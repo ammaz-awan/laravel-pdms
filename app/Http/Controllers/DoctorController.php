@@ -83,11 +83,11 @@ class DoctorController extends Controller
         return view('doctor.edit', compact('doctor'));
     }
 
-    public function update(UpdateDoctorRequest $request, Doctor $doctor)
-    {
-        $doctor->update($request->validated());
-        return redirect()->route('doctors.index')->with('success', 'Doctor updated successfully.');
-    }
+    // public function update(UpdateDoctorRequest $request, Doctor $doctor)
+    // {
+    //     $doctor->update($request->validated());
+    //     return redirect()->route('doctors.index')->with('success', 'Doctor updated successfully.');
+    // }
 
     public function destroy(Doctor $doctor)
     {

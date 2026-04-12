@@ -212,8 +212,8 @@
                                         <input id="patient-phone" type="tel" class="form-control" placeholder="Phone Number" required>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Date of Birth / Age</label>
-                                        <input id="patient-dob" type="text" class="form-control" placeholder="MM/DD/YYYY or Age" required>
+                                        <label class="form-label">Age</label>
+                                        <input id="patient-dob" type="text" class="form-control" placeholder="Age" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Gender</label>
@@ -239,7 +239,7 @@
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Address <small class="text-muted">(optional)</small></label>
+                                        <label class="form-label">Address <small class="text-muted"></small></label>
                                         <input id="patient-address" type="text" class="form-control" placeholder="Street, City, Country">
                                     </div>
                                 </div>

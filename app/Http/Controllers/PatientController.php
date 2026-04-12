@@ -33,6 +33,7 @@ class PatientController extends Controller
             'phone' => 'required|string|max:50',
             'age' => 'required|integer|min:0|max:150',
             'gender' => 'required|in:male,female,other',
+            'blood_group' => 'required|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
             'address' => 'nullable|string|max:255',
             'is_verified' => 'boolean',
             'is_payment_method_verified' => 'boolean',
@@ -50,7 +51,7 @@ class PatientController extends Controller
             'user_id' => $user->id,
             'age' => $validated['age'],
             'gender' => $validated['gender'],
-            'blood_group' => 'Unknown',
+            'blood_group' => $validated['blood_group'],
             'is_payment_method_verified' => $validated['is_payment_method_verified'] ?? false,
             'phone' => $validated['phone'],
             'dob' => $validated['age'],
@@ -76,11 +77,11 @@ class PatientController extends Controller
         return view('patient.edit', compact('patient'));
     }
 
-    public function update(UpdatePatientRequest $request, Patient $patient)
-    {
-        $patient->update($request->validated());
-        return redirect()->route('patients.index')->with('success', 'Patient updated successfully.');
-    }
+    // public function update(UpdatePatientRequest $request, Patient $patient)
+    // {
+    //     $patient->update($request->validated());
+    //     return redirect()->route('patients.index')->with('success', 'Patient updated successfully.');
+    // }
 
     public function destroy(Patient $patient)
     {
