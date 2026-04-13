@@ -34,6 +34,11 @@ Route::middleware(['auth'])->group(function () {
     Route::redirect('/', '/dashboard');
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
+    // Profile Routes
+    Route::get('/profile/admin/{admin}', [AdminController::class, 'profile'])->name('admin.profile');
+    Route::get('/profile/doctor/{doctor}', [DoctorController::class, 'profile'])->name('doctor.profile');
+    Route::get('/profile/patient/{patient}', [PatientController::class, 'profile'])->name('patient.profile');
+
     Route::resource('admins', AdminController::class);
     Route::resource('doctors', DoctorController::class);
     Route::resource('patients', PatientController::class);

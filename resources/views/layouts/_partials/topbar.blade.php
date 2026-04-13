@@ -226,10 +226,36 @@
                             </div>
 
                             <!-- Item-->
-                            <a href="#" class="dropdown-item">
-                                <i class="ti ti-user-circle me-1 align-middle"></i>
-                                <span class="align-middle">Profile Settings</span>
-                            </a>
+                            @if(auth()->user()->role === 'admin')
+                                @php
+                                    $admin = \App\Models\Admin::where('user_id', auth()->user()->id)->first();
+                                @endphp
+                                <a href="{{ route('admin.profile', $admin->id) }}" class="dropdown-item">
+                                    <i class="ti ti-user-circle me-1 align-middle"></i>
+                                    <span class="align-middle">Profile Settings</span>
+                                </a>
+                            @elseif(auth()->user()->role === 'doctor')
+                                @php
+                                    $doctor = \App\Models\Doctor::where('user_id', auth()->user()->id)->first();
+                                @endphp
+                                <a href="{{ route('doctor.profile', $doctor->id) }}" class="dropdown-item">
+                                    <i class="ti ti-user-circle me-1 align-middle"></i>
+                                    <span class="align-middle">Profile Settings</span>
+                                </a>
+                            @elseif(auth()->user()->role === 'patient')
+                                @php
+                                    $patient = \App\Models\Patient::where('user_id', auth()->user()->id)->first();
+                                @endphp
+                                <a href="{{ route('patient.profile', $patient->id) }}" class="dropdown-item">
+                                    <i class="ti ti-user-circle me-1 align-middle"></i>
+                                    <span class="align-middle">Profile Settings</span>
+                                </a>
+                            @else
+                                <a href="#" class="dropdown-item">
+                                    <i class="ti ti-user-circle me-1 align-middle"></i>
+                                    <span class="align-middle">Profile Settings</span>
+                                </a>
+                            @endif
 
                             <!-- Item-->
                             <a href="#" class="dropdown-item">

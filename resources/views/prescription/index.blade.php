@@ -30,7 +30,7 @@
                             <td>#{{ $prescription->appointment_id }}</td>
                             <td>{{ $prescription->doctor->user->name }}</td>
                             <td>{{ $prescription->patient->user->name }}</td>
-                            <td><span class="badge bg-info">{{ count(json_decode($prescription->medicines)) }} items</span></td>
+                            <td><span class="badge bg-info">{{ count($prescription->medicines) }} items</span></td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ route('prescriptions.show', $prescription->id) }}" class="btn btn-info"><i class="ti ti-eye"></i></a>

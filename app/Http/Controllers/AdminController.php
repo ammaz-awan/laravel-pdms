@@ -37,6 +37,12 @@ class AdminController extends Controller
         return view('admin.edit', compact('admin'));
     }
 
+    public function profile(Admin $admin)
+    {
+        $admin->load('user');
+        return view('admin.profile', compact('admin'));
+    }
+
     public function update(UpdateAdminRequest $request, Admin $admin)
     {
         $admin->update($request->validated());

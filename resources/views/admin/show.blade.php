@@ -16,7 +16,7 @@
             </div>
             <div class="col-md-6">
                 <p><strong>Email:</strong> {{ $admin->user->email ?? 'N/A' }}</p>
-                <p><strong>Permissions:</strong> {{ $admin->permissions ? count($admin->permissions) : 0 }} permissions</p>
+                <p><strong>Permissions:</strong> {{ is_array($admin->permissions) ? count($admin->permissions) : 0 }} permissions</p>
             </div>
         </div>
 
