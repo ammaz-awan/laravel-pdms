@@ -24,7 +24,7 @@
                     @if($doctor->is_verified)
                         <span class="badge bg-success"><i class="ti ti-check"></i> Verified</span>
                     @else
-                        <span class="badge bg-warning">Not Verified</span>
+                        <span class="badge bg-warning"> Verified</span>
                     @endif
                 </p>
             </div>
