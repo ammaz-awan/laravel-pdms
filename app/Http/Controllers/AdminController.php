@@ -40,6 +40,7 @@ class AdminController extends Controller
     public function profile(Admin $admin)
     {
         $admin->load('user');
+        dd($admin);
         return view('admin.profile', compact('admin'));
     }
 

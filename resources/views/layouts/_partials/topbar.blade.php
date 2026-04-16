@@ -212,13 +212,13 @@
 					<!-- User Dropdown -->
 					<div class="dropdown profile-dropdown d-flex align-items-center justify-content-center">
                         <a href="javascript:void(0);" class="topbar-link dropdown-toggle drop-arrow-none position-relative" data-bs-toggle="dropdown" data-bs-offset="0,22" aria-haspopup="false" aria-expanded="false">
-                            <img src="{{ asset('assets/img/users/user-01.jpg') }}" width="32" class="rounded-circle d-flex" alt="user-image">
+                            <img src="{{ auth()->user()->profile_image_url }}" width="32" class="rounded-circle d-flex" alt="user-image">
                             <span class="online text-success"><i class="ti ti-circle-filled d-flex bg-white rounded-circle border border-1 border-white"></i></span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-2">
 
                             <div class="d-flex align-items-center bg-light rounded-3 p-2 mb-2">
-                                <img src="{{ asset('assets/img/users/user-01.jpg') }}" class="rounded-circle" width="42" height="42" alt="">
+                                <img src="{{ auth()->user()->profile_image_url }}" class="rounded-circle" width="42" height="42" alt="">
                                 <div class="ms-2">
                                     <p class="fw-medium text-dark mb-0">{{ auth()->user()->name ?? 'User' }}</p>
                                     <span class="d-block fs-13 text-capitalize">{{ auth()->user()->role ?? 'guest' }}</span>
@@ -230,7 +230,7 @@
                                 @php
                                     $admin = \App\Models\Admin::where('user_id', auth()->user()->id)->first();
                                 @endphp
-                                <a href="{{ route('admin.profile', $admin->id) }}" class="dropdown-item">
+                                <a href="{{ route('profile.show', auth()->user()->ensureUuid()) }}" class="dropdown-item">
                                     <i class="ti ti-user-circle me-1 align-middle"></i>
                                     <span class="align-middle">Profile Settings</span>
                                 </a>
@@ -238,7 +238,7 @@
                                 @php
                                     $doctor = \App\Models\Doctor::where('user_id', auth()->user()->id)->first();
                                 @endphp
-                                <a href="{{ route('doctor.profile', $doctor->id) }}" class="dropdown-item">
+                                <a href="{{ route('profile.show', auth()->user()->ensureUuid()) }}" class="dropdown-item">
                                     <i class="ti ti-user-circle me-1 align-middle"></i>
                                     <span class="align-middle">Profile Settings</span>
                                 </a>
@@ -246,7 +246,7 @@
                                 @php
                                     $patient = \App\Models\Patient::where('user_id', auth()->user()->id)->first();
                                 @endphp
-                                <a href="{{ route('patient.profile', $patient->id) }}" class="dropdown-item">
+                                <a href="{{ route('profile.show', auth()->user()->ensureUuid()) }}" class="dropdown-item">
                                     <i class="ti ti-user-circle me-1 align-middle"></i>
                                     <span class="align-middle">Profile Settings</span>
                                 </a>

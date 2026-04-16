@@ -45,6 +45,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}" id="app-style">
 
     @yield('styles')
+    @stack('styles')
 </head>
 
 <body>
@@ -142,6 +143,7 @@
     <script src="{{ asset('assets/js/script.js') }}" type="text/javascript"></script>
 
     @yield('scripts')
+    @stack('scripts')
 
 <!-- Mirrored from preclinic.dreamstechnologies.com/html/index.html by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 03 Apr 2026 14:31:44 GMT -->
 </html>
