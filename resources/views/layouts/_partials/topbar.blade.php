@@ -211,10 +211,21 @@
 					
 					<!-- User Dropdown -->
 					<div class="dropdown profile-dropdown d-flex align-items-center justify-content-center">
-                        <a href="javascript:void(0);" class="topbar-link dropdown-toggle drop-arrow-none position-relative" data-bs-toggle="dropdown" data-bs-offset="0,22" aria-haspopup="false" aria-expanded="false">
-                            <img src="{{ auth()->user()->profile_image_url }}"  class="rounded-circle" width="30" height="30" alt="user-image">
-                            <span class="online text-success"><i class="ti ti-circle-filled d-flex bg-white rounded-circle border border-1 border-white"></i></span>
-                        </a>
+                       <a href="javascript:void(0);"
+   class="topbar-link dropdown-toggle drop-arrow-none"
+   data-bs-toggle="dropdown">
+
+    <div class="d-flex flex-column text-end">
+        <span class="fw-semibold text-dark">
+            {{ auth()->user()->name ?? 'User' }}
+        </span>
+
+        <small class="text-muted" style="font-size: 11px;">
+            {{ ucfirst(auth()->user()->role ?? 'guest') }}
+        </small>
+    </div>
+
+</a>
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-2">
 
                             <div class="d-flex align-items-center bg-light rounded-3 p-2 mb-2">
