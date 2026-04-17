@@ -212,7 +212,7 @@
 					<!-- User Dropdown -->
 					<div class="dropdown profile-dropdown d-flex align-items-center justify-content-center">
                         <a href="javascript:void(0);" class="topbar-link dropdown-toggle drop-arrow-none position-relative" data-bs-toggle="dropdown" data-bs-offset="0,22" aria-haspopup="false" aria-expanded="false">
-                            <img src="{{ auth()->user()->profile_image_url }}" width="32" class="rounded-circle d-flex" alt="user-image">
+                            <img src="{{ auth()->user()->profile_image_url }}"  class="rounded-circle" width="30" height="30" alt="user-image">
                             <span class="online text-success"><i class="ti ti-circle-filled d-flex bg-white rounded-circle border border-1 border-white"></i></span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-2">

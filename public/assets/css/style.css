@@ -15476,4 +15476,33 @@ Author URL: https://themeforest.net/user/dreamstechnologies
   left: 60%;
 }
 
+
+
 /*# sourceMappingURL=style.css.map */
+
+
+.social-btn {
+    transition: all 0.3s ease;
+    font-size: 15px;
+}
+
+/* Facebook - slightly dull (less harsh blue) */
+.fb-btn {
+    background-color: #2d6cdf; /* softer than #1877f2 */
+    color: #fff;
+}
+
+/* Google - already neutral, just soften border/text */
+.google-btn {
+    background-color: #fafafa;
+    color: #555;
+    border: 1px solid #e0e0e0;
+}
+
+/* Hover (same color, just slight fade + soft shadow) */
+.social-btn:hover {
+    opacity: 0.9;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+

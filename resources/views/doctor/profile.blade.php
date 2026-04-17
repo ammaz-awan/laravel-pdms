@@ -36,7 +36,7 @@
                                         </div>
                                         <div class="col-lg-10">
                                             <div class="profile-container">
-                                                <img src="" alt="Profile" id="profilePreview">
+                                                <img src="{{ auth()->user()->profile_image_url }}" alt="Profile" id="profilePreview">
                                                 <div class="overlay-btn">
                                                     <a href="javascript:void(0);" class="text-white" id="uploadTrigger">
                                                         <i class="ti ti-photo fs-10"></i>

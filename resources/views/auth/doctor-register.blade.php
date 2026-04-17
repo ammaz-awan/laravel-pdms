@@ -91,6 +91,22 @@
             width: 3rem;
             height: 3rem;
         }
+        .password-toggle {
+            color: #6c757d;
+            border-left: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .password-toggle:focus {
+            box-shadow: none;
+        }
+        .input-group.is-invalid-group > .input-group-text,
+        .input-group.is-invalid-group > .form-control,
+        .input-group.is-invalid-group > .form-select,
+        .input-group.is-invalid-group > .password-toggle {
+            border-color: var(--bs-form-invalid-border-color);
+        }
     </style>
 
 </head>
@@ -112,7 +128,7 @@
                                 <h5 class="mb-1 fs-20 fw-bold">Doctor Registration</h5>
                                 <p class="text-muted mb-0">Submit your details and verification documents for review.</p>
                             </div>
-                            <a href="{{ route('login') }}" class="btn btn-outline-secondary">Back to Login</a>
+                            <a href="{{ route('login') }}" class="btn btn-success text-white"><--- Back to Login</a>
                         </div>
 
                         <div class="row g-3 mb-4">
@@ -140,6 +156,40 @@
                             </div>
                         </div>
 
+           
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
+
+                            <!-- Facebook Button -->
+                            <a href="javascript:void(0);"
+                            class="btn social-btn fb-btn d-flex align-items-center justify-content-center px-5 py-3 rounded-pill"
+                            style="min-width: 260px;">
+                                <img src="/assets/img/icons/facebook-logo.svg" class="me-2 bg-white rounded-circle p-1" width="24" alt="Facebook">
+                                <span class="fw-medium">Continue with Facebook</span>
+                            </a>
+
+                            <!-- Google Button -->
+                            <a href="javascript:void(0);"
+                            class="btn social-btn google-btn d-flex align-items-center justify-content-center px-5 py-3 rounded-pill"
+                            style="min-width: 260px;">
+                                <img src="/assets/img/icons/google-logo.svg" class="me-2 bg-white rounded-circle p-1" width="24" alt="Google">
+                                <span class="fw-medium">Continue with Google</span>
+                            </a>
+
+                        </div>
+
+                        <!-- Divider -->
+                        <div class="d-flex align-items-center my-3">
+                            <hr class="flex-grow-1">
+                            <span class="mx-2 text-muted">or</span>
+                            <hr class="flex-grow-1">
+                        </div>
+                    </div>
+
+
+
+        
+                         
                         <div class="card border-1 p-lg-4 shadow-md rounded-3 position-relative mb-4">
                             <div id="doctor-loader" class="loader-overlay d-none">
                                 <div class="spinner-border text-success" role="status"></div>
@@ -148,43 +198,109 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label">Full Name</label>
-                                        <input id="doctor-name" type="text" class="form-control" placeholder="Full Name" required>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-user fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-name" type="text" class="form-control border-start-0 ps-0" placeholder="Full Name" required>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Email</label>
-                                        <input id="doctor-email" type="email" class="form-control" placeholder="Email Address" required>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-mail fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-email" type="email" class="form-control border-start-0 ps-0" placeholder="Email Address" required>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Password</label>
-                                        <input id="doctor-password" type="password" class="form-control" placeholder="Password" required>
+                                        <div class="input-group has-validation">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-lock fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-password" type="password" class="form-control border-start-0 border-end-0 ps-0" placeholder="Password" required>
+                                            <button class="input-group-text bg-white password-toggle" type="button" data-password-toggle="doctor-password" aria-label="Toggle password visibility">
+                                                <i class="ti ti-eye-off"></i>
+                                            </button>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Confirm Password</label>
-                                        <input id="doctor-password-confirm" type="password" class="form-control" placeholder="Confirm Password" required>
+                                        <div class="input-group has-validation">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-lock fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-password-confirm" type="password" class="form-control border-start-0 border-end-0 ps-0" placeholder="Confirm Password" required>
+                                            <button class="input-group-text bg-white password-toggle" type="button" data-password-toggle="doctor-password-confirm" aria-label="Toggle confirm password visibility">
+                                                <i class="ti ti-eye-off"></i>
+                                            </button>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Phone</label>
-                                        <input id="doctor-phone" type="tel" class="form-control" placeholder="Phone Number" required>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-phone fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-phone" type="tel" class="form-control border-start-0 ps-0" placeholder="Phone Number" required>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Specialization</label>
-                                        <input id="doctor-specialization" type="text" class="form-control" placeholder="Specialization" required>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-stethoscope fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-specialization" type="text" class="form-control border-start-0 ps-0" placeholder="Specialization" required>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Experience</label>
-                                        <input id="doctor-experience" type="text" class="form-control" placeholder="Years of experience" required>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-briefcase fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-experience" type="text" class="form-control border-start-0 ps-0" placeholder="Years of experience" required>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Consultation Fees</label>
-                                        <input id="doctor-fees" type="number" step="0.01" class="form-control" placeholder="Fees in USD" required>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-currency-dollar fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-fees" type="number" step="0.01" class="form-control border-start-0 ps-0" placeholder="Fees in USD" required>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Clinic / Hospital Name</label>
-                                        <input id="doctor-clinic" type="text" class="form-control" placeholder="Clinic or Hospital" required>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-building-hospital fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-clinic" type="text" class="form-control border-start-0 ps-0" placeholder="Clinic or Hospital" required>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
-                                    <div class="col-12">
+                                    <div class="col-6">
                                         <label class="form-label">Address</label>
-                                        <input id="doctor-address" type="text" class="form-control" placeholder="Clinic address" required>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-map-pin fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-address" type="text" class="form-control border-start-0 ps-0" placeholder="Clinic address" required>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-end mt-4">
@@ -200,19 +316,35 @@
                                             <span class="text-muted">Drag & drop or click to upload certificate</span>
                                             <span class="badge bg-success">Accepted</span>
                                         </div>
-                                        <input id="doctor-certificate" type="file" class="form-control mt-3">
+                                        <div class="input-group mt-3">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-file-text fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-certificate" type="file" class="form-control border-start-0 ps-0">
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">License Number</label>
-                                        <input id="doctor-license" type="text" class="form-control" placeholder="License Number" required>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-id-badge fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-license" type="text" class="form-control border-start-0 ps-0" placeholder="License Number" required>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Additional Documents <small class="text-muted">(optional)</small></label>
-                                        <input id="doctor-documents" type="text" class="form-control" placeholder="Document link or notes">
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-files fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="doctor-documents" type="text" class="form-control border-start-0 ps-0" placeholder="Document link or notes">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4">
-                                    <button id="doctor-back" type="button" class="btn btn-outline-secondary">Back</button>
+                                    <button id="doctor-back" type="button" class="btn btn-outline-success">Back</button>
                                     <div class="d-flex gap-2">
                                         <button id="doctor-skip" type="button" class="btn btn-outline-success">Skip for Now</button>
                                         <button id="doctor-submit" type="button" class="btn bg-success text-white">Submit</button>
@@ -273,34 +405,82 @@
                 }, 260);
             }
 
+            function setInvalid(field, message) {
+                field.classList.add('is-invalid');
+                const inputGroup = field.closest('.input-group');
+                if (inputGroup) {
+                    inputGroup.classList.add('is-invalid-group');
+                }
+                const feedback = field.parentElement.querySelector('.invalid-feedback') || field.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.textContent = message;
+                }
+            }
+
+            function clearInvalid(field) {
+                field.classList.remove('is-invalid');
+                const inputGroup = field.closest('.input-group');
+                if (inputGroup) {
+                    inputGroup.classList.remove('is-invalid-group');
+                }
+                const feedback = field.parentElement.querySelector('.invalid-feedback') || field.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.textContent = 'This field is required';
+                }
+            }
+
+            function togglePassword(fieldId, iconElement) {
+                const field = document.getElementById(fieldId);
+                const showPassword = field.type === 'password';
+
+                field.type = showPassword ? 'text' : 'password';
+                iconElement.classList.toggle('ti-eye', showPassword);
+                iconElement.classList.toggle('ti-eye-off', !showPassword);
+            }
+
+            function validateRequiredFields(fieldIds) {
+                let isValid = true;
+
+                fieldIds.forEach(function (id) {
+                    const field = document.getElementById(id);
+
+                    if (!field.value.trim()) {
+                        setInvalid(field, 'This field is required');
+                        if (isValid) {
+                            field.focus();
+                        }
+                        isValid = false;
+                    } else {
+                        clearInvalid(field);
+                    }
+                });
+
+                return isValid;
+            }
+
             function validateStep1() {
                 const requiredIds = ['doctor-name', 'doctor-email', 'doctor-password', 'doctor-password-confirm', 'doctor-phone', 'doctor-specialization', 'doctor-experience', 'doctor-fees', 'doctor-clinic', 'doctor-address'];
-                for (const id of requiredIds) {
-                    const field = document.getElementById(id);
-                    if (!field.value.trim()) {
-                        field.focus();
-                        return false;
-                    }
-                }
-                const password = document.getElementById('doctor-password').value;
-                const confirm = document.getElementById('doctor-password-confirm').value;
-                if (password !== confirm) {
-                    alert('Passwords do not match.');
+                if (!validateRequiredFields(requiredIds)) {
                     return false;
                 }
+
+                const password = document.getElementById('doctor-password').value;
+                const confirmField = document.getElementById('doctor-password-confirm');
+                const confirm = confirmField.value;
+
+                if (password !== confirm) {
+                    setInvalid(confirmField, 'Passwords do not match');
+                    confirmField.focus();
+                    return false;
+                }
+
+                clearInvalid(confirmField);
                 return true;
             }
 
             function validateStep2() {
                 const requiredIds = ['doctor-license'];
-                for (const id of requiredIds) {
-                    const field = document.getElementById(id);
-                    if (!field.value.trim()) {
-                        field.focus();
-                        return false;
-                    }
-                }
-                return true;
+                return validateRequiredFields(requiredIds);
             }
 
             function showStep(step) {
@@ -393,6 +573,21 @@
                 .catch(error => {
                     console.error('Error:', error);
                     alert('An error occurred during registration.');
+                });
+            });
+
+            document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    togglePassword(button.dataset.passwordToggle, button.querySelector('i'));
+                });
+            });
+
+            ['doctor-name', 'doctor-email', 'doctor-password', 'doctor-password-confirm', 'doctor-phone', 'doctor-specialization', 'doctor-experience', 'doctor-fees', 'doctor-clinic', 'doctor-address', 'doctor-license'].forEach(function (id) {
+                const field = document.getElementById(id);
+                const eventName = field.tagName === 'SELECT' ? 'change' : 'input';
+
+                field.addEventListener(eventName, function () {
+                    clearInvalid(field);
                 });
             });
         });

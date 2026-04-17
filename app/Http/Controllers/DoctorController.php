@@ -83,11 +83,11 @@ class DoctorController extends Controller
         return view('doctor.edit', compact('doctor'));
     }
 
-    public function profile(Doctor $doctor)
-    {
-        $doctor->load('user');
-        return view('doctor.profile', compact('doctor'));
-    }
+    // public function profile(Doctor $doctor)
+    // {
+    //     $doctor->load('user');
+    //     return view('doctor.profile', compact('doctor'));
+    // }
 
     // public function update(UpdateDoctorRequest $request, Doctor $doctor)
     // {

@@ -105,6 +105,23 @@
                                         <div class="mb-2">
                                             <button type="submit" class="btn bg-primary text-white w-100">Login</button>
                                         </div>
+                                        <div class="login-or position-relative mb-3">
+											<span class="span-or">OR</span>
+										</div>
+                                        <div class="mb-2">
+											<div class="d-flex align-items-center justify-content-center flex-wrap">
+												<div class="text-center me-2 flex-fill">
+													<a href="javascript:void(0);" class="br-10 p-1 btn btn-outline-light border d-flex align-items-center justify-content-center">
+														<img class="img-fluid m-1" src="assets/img/icons/facebook-logo.svg" alt="Facebook">
+													</a>
+												</div>
+												<div class="text-center me-2 flex-fill">
+													<a href="javascript:void(0);" class="br-10 p-1 btn btn-outline-light border d-flex align-items-center justify-content-center">
+														<img class="img-fluid m-1" src="assets/img/icons/google-logo.svg" alt="Google">
+													</a>
+												</div>
+											</div>
+										</div>
                                        
                                         <div class="text-center">
                                             <h6 class="fw-normal fs-14 text-dark mb-0">Don’t have an account yet?

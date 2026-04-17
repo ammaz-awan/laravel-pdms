@@ -41,13 +41,14 @@
         }
         .step-pill {
             border-radius: 1rem;
+            border-color: rgb(46 55 164);
             padding: 1rem;
             border: 1px solid #dee2e6;
             transition: border-color .2s ease, background .2s ease;
         }
         .step-pill.active {
             background: rgba(13, 110, 253, .08);
-            border-color: #0d6efd;
+            border-color: rgb(46 55 164);
         }
         .step-pill .step-number {
             width: 34px;
@@ -57,7 +58,7 @@
             justify-content: center;
             border-radius: 50%;
             background: #e7f1ff;
-            color: #0d6efd;
+            color:rgb(46 55 164);
             font-weight: 700;
             margin-right: .75rem;
         }
@@ -116,6 +117,21 @@
             width: 3rem;
             height: 3rem;
         }
+        .password-toggle {
+            color: #6c757d;
+            border-left: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .password-toggle:focus {
+            box-shadow: none;
+        }
+        .input-group.is-invalid-group > .input-group-text,
+        .input-group.is-invalid-group > .form-control,
+        .input-group.is-invalid-group > .password-toggle {
+            border-color: var(--bs-form-invalid-border-color);
+        }
     </style>
 
 </head>
@@ -137,7 +153,7 @@
                                 <h5 class="mb-1 fs-20 fw-bold">Patient Registration</h5>
                                 <p class="text-muted mb-0">Complete your patient profile in two easy steps.</p>
                             </div>
-                            <a href="{{ route('login') }}" class="btn btn-outline-secondary">Back to Login</a>
+                            <a href="{{ route('login') }}" class="btn bg-primary text-white"><--- Back to Login</a>
                         </div>
 
                         <div class="row g-3 mb-4">
@@ -165,6 +181,35 @@
                             </div>
                         </div>
 
+                                <div class="mb-3">
+    <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
+
+        <!-- Facebook Button -->
+        <a href="javascript:void(0);"
+           class="btn social-btn fb-btn d-flex align-items-center justify-content-center px-5 py-3 rounded-pill"
+           style="min-width: 260px;">
+            <img src="/assets/img/icons/facebook-logo.svg" class="me-2 bg-white rounded-circle p-1" width="24" alt="Facebook">
+            <span class="fw-medium">Continue with Facebook</span>
+        </a>
+
+        <!-- Google Button -->
+        <a href="javascript:void(0);"
+           class="btn social-btn google-btn d-flex align-items-center justify-content-center px-5 py-3 rounded-pill"
+           style="min-width: 260px;">
+            <img src="/assets/img/icons/google-logo.svg" class="me-2 bg-white rounded-circle p-1" width="24" alt="Google">
+            <span class="fw-medium">Continue with Google</span>
+        </a>
+
+    </div>
+
+    <!-- Divider -->
+    <div class="d-flex align-items-center my-3">
+        <hr class="flex-grow-1">
+        <span class="mx-2 text-muted">or</span>
+        <hr class="flex-grow-1">
+    </div>
+</div>
+
                         <div class="card border-1 p-lg-4 shadow-md rounded-3 position-relative mb-4">
                             <div id="patient-loader" class="loader-overlay d-none">
                                 <div class="spinner-border text-primary" role="status"></div>
@@ -178,6 +223,7 @@
                                                 <i class="ti ti-user fs-14 text-dark"></i>
                                             </span>
                                             <input id="patient-name" type="text" class="form-control border-start-0 ps-0" placeholder="Full Name" required>
+                                            <div class="invalid-feedback">This field is required</div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -187,60 +233,99 @@
                                                 <i class="ti ti-mail fs-14 text-dark"></i>
                                             </span>
                                             <input id="patient-email" type="email" class="form-control border-start-0 ps-0" placeholder="Email Address" required>
+                                            <div class="invalid-feedback">This field is required</div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Password</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text border-end-0 bg-white">
+                                        <div class="input-group has-validation">
+                                            <span class="input-group-text border-end-0 bg-white rounded-0">
                                                 <i class="ti ti-lock fs-14 text-dark"></i>
                                             </span>
-                                            <input id="patient-password" type="password" class="form-control border-start-0 ps-0" placeholder="Password" required>
+                                            <input id="patient-password" type="password" class="form-control border-start-0 border-end-0 ps-0 rounded-0" placeholder="Password" required>
+                                            <button class="input-group-text bg-white password-toggle rounded-0" type="button" data-password-toggle="patient-password" aria-label="Toggle password visibility">
+                                                <i class="ti ti-eye-off"></i>
+                                            </button>
+                                            <div class="invalid-feedback">This field is required</div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Confirm Password</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text border-end-0 bg-white">
+                                        <div class="input-group has-validation">
+                                            <span class="input-group-text border-end-0 bg-white rounded-0">
                                                 <i class="ti ti-lock fs-14 text-dark"></i>
                                             </span>
-                                            <input id="patient-password-confirm" type="password" class="form-control border-start-0 ps-0" placeholder="Confirm Password" required>
+                                            <input id="patient-password-confirm" type="password" class="form-control border-start-0 border-end-0 ps-0 rounded-0" placeholder="Confirm Password" required>
+                                            <button class="input-group-text bg-white password-toggle rounded-0" type="button" data-password-toggle="patient-password-confirm" aria-label="Toggle confirm password visibility">
+                                                <i class="ti ti-eye-off"></i>
+                                            </button>
+                                            <div class="invalid-feedback">This field is required</div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Phone</label>
-                                        <input id="patient-phone" type="tel" class="form-control" placeholder="Phone Number" required>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-phone fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="patient-phone" type="tel" class="form-control border-start-0 ps-0" placeholder="Phone Number" required >
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Age</label>
-                                        <input id="patient-dob" type="text" class="form-control" placeholder="Age" required>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-calendar fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="patient-dob" type="text" class="form-control border-start-0 ps-0" placeholder="Age" required>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Gender</label>
-                                        <select id="patient-gender" class="form-select" required>
-                                            <option value="">Choose...</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="other">Other</option>
-                                        </select>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-user fs-14 text-dark"></i>
+                                            </span>
+                                            <select id="patient-gender" class="form-select border-start-0 ps-0" required>
+                                                <option value="">Choose...</option>
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Blood Group</label>
-                                        <select id="patient-blood-group" class="form-select" required>
-                                            <option value="">Choose...</option>
-                                            <option value="A+">A+</option>
-                                            <option value="A-">A-</option>
-                                            <option value="B+">B+</option>
-                                            <option value="B-">B-</option>
-                                            <option value="AB+">AB+</option>
-                                            <option value="AB-">AB-</option>
-                                            <option value="O+">O+</option>
-                                            <option value="O-">O-</option>
-                                        </select>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-droplet fs-14 text-dark"></i>
+                                            </span>
+                                            <select id="patient-blood-group" class="form-select border-start-0 ps-0" required>
+                                                <option value="">Choose...</option>
+                                                <option value="A+">A+</option>
+                                                <option value="A-">A-</option>
+                                                <option value="B+">B+</option>
+                                                <option value="B-">B-</option>
+                                                <option value="AB+">AB+</option>
+                                                <option value="AB-">AB-</option>
+                                                <option value="O+">O+</option>
+                                                <option value="O-">O-</option>
+                                            </select>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Address <small class="text-muted"></small></label>
-                                        <input id="patient-address" type="text" class="form-control" placeholder="Street, City, Country">
+                                    <div class="col-md-12">
+                                        <label class="form-label">Address</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text border-end-0 bg-white">
+                                                <i class="ti ti-map-pin fs-14 text-dark"></i>
+                                            </span>
+                                            <input id="patient-address" type="text" class="form-control border-start-0 ps-0" placeholder="Street, City, Country" required>
+                                            <div class="invalid-feedback">This field is required</div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-end mt-4">
@@ -269,30 +354,59 @@
                                         <div class="row g-3">
                                             <div class="col-12">
                                                 <label class="form-label">Cardholder Name</label>
-                                                <input id="cardholder-name" type="text" class="form-control" placeholder="Full Name" required>
+                                                <div class="input-group">
+                                                    <span class="input-group-text border-end-0 bg-white">
+                                                        <i class="ti ti-user fs-14 text-dark"></i>
+                                                    </span>
+                                                    <input id="cardholder-name" type="text" class="form-control border-start-0 ps-0" placeholder="Full Name" required>
+                                                    <div class="invalid-feedback">This field is required</div>
+                                                </div>
                                             </div>
                                             <div class="col-12">
                                                 <label class="form-label">Card Number</label>
-                                                <input id="card-number" type="text" class="form-control" placeholder="4242 4242 4242 4242" maxlength="19" required>
+                                                <div class="input-group">
+                                                    <span class="input-group-text border-end-0 bg-white">
+                                                        <i class="ti ti-credit-card fs-14 text-dark"></i>
+                                                    </span>
+                                                    <input id="card-number" type="text" class="form-control border-start-0 ps-0" placeholder="4242 4242 4242 4242" maxlength="19" required>
+                                                    <div class="invalid-feedback">This field is required</div>
+                                                </div>
                                             </div>
                                             <div class="col-6">
                                                 <label class="form-label">Expiry Date (MM/YY)</label>
-                                                <input id="expiry-date" type="text" class="form-control" placeholder="MM/YY" maxlength="5" required>
+                                                <div class="input-group">
+                                                    <span class="input-group-text border-end-0 bg-white">
+                                                        <i class="ti ti-calendar fs-14 text-dark"></i>
+                                                    </span>
+                                                    <input id="expiry-date" type="text" class="form-control border-start-0 ps-0" placeholder="MM/YY" maxlength="5" required>
+                                                    <div class="invalid-feedback">This field is required</div>
+                                                </div>
                                             </div>
                                             <div class="col-6">
                                                 <label class="form-label">CVV</label>
-                                                <input id="cvv" type="text" class="form-control" placeholder="123" maxlength="4" required>
+                                                <div class="input-group">
+                                                    <span class="input-group-text border-end-0 bg-white">
+                                                        <i class="ti ti-shield-lock fs-14 text-dark"></i>
+                                                    </span>
+                                                    <input id="cvv" type="text" class="form-control border-start-0 ps-0" placeholder="123" maxlength="4" required>
+                                                    <div class="invalid-feedback">This field is required</div>
+                                                </div>
                                             </div>
                                             <div class="col-12">
                                                 <label class="form-label">Billing Address <small class="text-muted">(optional)</small></label>
-                                                <input id="billing-address" type="text" class="form-control" placeholder="Billing Address">
+                                                <div class="input-group">
+                                                    <span class="input-group-text border-end-0 bg-white">
+                                                        <i class="ti ti-map-pin fs-14 text-dark"></i>
+                                                    </span>
+                                                    <input id="billing-address" type="text" class="form-control border-start-0 ps-0" placeholder="Billing Address">
+                                                </div>
                                             </div>
                                         </div>
                                         <p class="text-muted small mt-3"><i class="ti ti-lock me-2"></i>Secure payment details only used for demonstration and will not be processed.</p>
                                     </div>
                                 </div>
                                 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4">
-                                    <button id="patient-back" type="button" class="btn btn-outline-secondary">Back</button>
+                                    <button id="patient-back" type="button" class="btn btn-outline-primary">Back</button>
                                     <div class="d-flex gap-2">
                                         <button id="patient-skip" type="button" class="btn btn-outline-primary">Skip for Now</button>
                                         <button id="patient-submit" type="button" class="btn bg-primary text-white">Submit</button>
@@ -352,27 +466,85 @@
                 }, 260);
             }
 
-            function validateStep1() {
-                const requiredIds = ['patient-name', 'patient-email', 'patient-password', 'patient-password-confirm', 'patient-phone', 'patient-dob', 'patient-gender', 'patient-blood-group'];
-                for (const id of requiredIds) {
+            function setInvalid(field, message) {
+                field.classList.add('is-invalid');
+                const inputGroup = field.closest('.input-group');
+                if (inputGroup) {
+                    inputGroup.classList.add('is-invalid-group');
+                }
+                const feedback = field.parentElement.querySelector('.invalid-feedback') || field.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.textContent = message;
+                }
+            }
+
+            function clearInvalid(field) {
+                field.classList.remove('is-invalid');
+                const inputGroup = field.closest('.input-group');
+                if (inputGroup) {
+                    inputGroup.classList.remove('is-invalid-group');
+                }
+                const feedback = field.parentElement.querySelector('.invalid-feedback') || field.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.textContent = 'This field is required';
+                }
+            }
+
+            function togglePassword(fieldId, iconElement) {
+                const field = document.getElementById(fieldId);
+                const showPassword = field.type === 'password';
+
+                field.type = showPassword ? 'text' : 'password';
+                iconElement.classList.toggle('ti-eye', showPassword);
+                iconElement.classList.toggle('ti-eye-off', !showPassword);
+            }
+
+            function validateRequiredFields(fieldIds) {
+                let isValid = true;
+
+                fieldIds.forEach(function (id) {
                     const field = document.getElementById(id);
+
                     if (!field.value.trim()) {
-                        field.focus();
-                        return false;
+                        setInvalid(field, 'This field is required');
+                        if (isValid) {
+                            field.focus();
+                        }
+                        isValid = false;
+                    } else {
+                        clearInvalid(field);
                     }
+                });
+
+                return isValid;
+            }
+
+            function validateStep1() {
+                const requiredIds = ['patient-name', 'patient-email', 'patient-password', 'patient-password-confirm', 'patient-phone', 'patient-dob', 'patient-gender', 'patient-blood-group', 'patient-address'];
+                if (!validateRequiredFields(requiredIds)) {
+                    return false;
                 }
                 // Special check for age
-                const ageValue = document.getElementById('patient-dob').value;
-                if (isNaN(ageValue) || parseInt(ageValue) <= 0) {
-                    document.getElementById('patient-dob').focus();
+                const ageField = document.getElementById('patient-dob');
+                const ageValue = ageField.value;
+                if (isNaN(ageValue) || parseInt(ageValue, 10) <= 0) {
+                    setInvalid(ageField, 'Please enter a valid age');
+                    ageField.focus();
                     return false;
                 }
+
+                clearInvalid(ageField);
+
                 const password = document.getElementById('patient-password').value;
-                const confirm = document.getElementById('patient-password-confirm').value;
+                const confirmField = document.getElementById('patient-password-confirm');
+                const confirm = confirmField.value;
                 if (password !== confirm) {
-                    alert('Passwords do not match.');
+                    setInvalid(confirmField, 'Passwords do not match');
+                    confirmField.focus();
                     return false;
                 }
+
+                clearInvalid(confirmField);
                 return true;
             }
 
@@ -433,13 +605,7 @@
 
             submitButton.addEventListener('click', function () {
                 const requiredIds = ['cardholder-name', 'card-number', 'expiry-date', 'cvv'];
-                for (const id of requiredIds) {
-                    const field = document.getElementById(id);
-                    if (!field.value.trim()) {
-                        field.focus();
-                        return;
-                    }
-                }
+                if (!validateRequiredFields(requiredIds)) return;
                 // Collect step 1 data
                 const data = {
                     name: document.getElementById('patient-name').value,
@@ -486,6 +652,21 @@
             });
             document.getElementById('cvv').addEventListener('input', function (e) {
                 e.target.value = e.target.value.replace(/\D/g, '');
+            });
+
+            document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    togglePassword(button.dataset.passwordToggle, button.querySelector('i'));
+                });
+            });
+
+            ['patient-name', 'patient-email', 'patient-password', 'patient-password-confirm', 'patient-phone', 'patient-dob', 'patient-gender', 'patient-blood-group', 'patient-address', 'cardholder-name', 'card-number', 'expiry-date', 'cvv'].forEach(function (id) {
+                const field = document.getElementById(id);
+                const eventName = field.tagName === 'SELECT' ? 'change' : 'input';
+
+                field.addEventListener(eventName, function () {
+                    clearInvalid(field);
+                });
             });
         });
     </script>
