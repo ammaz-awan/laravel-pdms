@@ -161,15 +161,15 @@
                         <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
 
                             <!-- Facebook Button -->
-                            <a href="javascript:void(0);"
+                            <a href="{{ url('/auth/facebook?role=doctor') }}"
                             class="btn social-btn fb-btn d-flex align-items-center justify-content-center px-5 py-3 rounded-pill"
                             style="min-width: 260px;">
                                 <img src="/assets/img/icons/facebook-logo.svg" class="me-2 bg-white rounded-circle p-1" width="24" alt="Facebook">
                                 <span class="fw-medium">Continue with Facebook</span>
                             </a>
-
+                            
                             <!-- Google Button -->
-                            <a href="javascript:void(0);"
+                            <a href="{{ url('/auth/google?role=doctor') }}"
                             class="btn social-btn google-btn d-flex align-items-center justify-content-center px-5 py-3 rounded-pill"
                             style="min-width: 260px;">
                                 <img src="/assets/img/icons/google-logo.svg" class="me-2 bg-white rounded-circle p-1" width="24" alt="Google">

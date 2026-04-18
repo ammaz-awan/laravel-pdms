@@ -100,17 +100,19 @@ class ProfileController extends Controller
         return $path;
     }
 
-    protected function resolveProfile(string $uuid): array
-    {
-        $user = User::where('uuid', $uuid)->firstOrFail();
+   protected function resolveProfile(string $uuid): array
+{
+    $user = User::where('uuid', $uuid)->firstOrFail();
 
-        return match ($user->role) {
-            'admin' => [$user, Admin::where('user_id', $user->id)->with('user')->firstOrFail()],
-            'doctor' => [$user, Doctor::where('user_id', $user->id)->with('user')->firstOrFail()],
-            'patient' => [$user, Patient::where('user_id', $user->id)->with('user')->firstOrFail()],
-            default => abort(404),
-        };
-    }
+    $profile = match ($user->role) {
+        'admin' => Admin::firstOrCreate(['user_id' => $user->id]),
+        'doctor' => Doctor::firstOrCreate(['user_id' => $user->id]),
+        'patient' => Patient::firstOrCreate(['user_id' => $user->id]),
+        default => abort(404),
+    };
+
+    return [$user, $profile];
+}
 
     protected function renderProfileView(User $user, $profile)
     {
@@ -121,4 +123,8 @@ class ProfileController extends Controller
             default => abort(404),
         };
     }
+
+
+
+
 }

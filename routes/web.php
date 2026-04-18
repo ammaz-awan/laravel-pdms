@@ -15,6 +15,8 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Auth\SocialController;
+
 
 // Authentication Routes
 Auth::routes();
@@ -31,11 +33,31 @@ Route::get('/register/doctor', function () {
 
 Route::post('/register/doctor', [DoctorController::class, 'store'])->name('register.doctor.store');
 
+
+Route::get('/auth/google', [SocialController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [SocialController::class, 'handleGoogleCallback']);
+
+
+Route::get('/auth/facebook', [SocialController::class, 'redirectToFacebook']);
+Route::get('/auth/facebook/callback', [SocialController::class, 'handleFacebookCallback']);
+
+Route::get('/privacy-policy', function () {
+    return view('privacy-policy');
+});
+
+Route::get('/data-deletion', function () {
+    return view('data-deletion');
+});
+
 // Protected Routes - Require Authentication
 Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::redirect('/', '/dashboard');
+
+    Route::get('/doctor/dashboard', function () {
+        return view('doctor.dashboard');
+    });
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
     // Profile Routes
@@ -64,3 +86,5 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('invoices', InvoiceController::class);
     Route::resource('ratings', RatingController::class);
 });
+
+

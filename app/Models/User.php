@@ -93,6 +93,28 @@ class User extends Authenticatable
         return asset('assets/img/users/user-08.jpg');
     }
 
+
+//     public function isProfileComplete(): bool
+// {
+//     if ($this->role === 'doctor') {
+//         return $this->doctor &&
+//             $this->doctor->specialization &&
+//             $this->doctor->phone;
+//     }
+
+//     if ($this->role === 'patient') {
+//         return $this->patient &&
+//             $this->patient->age &&
+//             $this->patient->phone &&
+//             $this->patient->gender &&
+//             $this->patient->blood_group;
+//     }
+
+//     return true;
+// }
+
+
+
     public function admin()
     {
         return $this->hasOne(Admin::class);
@@ -108,3 +130,4 @@ class User extends Authenticatable
         return $this->hasOne(Patient::class);
     }
 }
+

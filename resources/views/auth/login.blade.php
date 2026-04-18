@@ -55,7 +55,7 @@
                                 <div class="card border-1 p-lg-3 shadow-md rounded-3 mb-4">
                                     <div class="card-body">
                                         <div class="text-center mb-3">
-                                            <h5 class="mb-1 fs-20 fw-bold">Sign In</h5>
+                                            <h5 class="mb-1 fs-20 fw-bold">Login</h5>
                                             <p class="mb-0">Please enter below details to access the dashboard</p>
                                         </div>
 
@@ -111,12 +111,12 @@
                                         <div class="mb-2">
 											<div class="d-flex align-items-center justify-content-center flex-wrap">
 												<div class="text-center me-2 flex-fill">
-													<a href="javascript:void(0);" class="br-10 p-1 btn btn-outline-light border d-flex align-items-center justify-content-center">
+													<a href="{{ url('/auth/facebook?type=login') }}" class="br-10 p-1 btn btn-outline-light border d-flex align-items-center justify-content-center">
 														<img class="img-fluid m-1" src="assets/img/icons/facebook-logo.svg" alt="Facebook">
 													</a>
 												</div>
 												<div class="text-center me-2 flex-fill">
-													<a href="javascript:void(0);" class="br-10 p-1 btn btn-outline-light border d-flex align-items-center justify-content-center">
+													<a href="{{ url('/auth/google?type=login') }}" class="br-10 p-1 btn btn-outline-light border d-flex align-items-center justify-content-center">
 														<img class="img-fluid m-1" src="assets/img/icons/google-logo.svg" alt="Google">
 													</a>
 												</div>

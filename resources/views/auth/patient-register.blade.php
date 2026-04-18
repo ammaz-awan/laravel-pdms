@@ -10,7 +10,7 @@
     <title>Patient Registration | PDMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Dreams Technologies">
-    
+
     <!-- Favicon -->
     <link rel="shortcut icon" href="{{ asset('assets/img/favicon.png') }}">
 
@@ -181,26 +181,26 @@
                             </div>
                         </div>
 
-                                <div class="mb-3">
-    <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
+                             <div class="mb-3">
+                                    <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
 
-        <!-- Facebook Button -->
-        <a href="javascript:void(0);"
-           class="btn social-btn fb-btn d-flex align-items-center justify-content-center px-5 py-3 rounded-pill"
-           style="min-width: 260px;">
-            <img src="/assets/img/icons/facebook-logo.svg" class="me-2 bg-white rounded-circle p-1" width="24" alt="Facebook">
-            <span class="fw-medium">Continue with Facebook</span>
-        </a>
+                                        <!-- Facebook Button -->
+                                        <a href="{{ url('/auth/facebook?role=patient') }}"
+                                        class="btn social-btn fb-btn d-flex align-items-center justify-content-center px-5 py-3 rounded-pill"
+                                        style="min-width: 260px;">
+                                            <img src="/assets/img/icons/facebook-logo.svg" class="me-2 bg-white rounded-circle p-1" width="24" alt="Facebook">
+                                            <span class="fw-medium">Continue with Facebook</span>
+                                        </a>
 
-        <!-- Google Button -->
-        <a href="javascript:void(0);"
-           class="btn social-btn google-btn d-flex align-items-center justify-content-center px-5 py-3 rounded-pill"
-           style="min-width: 260px;">
-            <img src="/assets/img/icons/google-logo.svg" class="me-2 bg-white rounded-circle p-1" width="24" alt="Google">
-            <span class="fw-medium">Continue with Google</span>
-        </a>
+                                        <!-- Google Button -->
+                                        <a href="{{ url('/auth/google?role=patient') }}"
+                                        class="btn social-btn google-btn d-flex align-items-center justify-content-center px-5 py-3 rounded-pill"
+                                        style="min-width: 260px;">
+                                            <img src="/assets/img/icons/google-logo.svg" class="me-2 bg-white rounded-circle p-1" width="24" alt="Google">
+                                            <span class="fw-medium">Continue with Google</span>
+                                        </a>
 
-    </div>
+                             </div>
 
     <!-- Divider -->
     <div class="d-flex align-items-center my-3">
