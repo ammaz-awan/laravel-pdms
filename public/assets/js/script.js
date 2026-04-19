@@ -347,89 +347,89 @@ Template Name: Preclinic - Bootstrap Admin Template
 	}
 
 	// Profile upload
-	document.addEventListener('DOMContentLoaded', function () {
-		const profileSection = document.getElementById('profilePage');
-		if (profileSection) {
-		  const uploadTrigger = document.getElementById('uploadTrigger');
-		  const fileInput = document.getElementById('profileUpload');
+	// document.addEventListener('DOMContentLoaded', function () {
+	// 	const profileSection = document.getElementById('profilePage');
+	// 	if (profileSection) {
+	// 	  const uploadTrigger = document.getElementById('uploadTrigger');
+	// 	  const fileInput = document.getElementById('profileUpload');
 	
-		  if (uploadTrigger && fileInput) {
-			uploadTrigger.addEventListener('click', function () {
-			  fileInput.click();
-			});
-		  }
-		}
-	  });
+	// 	  if (uploadTrigger && fileInput) {
+	// 		uploadTrigger.addEventListener('click', function () {
+	// 		  fileInput.click();
+	// 		});
+	// 	  }
+	// 	}
+	//   });
 
-	document.addEventListener('DOMContentLoaded', function () {
-		const profileSection = document.getElementById('profilePage');
-		if (profileSection) {
-		  const uploadTrigger = document.getElementById('uploadTrigger1');
-		  const fileInput = document.getElementById('profileUpload1');
+	// document.addEventListener('DOMContentLoaded', function () {
+	// 	const profileSection = document.getElementById('profilePage');
+	// 	if (profileSection) {
+	// 	  const uploadTrigger = document.getElementById('uploadTrigger1');
+	// 	  const fileInput = document.getElementById('profileUpload1');
 	
-		  if (uploadTrigger && fileInput) {
-			uploadTrigger.addEventListener('click', function () {
-			  fileInput.click();
-			});
-		  }
-		}
-	  });
+	// 	  if (uploadTrigger && fileInput) {
+	// 		uploadTrigger.addEventListener('click', function () {
+	// 		  fileInput.click();
+	// 		});
+	// 	  }
+	// 	}
+	//   });
 
-	document.addEventListener('DOMContentLoaded', function () {
-		const profileSection = document.getElementById('profilePage');
-		if (profileSection) {
-		  const uploadTrigger = document.getElementById('uploadTrigger2');
-		  const fileInput = document.getElementById('profileUpload2');
+	// document.addEventListener('DOMContentLoaded', function () {
+	// 	const profileSection = document.getElementById('profilePage');
+	// 	if (profileSection) {
+	// 	  const uploadTrigger = document.getElementById('uploadTrigger2');
+	// 	  const fileInput = document.getElementById('profileUpload2');
 	
-		  if (uploadTrigger && fileInput) {
-			uploadTrigger.addEventListener('click', function () {
-			  fileInput.click();
-			});
-		  }
-		}
-	  });
+	// 	  if (uploadTrigger && fileInput) {
+	// 		uploadTrigger.addEventListener('click', function () {
+	// 		  fileInput.click();
+	// 		});
+	// 	  }
+	// 	}
+	//   });
 
-	document.addEventListener('DOMContentLoaded', function () {
-		const profileSection = document.getElementById('profilePage');
-		if (profileSection) {
-		  const uploadTrigger = document.getElementById('uploadTrigger3');
-		  const fileInput = document.getElementById('profileUpload3');
+	// document.addEventListener('DOMContentLoaded', function () {
+	// 	const profileSection = document.getElementById('profilePage');
+	// 	if (profileSection) {
+	// 	  const uploadTrigger = document.getElementById('uploadTrigger3');
+	// 	  const fileInput = document.getElementById('profileUpload3');
 	
-		  if (uploadTrigger && fileInput) {
-			uploadTrigger.addEventListener('click', function () {
-			  fileInput.click();
-			});
-		  }
-		}
-	  });
+	// 	  if (uploadTrigger && fileInput) {
+	// 		uploadTrigger.addEventListener('click', function () {
+	// 		  fileInput.click();
+	// 		});
+	// 	  }
+	// 	}
+	//   });
 
-	document.addEventListener('DOMContentLoaded', function () {
-		const profileSection = document.getElementById('profilePage');
-		if (profileSection) {
-		  const uploadTrigger = document.getElementById('uploadTrigger4');
-		  const fileInput = document.getElementById('profileUpload4');
+	// document.addEventListener('DOMContentLoaded', function () {
+	// 	const profileSection = document.getElementById('profilePage');
+	// 	if (profileSection) {
+	// 	  const uploadTrigger = document.getElementById('uploadTrigger4');
+	// 	  const fileInput = document.getElementById('profileUpload4');
 	
-		  if (uploadTrigger && fileInput) {
-			uploadTrigger.addEventListener('click', function () {
-			  fileInput.click();
-			});
-		  }
-		}
-	  });
+	// 	  if (uploadTrigger && fileInput) {
+	// 		uploadTrigger.addEventListener('click', function () {
+	// 		  fileInput.click();
+	// 		});
+	// 	  }
+	// 	}
+	//   });
 
-	document.addEventListener('DOMContentLoaded', function () {
-		const profileSection = document.getElementById('profilePage');
-		if (profileSection) {
-		  const uploadTrigger = document.getElementById('uploadTrigger5');
-		  const fileInput = document.getElementById('profileUpload5');
+	// document.addEventListener('DOMContentLoaded', function () {
+	// 	const profileSection = document.getElementById('profilePage');
+	// 	if (profileSection) {
+	// 	  const uploadTrigger = document.getElementById('uploadTrigger5');
+	// 	  const fileInput = document.getElementById('profileUpload5');
 	
-		  if (uploadTrigger && fileInput) {
-			uploadTrigger.addEventListener('click', function () {
-			  fileInput.click();
-			});
-		  }
-		}
-	  });
+	// 	  if (uploadTrigger && fileInput) {
+	// 		uploadTrigger.addEventListener('click', function () {
+	// 		  fileInput.click();
+	// 		});
+	// 	  }
+	// 	}
+	//   });
 
 	//  Profile upload
 
@@ -1283,3 +1283,28 @@ Template Name: Preclinic - Bootstrap Admin Template
 	
 })();
 
+
+
+// image upload
+document.addEventListener('DOMContentLoaded', function () {
+    const trigger = document.getElementById('uploadTrigger');
+    const input = document.getElementById('profileUpload');
+    const preview = document.getElementById('profilePreview');
+
+    if (!trigger || !input || !preview) return;
+
+    trigger.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation(); // 🔥 STOP double trigger
+
+        input.value = null;
+        input.click();
+    });
+
+    input.addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        preview.src = URL.createObjectURL(file);
+    });
+});

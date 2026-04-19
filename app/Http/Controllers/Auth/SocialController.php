@@ -11,7 +11,6 @@ class SocialController extends Controller
 {
     public function redirectToGoogle()
     {
-        // store role from query (?role=doctor / patient)
         session(['role' => request('role', 'patient'),
         'type' => request('type')
         ]);
@@ -29,11 +28,10 @@ class SocialController extends Controller
         }
 
         $role = session('role');
-        $type = session('type'); // 👈 NEW
+        $type = session('type'); 
 
         $user = User::where('email', $googleUser->getEmail())->first();
 
-        // ✅ LOGIN FLOW
         if ($type === 'login') {
             if (!$user) {
                 return redirect('/login')->withErrors([
@@ -48,7 +46,6 @@ class SocialController extends Controller
             return redirect("/profile/{$uuid}");
         }
 
-        // ✅ REGISTER FLOW (your existing logic untouched)
         if (!$user) {
             $user = User::create([
                 'name' => $googleUser->getName(),
@@ -107,7 +104,6 @@ public function handleFacebookCallback()
 
         $user = User::where('email', $fbUser->getEmail())->first();
 
-        // ✅ LOGIN FLOW
         if ($type === 'login') {
             if (!$user) {
                 return redirect('/login')->withErrors([
@@ -122,7 +118,6 @@ public function handleFacebookCallback()
             return redirect("/profile/{$uuid}");
         }
 
-        // ✅ REGISTER FLOW
         if (!$user) {
             $user = User::create([
                 'name' => $fbUser->getName(),

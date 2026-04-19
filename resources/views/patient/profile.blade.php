@@ -220,29 +220,5 @@
 @endsection
 
 @push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const trigger = document.getElementById('uploadTrigger');
-        const input = document.getElementById('profileUpload');
-        const preview = document.getElementById('profilePreview');
 
-        if (!trigger || !input || !preview) {
-            return;
-        }
-
-        trigger.addEventListener('click', function () {
-            input.click();
-        });
-
-        input.addEventListener('change', function (event) {
-            const [file] = event.target.files;
-
-            if (!file) {
-                return;
-            }
-
-            preview.src = URL.createObjectURL(file);
-        });
-    });
-</script>
 @endpush
