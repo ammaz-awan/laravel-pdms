@@ -46,7 +46,11 @@ Route::get('/privacy-policy', function () {
 });
 
 Route::get('/data-deletion', function () {
-    return view('data-deletion');
+return response("To delete your account, email support@pdms.developers.ink. We will remove your data within 7 days.");
+});
+
+Route::get('/terms', function () {
+    return view('terms');
 });
 
 // Protected Routes - Require Authentication
@@ -76,6 +80,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile/{uuid}', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/{uuid}/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile/{uuid}', [ProfileController::class, 'update'])->name('profile.update');
+
+    Route::get('/patient/payment-verification', [PatientController::class, 'paymentPage'])
+    ->name('patient.payment.page')
+    ->middleware(['auth']);
+    
+    Route::post('/stripe/checkout', [PaymentController::class, 'checkout'])
+    ->name('stripe.checkout');
 
     Route::resource('admins', AdminController::class);
     Route::resource('doctors', DoctorController::class);

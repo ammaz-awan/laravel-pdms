@@ -52,6 +52,7 @@ class SocialController extends Controller
                 'email' => $googleUser->getEmail(),
                 'password' => bcrypt(str()->random(32)),
                 'email_verified_at' => now(),
+                'is_payment_method_verified' => false,
                 'role' => $role,
             ]);
         } else {
@@ -124,6 +125,7 @@ public function handleFacebookCallback()
                 'email' => $fbUser->getEmail(),
                 'password' => bcrypt(str()->random(32)),
                 'email_verified_at' => now(),
+                'is_payment_method_verified' => false,
                 'role' => $role,
             ]);
         } else {

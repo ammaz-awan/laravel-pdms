@@ -172,8 +172,8 @@
                                             <label class="form-label mb-0">Verification Status</label>
                                         </div>
                                         <div class="col-lg-8">
-                                            <span class="badge bg-{{ $patient->is_verified ? 'success' : 'warning' }}">
-                                                {{ $patient->is_verified ? 'Verified' : 'Not Verified' }}
+                                            <span class="badge bg-{{ $patient->is_payment_method_verified ? 'success' : 'warning' }}">
+                                                {{ $patient->is_payment_method_verified ? 'Verified' : 'Not Verified' }}
                                             </span>
                                         </div>
                                     </div>
@@ -204,7 +204,7 @@
                             <!-- end row -->
 
                             <div class="d-flex align-items-center justify-content-end">
-                                <a href="{{ route('patients.index') }}" class="btn btn-light me-3">Cancel</a>
+                                <a href="{{ route('dashboard') }}" class="btn btn-light me-3">Cancel</a>
                                 <button type="submit" class="btn btn-primary">Save Changes</button>
                             </div>
                         </form>

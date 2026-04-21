@@ -135,10 +135,10 @@
                                             </div>
                                         </div>
 
-                                        <div class="d-flex align-items-center justify-content-end">
+                                        {{-- <div class="d-flex align-items-center justify-content-end">
                                             <a href="{{ route('admins.index') }}" class="btn btn-light me-3">Cancel</a>
                                             <button type="submit" class="btn btn-primary">Save Changes</button>
-                                        </div>
+                                        </div> --}}
                                     </form>
                                 </div>
                             </div>

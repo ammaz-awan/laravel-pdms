@@ -94,4 +94,9 @@ class PatientController extends Controller
         $patient->delete();
         return redirect()->route('patients.index')->with('success', 'Patient deleted successfully.');
     }
+
+    public function paymentPage()
+{
+    return view('patient.payment-verification');
+}
 }

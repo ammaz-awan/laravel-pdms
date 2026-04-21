@@ -198,7 +198,7 @@
                             <!-- end row -->
 
                             <div class="d-flex align-items-center justify-content-end">
-                                <a href="{{ route('doctors.index') }}" class="btn btn-light me-3">Cancel</a>
+                                <a href="{{ route('dashboard') }}" class="btn btn-light me-3">Cancel</a>
                                 <button type="submit" class="btn btn-primary">Save Changes</button>
                             </div>
                         </form>

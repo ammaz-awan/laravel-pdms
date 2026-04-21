@@ -202,13 +202,13 @@
 
                              </div>
 
-    <!-- Divider -->
-    <div class="d-flex align-items-center my-3">
-        <hr class="flex-grow-1">
-        <span class="mx-2 text-muted">or</span>
-        <hr class="flex-grow-1">
-    </div>
-</div>
+                                <!-- Divider -->
+                                <div class="d-flex align-items-center my-3">
+                                    <hr class="flex-grow-1">
+                                    <span class="mx-2 text-muted">or</span>
+                                    <hr class="flex-grow-1">
+                                </div>
+                            </div>
 
                         <div class="card border-1 p-lg-4 shadow-md rounded-3 position-relative mb-4">
                             <div id="patient-loader" class="loader-overlay d-none">
