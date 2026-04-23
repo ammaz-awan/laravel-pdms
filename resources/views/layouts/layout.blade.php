@@ -89,20 +89,25 @@
                     <div class="alert alert-danger rounded-3 mb-4 d-flex align-items-start" role="alert">
                         <i class="ti ti-alert-circle fs-4 me-3"></i>
                         <div>
-                            <strong>Payment verification pending.</strong> Your patient account is registered, but payment verification is still off. You can complete it later from your dashboard.
-                                <div class="mt-2">
-                                <a href="{{ route('patient.payment.page') }}" class="btn btn-sm btn-light">
-                                    Verify Now
+                            <strong>Payment verification pending.</strong> Your patient account is registered, but payment verification is still off. You can complete it now.
+                               <a href="{{ route('patient.payment.page') }}"
+                                    class="btn btn-sm btn-outline-light ms-2 py-1 px-2"
+                                    style="font-size: 12px;">
+                                        Verify Now
                                 </a>
-                            </div>
                         </div>
                     </div>
                 @endif
                 @if(Auth::check() && Auth::user()->role === 'doctor' && !optional(Auth::user()->doctor)->is_verified)
                     <div class="alert alert-danger rounded-3 mb-4 d-flex align-items-start" role="alert">
                         <i class="ti ti-alert-circle fs-4 me-3"></i>
-                        <div>
-                            <strong>Doctor verification pending.</strong> Your profile is registered, but verification is not complete yet. Please submit certification details when you're ready.
+                         <div>
+                            <strong>Certificate verification pending.</strong> Your doctor account is registered, but certificate verification is still off. You can complete it now.
+                               <a href=""
+                                    class="btn btn-sm btn-outline-light ms-2 py-1 px-2"
+                                    style="font-size: 12px;">
+                                        Verify Now
+                                </a>
                         </div>
                     </div>
                 @endif

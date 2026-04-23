@@ -85,8 +85,7 @@ Route::middleware(['auth'])->group(function () {
     ->name('patient.payment.page')
     ->middleware(['auth']);
     
-    Route::post('/stripe/checkout', [PaymentController::class, 'checkout'])
-    ->name('stripe.checkout');
+    Route::post('/mark-verified', [PatientController::class, 'markVerified'])->middleware('auth');
 
     Route::resource('admins', AdminController::class);
     Route::resource('doctors', DoctorController::class);
@@ -96,6 +95,21 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('payments', PaymentController::class);
     Route::resource('invoices', InvoiceController::class);
     Route::resource('ratings', RatingController::class);
-});
+    });
+    
+    Route::post('/stripe/create-intent', [PatientController::class, 'createIntent'])
+    ->middleware('throttle:10,1');
+Route::post('/stripe/register-intent', [PatientController::class, 'registerIntent'])
+    ->middleware('throttle:10,1');    
+Route::post('/register-mark-verified', [PatientController::class, 'markVerifiedAfterRegister'])
+    ->middleware('throttle:10,1');
 
+//admin doctor verification routes
+Route::get('/admin/doctor-verifications', [AdminController::class, 'doctorVerifications'])
+    ->name('doctor-verifications');
 
+Route::post('/admin/doctor-verifications/{doctor}/approve', [AdminController::class, 'approveDoctor'])
+    ->name('doctor.approve');
+
+Route::post('/admin/doctor-verifications/{doctor}/reject', [AdminController::class, 'rejectDoctor'])
+    ->name('doctor.reject');

@@ -117,6 +117,12 @@
                                 </li>
                                 
                                 <li>
+                                    <a href="{{ route('doctor-verifications') }}">
+                                        <i class="ti ti-user-check"></i><span>Doctor Verifications</span>
+                                    </a>
+                                </li>
+                                <li>
+                                <li>
                                     <a href="{{ route('doctors.index') }}">
                                         <i class="ti ti-user-plus"></i><span>Doctors</span>
                                     </a>
@@ -127,6 +133,7 @@
                                     </a>
                                 </li>
                                 <li>
+
                                     <a href="{{ route('appointments.index') }}">
                                         <i class="ti ti-calendar-check"></i><span>Appointments</span>
                                     </a>

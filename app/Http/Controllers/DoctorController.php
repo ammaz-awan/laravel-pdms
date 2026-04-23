@@ -27,24 +27,37 @@ class DoctorController extends Controller
     }
 
     public function store(Request $request)
-    {
-        if ($request->has('skip')) {
-            return redirect()->route('login');
-        }
+{
+    try {
 
+        $isSkip = $request->has('skip');
+
+        // ===============================
+        // 1. VALIDATION
+        // ===============================
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|confirmed|min:8',
+
             'phone' => 'required|string|max:50',
             'specialization' => 'required|string|max:255',
             'experience' => 'required|integer|min:0',
             'fees' => 'required|numeric|min:0',
             'clinic_name' => 'required|string|max:255',
             'address' => 'nullable|string|max:255',
-            'is_verified' => 'boolean',
-        ]);
 
+             'license_number' => $isSkip ? 'nullable|string|max:255' : 'required|string|max:255',
+
+            // 👇 KEY FIX HERE
+                'certificate' => $isSkip
+                ? 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120'
+                : 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                ]);
+
+        // ===============================
+        // 2. CREATE USER
+        // ===============================
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -53,24 +66,61 @@ class DoctorController extends Controller
             'is_active' => true,
         ]);
 
+        // ===============================
+        // 3. FILE UPLOAD (if exists)
+        // ===============================
+        $certificatePath = null;
+
+        if ($request->hasFile('certificate')) {
+            $certificatePath = $request->file('certificate')
+                ->store('certificates', 'public');
+        }
+
+        // ===============================
+        // 4. CREATE DOCTOR (BOTH CASES)
+        // ===============================
         Doctor::create([
             'user_id' => $user->id,
+
             'phone' => $validated['phone'],
             'specialization' => $validated['specialization'],
             'experience' => $validated['experience'],
             'fees' => $validated['fees'],
             'clinic_name' => $validated['clinic_name'],
             'address' => $validated['address'] ?? null,
-            'is_verified' => $validated['is_verified'] ?? false,
+            'license_number' => $validated['license_number'] ?? null,
+            'certificate_path' => $certificatePath,
+
+            // IMPORTANT LOGIC
+            'verification_status' => $isSkip ? 'pending' : 'pending',
+            'is_verified' => 0,
             'rating_avg' => 0,
         ]);
 
-        if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Registration submitted.']);
-        }
+        // ===============================
+        // 5. RESPONSE
+        // ===============================
+        return response()->json([
+            'success' => true,
+            'message' => 'Doctor registered successfully',
+            'skip' => $isSkip
+        ]);
 
-        return redirect()->route('login')->with('success', 'Registration submitted. Please login after approval.');
+    } catch (\Illuminate\Validation\ValidationException $e) {
+
+        return response()->json([
+            'success' => false,
+            'errors' => $e->errors()
+        ], 422);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
     }
+}
 
     public function show(Doctor $doctor)
     {

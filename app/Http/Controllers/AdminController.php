@@ -6,6 +6,7 @@ use App\Models\Admin;
 use App\Http\Requests\StoreAdminRequest;
 use App\Http\Requests\UpdateAdminRequest;
 use Illuminate\Http\Request;
+use App\Models\Doctor;
 
 class AdminController extends Controller
 {
@@ -55,4 +56,40 @@ class AdminController extends Controller
         $admin->delete();
         return redirect()->route('admins.index')->with('success', 'Admin deleted successfully.');
     }
+
+
+
+
+    public function doctorVerifications()
+{
+    $doctors = Doctor::with('user')
+        ->where('verification_status', 'pending')
+        ->get();
+
+    return view('admin.doctor-verifications', compact('doctors'));
+}
+public function approveDoctor($doctorId)
+{
+    
+    $doctor = Doctor::findOrFail($doctorId);
+
+    $doctor->update([
+        'is_verified' => true,
+        'verification_status' => 'approved'
+    ]);
+
+    return back()->with('success', 'Doctor approved successfully');
+}
+
+public function rejectDoctor($doctorId)
+{
+    $doctor = Doctor::findOrFail($doctorId);
+
+    $doctor->update([
+        'is_verified' => false,
+        'verification_status' => 'rejected'
+    ]);
+
+    return back()->with('success', 'Doctor rejected successfully');
+}
 }

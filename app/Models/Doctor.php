@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Doctor extends Model
 {
-    protected $fillable = ['user_id', 'phone', 'specialization', 'experience', 'fees', 'clinic_name', 'address', 'is_verified', 'rating_avg'];
+    protected $fillable = ['user_id', 'phone', 'specialization', 'experience', 'fees', 'clinic_name', 'address', 'is_verified', 'rating_avg' , 'certificate_path','verification_status','ai_result','license_number',];
 
     protected function casts(): array
     {
@@ -14,6 +14,8 @@ class Doctor extends Model
             'is_verified' => 'boolean',
             'fees' => 'decimal:2',
             'rating_avg' => 'float',
+            'ai_result' => 'array',
+
         ];
     }
 

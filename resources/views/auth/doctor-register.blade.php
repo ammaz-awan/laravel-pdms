@@ -310,38 +310,51 @@
 
                             <div id="doctor-step-2" class="form-step">
                                 <div class="row g-3">
-                                    <div class="col-12">
-                                        <label class="form-label">Upload Certificate</label>
-                                        <div class="file-drop d-flex align-items-center justify-content-between">
-                                            <span class="text-muted">Drag & drop or click to upload certificate</span>
-                                            <span class="badge bg-success">Accepted</span>
+                                   <div class="col-12">
+                                            <label class="form-label">Upload Certificate (PDF / Image)</label>
+
+                                            <div class="file-drop d-flex align-items-center justify-content-between">
+                                                <span class="text-muted">Upload MBBS / License / Registration Certificate</span>
+                                                <span class="badge bg-success">Required</span>
+                                            </div>
+
+                                            <div class="input-group mt-3">
+                                                <span class="input-group-text border-end-0 bg-white">
+                                                    <i class="ti ti-file-text fs-14 text-dark"></i>
+                                                </span>
+
+                                                <input 
+                                                    id="doctor-certificate"
+                                                    name="certificate"
+                                                    type="file"
+                                                    class="form-control border-start-0 ps-0"
+                                                    accept=".pdf,.jpg,.jpeg,.png"
+                                                    required
+                                                >
+                                            </div>
+
+                                            <small class="text-muted">
+                                                Allowed formats: PDF, JPG, PNG (Max 5MB)
+                                            </small>
                                         </div>
-                                        <div class="input-group mt-3">
-                                            <span class="input-group-text border-end-0 bg-white">
-                                                <i class="ti ti-file-text fs-14 text-dark"></i>
-                                            </span>
-                                            <input id="doctor-certificate" type="file" class="form-control border-start-0 ps-0">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-12">
                                         <label class="form-label">License Number</label>
                                         <div class="input-group">
                                             <span class="input-group-text border-end-0 bg-white">
                                                 <i class="ti ti-id-badge fs-14 text-dark"></i>
                                             </span>
-                                            <input id="doctor-license" type="text" class="form-control border-start-0 ps-0" placeholder="License Number" required>
-                                            <div class="invalid-feedback">This field is required</div>
+                                                <input 
+                                                    id="doctor-license"
+                                                    name="license_number"
+                                                    type="text"
+                                                    class="form-control border-start-0 ps-0"
+                                                    placeholder="License Number"
+                                                    required>
+                                                                                              
+                                    <div class="invalid-feedback">This field is required</div>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Additional Documents <small class="text-muted">(optional)</small></label>
-                                        <div class="input-group">
-                                            <span class="input-group-text border-end-0 bg-white">
-                                                <i class="ti ti-files fs-14 text-dark"></i>
-                                            </span>
-                                            <input id="doctor-documents" type="text" class="form-control border-start-0 ps-0" placeholder="Document link or notes">
-                                        </div>
-                                    </div>
+                                
                                 </div>
                                 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4">
                                     <button id="doctor-back" type="button" class="btn btn-outline-success">Back</button>
@@ -362,7 +375,6 @@
                             </div>
                         </div>
 
-                        <p class="text-center text-muted">Responsive doctor onboarding UI with review status and optional certificate skip.</p>
                     </div><!-- end col -->
                 </div>
                 <!-- end row -->
@@ -396,6 +408,21 @@
             const backButton = document.getElementById('doctor-back');
             const skipButton = document.getElementById('doctor-skip');
             const submitButton = document.getElementById('doctor-submit');
+
+             document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    togglePassword(button.dataset.passwordToggle, button.querySelector('i'));
+                });
+            });
+
+            ['doctor-name', 'doctor-email', 'doctor-password', 'doctor-password-confirm', 'doctor-phone', 'doctor-specialization', 'doctor-experience', 'doctor-fees', 'doctor-clinic', 'doctor-address', 'doctor-license'].forEach(function (id) {
+                const field = document.getElementById(id);
+                const eventName = field.tagName === 'SELECT' ? 'change' : 'input';
+
+                field.addEventListener(eventName, function () {
+                    clearInvalid(field);
+                });
+            });
 
             function showLoader(callback) {
                 loader.classList.remove('d-none');
@@ -497,100 +524,102 @@
             backButton.addEventListener('click', function () {
                 showLoader(() => showStep(1));
             });
+
             skipButton.addEventListener('click', function () {
-                // Collect step 1 data
-                const data = {
-                    name: document.getElementById('doctor-name').value,
-                    email: document.getElementById('doctor-email').value,
-                    password: document.getElementById('doctor-password').value,
-                    password_confirmation: document.getElementById('doctor-password-confirm').value,
-                    phone: document.getElementById('doctor-phone').value,
-                    specialization: document.getElementById('doctor-specialization').value,
-                    experience: document.getElementById('doctor-experience').value,
-                    fees: parseFloat(document.getElementById('doctor-fees').value) || 0,
-                    clinic_name: document.getElementById('doctor-clinic').value,
-                    address: document.getElementById('doctor-address').value,
-                    is_verified: 0
-                };
 
+                const formData = new FormData();
 
-               fetch('{{ url("/register/doctor") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        window.location.href = '/login';
-                    } else {
-                        alert('Registration failed: ' + (result.message || 'Unknown error'));
+                formData.append('name', document.getElementById('doctor-name').value);
+                formData.append('email', document.getElementById('doctor-email').value);
+                formData.append('password', document.getElementById('doctor-password').value);
+                formData.append('password_confirmation', document.getElementById('doctor-password-confirm').value);
+                formData.append('phone', document.getElementById('doctor-phone').value);
+                formData.append('specialization', document.getElementById('doctor-specialization').value);
+                formData.append('experience', document.getElementById('doctor-experience').value);
+                formData.append('fees', document.getElementById('doctor-fees').value);
+                formData.append('clinic_name', document.getElementById('doctor-clinic').value);
+                formData.append('address', document.getElementById('doctor-address').value);
+
+                formData.append('skip', 1);
+
+              fetch('{{ url("/register/doctor") }}', {
+    method: 'POST',
+    headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'Accept': 'application/json'
+    },
+    body: formData
+})
+.then(async res => {
+    const data = await res.json();
+
+    if (!res.ok) {
+        console.log('Validation Error:', data);
+        alert(JSON.stringify(data.errors || data.message));
+        return;
+    }
+
+    if (data.success) {
+        window.location.href = '/login';
+    }
+})
+.catch(err => {
+    console.error(err);
+});
+            });;
+
+           submitButton.addEventListener('click', function () {
+                 if (!validateStep2()) return;
+
+                    const formData = new FormData();
+
+                    // Step 1
+                    formData.append('name', document.getElementById('doctor-name').value);
+                    formData.append('email', document.getElementById('doctor-email').value);
+                    formData.append('password', document.getElementById('doctor-password').value);
+                    formData.append('password_confirmation', document.getElementById('doctor-password-confirm').value);
+                    formData.append('phone', document.getElementById('doctor-phone').value);
+                    formData.append('specialization', document.getElementById('doctor-specialization').value);
+                    formData.append('experience', document.getElementById('doctor-experience').value);
+                    formData.append('fees', document.getElementById('doctor-fees').value);
+                    formData.append('clinic_name', document.getElementById('doctor-clinic').value);
+                    formData.append('address', document.getElementById('doctor-address').value);
+
+                    // Step 2
+                    formData.append('license_number', document.getElementById('doctor-license').value);
+
+                    // ❗ FIX: DO NOT set is_verified manually
+                    // backend handles it
+
+                    const fileInput = document.getElementById('doctor-certificate');
+                    if (fileInput.files.length > 0) {
+                        formData.append('certificate', fileInput.files[0]);
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred during registration.');
-                });
-            });
-            submitButton.addEventListener('click', function () {
-                if (!validateStep2()) return;
-                // Collect step 1 data
-                const data = {
-                    name: document.getElementById('doctor-name').value,
-                    email: document.getElementById('doctor-email').value,
-                    password: document.getElementById('doctor-password').value,
-                    password_confirmation: document.getElementById('doctor-password-confirm').value,
-                    phone: document.getElementById('doctor-phone').value,
-                    specialization: document.getElementById('doctor-specialization').value,
-                    experience: document.getElementById('doctor-experience').value,
-                    fees: parseFloat(document.getElementById('doctor-fees').value) || 0,
-                    clinic_name: document.getElementById('doctor-clinic').value,
-                    address: document.getElementById('doctor-address').value,
-                    is_verified: 1
-                };
-                // Send AJAX POST
-                fetch('{{ url("/register/doctor") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        window.location.href = '/login';
-                    } else {
-                        alert('Registration failed: ' + (result.message || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred during registration.');
-                });
-            });
 
-            document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
-                button.addEventListener('click', function () {
-                    togglePassword(button.dataset.passwordToggle, button.querySelector('i'));
-                });
-            });
+                    fetch('{{ url("/register/doctor") }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result.success) {
+                            window.location.href = '/login';
+                        } else {
+                            alert(result.message || 'Registration failed');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert('Something went wrong');
+                    });
+         });
 
-            ['doctor-name', 'doctor-email', 'doctor-password', 'doctor-password-confirm', 'doctor-phone', 'doctor-specialization', 'doctor-experience', 'doctor-fees', 'doctor-clinic', 'doctor-address', 'doctor-license'].forEach(function (id) {
-                const field = document.getElementById(id);
-                const eventName = field.tagName === 'SELECT' ? 'change' : 'input';
-
-                field.addEventListener(eventName, function () {
-                    clearInvalid(field);
-                });
+           
             });
-        });
     </script>
 
 </body>

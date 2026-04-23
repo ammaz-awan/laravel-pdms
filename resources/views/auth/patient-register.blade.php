@@ -33,106 +33,7 @@
     <!-- Main CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}" id="app-style">
 
-    <style>
-        .step-indicator {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-        }
-        .step-pill {
-            border-radius: 1rem;
-            border-color: rgb(46 55 164);
-            padding: 1rem;
-            border: 1px solid #dee2e6;
-            transition: border-color .2s ease, background .2s ease;
-        }
-        .step-pill.active {
-            background: rgba(13, 110, 253, .08);
-            border-color: rgb(46 55 164);
-        }
-        .step-pill .step-number {
-            width: 34px;
-            height: 34px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: #e7f1ff;
-            color:rgb(46 55 164);
-            font-weight: 700;
-            margin-right: .75rem;
-        }
-        .form-step {
-            display: none;
-        }
-        .form-step.active {
-            display: block;
-        }
-        .step-card-icon {
-            width: 48px;
-            height: 48px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(13, 110, 253, .1);
-            border-radius: .85rem;
-            color: #0d6efd;
-        }
-        .payment-card {
-            background: linear-gradient(135deg, #0d6efd 0%, #5b8cff 100%);
-            color: white;
-            border-radius: 1.25rem;
-            padding: 1.5rem;
-            min-height: 180px;
-            position: relative;
-        }
-        .payment-card .card-chip {
-            width: 44px;
-            height: 34px;
-            border-radius: .6rem;
-            background: rgba(255,255,255,.65);
-            margin-bottom: 1rem;
-        }
-        .payment-card-icons i {
-            font-size: 1.2rem;
-            margin-right: .75rem;
-            opacity: .85;
-        }
-        .form-feedback {
-            display: none;
-        }
-        .form-feedback.active {
-            display: block;
-        }
-        .loader-overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(255,255,255,.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9;
-        }
-        .loader-overlay .spinner-border {
-            width: 3rem;
-            height: 3rem;
-        }
-        .password-toggle {
-            color: #6c757d;
-            border-left: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .password-toggle:focus {
-            box-shadow: none;
-        }
-        .input-group.is-invalid-group > .input-group-text,
-        .input-group.is-invalid-group > .form-control,
-        .input-group.is-invalid-group > .password-toggle {
-            border-color: var(--bs-form-invalid-border-color);
-        }
-    </style>
+    
 
 </head>
 
@@ -353,54 +254,15 @@
                                     <div class="col-lg-7">
                                         <div class="row g-3">
                                             <div class="col-12">
-                                                <label class="form-label">Cardholder Name</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text border-end-0 bg-white">
-                                                        <i class="ti ti-user fs-14 text-dark"></i>
-                                                    </span>
-                                                    <input id="cardholder-name" type="text" class="form-control border-start-0 ps-0" placeholder="Full Name" required>
-                                                    <div class="invalid-feedback">This field is required</div>
-                                                </div>
-                                            </div>
+                                            <label class="form-label">Cardholder Name</label>
+                                            <input type="text" id="cardholder-name" class="form-control" placeholder="Full Name">
+                                        </div>
                                             <div class="col-12">
-                                                <label class="form-label">Card Number</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text border-end-0 bg-white">
-                                                        <i class="ti ti-credit-card fs-14 text-dark"></i>
-                                                    </span>
-                                                    <input id="card-number" type="text" class="form-control border-start-0 ps-0" placeholder="4242 4242 4242 4242" maxlength="19" required>
-                                                    <div class="invalid-feedback">This field is required</div>
-                                                </div>
+                                                <label class="form-label">Card Details</label>
+                                                <div id="card-element" class="form-control p-3"></div>
+                                                <div id="card-errors" class="text-danger mt-2"></div>
                                             </div>
-                                            <div class="col-6">
-                                                <label class="form-label">Expiry Date (MM/YY)</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text border-end-0 bg-white">
-                                                        <i class="ti ti-calendar fs-14 text-dark"></i>
-                                                    </span>
-                                                    <input id="expiry-date" type="text" class="form-control border-start-0 ps-0" placeholder="MM/YY" maxlength="5" required>
-                                                    <div class="invalid-feedback">This field is required</div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label">CVV</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text border-end-0 bg-white">
-                                                        <i class="ti ti-shield-lock fs-14 text-dark"></i>
-                                                    </span>
-                                                    <input id="cvv" type="text" class="form-control border-start-0 ps-0" placeholder="123" maxlength="4" required>
-                                                    <div class="invalid-feedback">This field is required</div>
-                                                </div>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label">Billing Address <small class="text-muted">(optional)</small></label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text border-end-0 bg-white">
-                                                        <i class="ti ti-map-pin fs-14 text-dark"></i>
-                                                    </span>
-                                                    <input id="billing-address" type="text" class="form-control border-start-0 ps-0" placeholder="Billing Address">
-                                                </div>
-                                            </div>
+                                           
                                         </div>
                                         <p class="text-muted small mt-3"><i class="ti ti-lock me-2"></i>Secure payment details only used for demonstration and will not be processed.</p>
                                     </div>
@@ -446,230 +308,113 @@
     <!-- Main JS -->
     <script src="{{ asset('assets/js/script.js') }}" type="text/javascript"></script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const step1 = document.getElementById('patient-step-1');
-            const step2 = document.getElementById('patient-step-2');
-            const success = document.getElementById('patient-success');
-            const loader = document.getElementById('patient-loader');
-            const step2Pill = document.getElementById('patient-step-2-pill');
-            const nextButton = document.getElementById('patient-next');
-            const backButton = document.getElementById('patient-back');
-            const skipButton = document.getElementById('patient-skip');
-            const submitButton = document.getElementById('patient-submit');
+   <script src="https://js.stripe.com/v3/"></script>
 
-            function showLoader(callback) {
-                loader.classList.remove('d-none');
-                setTimeout(() => {
-                    loader.classList.add('d-none');
-                    callback();
-                }, 260);
-            }
+<script>
+const stripe = Stripe("{{ config('services.stripe.key') }}");
+const elements = stripe.elements();
+const card = elements.create('card');
+card.mount('#card-element');
 
-            function setInvalid(field, message) {
-                field.classList.add('is-invalid');
-                const inputGroup = field.closest('.input-group');
-                if (inputGroup) {
-                    inputGroup.classList.add('is-invalid-group');
-                }
-                const feedback = field.parentElement.querySelector('.invalid-feedback') || field.nextElementSibling;
-                if (feedback && feedback.classList.contains('invalid-feedback')) {
-                    feedback.textContent = message;
-                }
-            }
+// Show card errors
+card.on('change', function (event) {
+    document.getElementById('card-errors').textContent =
+        event.error ? event.error.message : '';
+});
 
-            function clearInvalid(field) {
-                field.classList.remove('is-invalid');
-                const inputGroup = field.closest('.input-group');
-                if (inputGroup) {
-                    inputGroup.classList.remove('is-invalid-group');
-                }
-                const feedback = field.parentElement.querySelector('.invalid-feedback') || field.nextElementSibling;
-                if (feedback && feedback.classList.contains('invalid-feedback')) {
-                    feedback.textContent = 'This field is required';
-                }
-            }
+// CSRF token (FIXED)
+const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-            function togglePassword(fieldId, iconElement) {
-                const field = document.getElementById(fieldId);
-                const showPassword = field.type === 'password';
+// Button click
+document.getElementById('pay-btn').addEventListener('click', async function () {
 
-                field.type = showPassword ? 'text' : 'password';
-                iconElement.classList.toggle('ti-eye', showPassword);
-                iconElement.classList.toggle('ti-eye-off', !showPassword);
-            }
+    const name = document.getElementById("cardholder-name").value;
 
-            function validateRequiredFields(fieldIds) {
-                let isValid = true;
+    // Validation
+    if (!name) {
+        document.getElementById('card-errors').textContent = "Cardholder name is required";
+        return;
+    }
+    const btn = this;
 
-                fieldIds.forEach(function (id) {
-                    const field = document.getElementById(id);
+    btn.disabled = true;
+    btn.innerText = "Processing...";
 
-                    if (!field.value.trim()) {
-                        setInvalid(field, 'This field is required');
-                        if (isValid) {
-                            field.focus();
-                        }
-                        isValid = false;
-                    } else {
-                        clearInvalid(field);
-                    }
-                });
+    try {
 
-                return isValid;
-            }
-
-            function validateStep1() {
-                const requiredIds = ['patient-name', 'patient-email', 'patient-password', 'patient-password-confirm', 'patient-phone', 'patient-dob', 'patient-gender', 'patient-blood-group', 'patient-address'];
-                if (!validateRequiredFields(requiredIds)) {
-                    return false;
-                }
-                // Special check for age
-                const ageField = document.getElementById('patient-dob');
-                const ageValue = ageField.value;
-                if (isNaN(ageValue) || parseInt(ageValue, 10) <= 0) {
-                    setInvalid(ageField, 'Please enter a valid age');
-                    ageField.focus();
-                    return false;
-                }
-
-                clearInvalid(ageField);
-
-                const password = document.getElementById('patient-password').value;
-                const confirmField = document.getElementById('patient-password-confirm');
-                const confirm = confirmField.value;
-                if (password !== confirm) {
-                    setInvalid(confirmField, 'Passwords do not match');
-                    confirmField.focus();
-                    return false;
-                }
-
-                clearInvalid(confirmField);
-                return true;
-            }
-
-            function showStep(step) {
-                step1.classList.toggle('active', step === 1);
-                step2.classList.toggle('active', step === 2);
-                success.classList.toggle('d-none', step !== 3);
-                step2Pill.classList.toggle('active', step === 2);
-            }
-
-            nextButton.addEventListener('click', function () {
-                if (!validateStep1()) return;
-                showLoader(() => showStep(2));
-            });
-
-            backButton.addEventListener('click', function () {
-                showLoader(() => showStep(1));
-            });
-
-            skipButton.addEventListener('click', function () {
-                // Collect step 1 data
-                const data = {
-                    name: document.getElementById('patient-name').value,
-                    email: document.getElementById('patient-email').value,
-                    password: document.getElementById('patient-password').value,
-                    password_confirmation: document.getElementById('patient-password-confirm').value,
-                    phone: document.getElementById('patient-phone').value,
-                    age: parseInt(document.getElementById('patient-dob').value) || 0,
-                    gender: document.getElementById('patient-gender').value,
-                    blood_group: document.getElementById('patient-blood-group').value,
-                    address: document.getElementById('patient-address').value,
-                    is_verified: 0,
-                    is_payment_method_verified: 0
-                };
-                // Send AJAX POST
-                fetch('{{ url("/register/patient") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        window.location.href = '/login';
-                    } else {
-                        alert('Registration failed: ' + (result.message || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred during registration.');
-                });
-            });
-
-            submitButton.addEventListener('click', function () {
-                const requiredIds = ['cardholder-name', 'card-number', 'expiry-date', 'cvv'];
-                if (!validateRequiredFields(requiredIds)) return;
-                // Collect step 1 data
-                const data = {
-                    name: document.getElementById('patient-name').value,
-                    email: document.getElementById('patient-email').value,
-                    password: document.getElementById('patient-password').value,
-                    password_confirmation: document.getElementById('patient-password-confirm').value,
-                    phone: document.getElementById('patient-phone').value,
-                    age: parseInt(document.getElementById('patient-dob').value) || 0,
-                    gender: document.getElementById('patient-gender').value,
-                    blood_group: document.getElementById('patient-blood-group').value,
-                    address: document.getElementById('patient-address').value,
-                    is_verified: 0,
-                    is_payment_method_verified: 1
-                };
-                // Send AJAX POST
-                fetch('{{ url("/register/patient") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        window.location.href = '/login';
-                    } else {
-                        alert('Registration failed: ' + (result.message || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred during registration.');
-                });
-            });
-
-            document.getElementById('card-number').addEventListener('input', function (e) {
-                e.target.value = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
-            });
-            document.getElementById('expiry-date').addEventListener('input', function (e) {
-                e.target.value = e.target.value.replace(/\D/g, '').replace(/^(\d{2})(\d{1,2})$/, '$1/$2');
-            });
-            document.getElementById('cvv').addEventListener('input', function (e) {
-                e.target.value = e.target.value.replace(/\D/g, '');
-            });
-
-            document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
-                button.addEventListener('click', function () {
-                    togglePassword(button.dataset.passwordToggle, button.querySelector('i'));
-                });
-            });
-
-            ['patient-name', 'patient-email', 'patient-password', 'patient-password-confirm', 'patient-phone', 'patient-dob', 'patient-gender', 'patient-blood-group', 'patient-address', 'cardholder-name', 'card-number', 'expiry-date', 'cvv'].forEach(function (id) {
-                const field = document.getElementById(id);
-                const eventName = field.tagName === 'SELECT' ? 'change' : 'input';
-
-                field.addEventListener(eventName, function () {
-                    clearInvalid(field);
-                });
-            });
+        // 1. Create PaymentIntent (REGISTER route)
+        const res = await fetch("/stripe/register-intent", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": csrf
+            },
+            body: JSON.stringify({
+                source: "register"
+            })
         });
-    </script>
+
+        const data = await res.json();
+
+        if (!data.clientSecret) {
+            throw new Error(data.error || "Failed to create payment intent");
+        }
+
+        // 2. Confirm card payment
+        const result = await stripe.confirmCardPayment(data.clientSecret, {
+            payment_method: {
+                card: card,
+                billing_details: {
+                    name: name
+                }
+            }
+        });
+
+        // 3. Handle error
+        if (result.error) {
+            document.getElementById('card-errors').textContent = result.error.message;
+            btn.disabled = false;
+            btn.innerText = "Verify & Pay";
+            return;
+        }
+
+        // 4. Success case
+        if (
+            result.paymentIntent &&
+            (result.paymentIntent.status === "succeeded" ||
+             result.paymentIntent.status === "requires_capture")
+        ) {
+
+            // Mark verified (REGISTER SAFE ROUTE)
+            await fetch("/register-mark-verified", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": csrf
+                },
+                body: JSON.stringify({
+                    source: "register"
+                })
+            });
+
+            // Redirect
+            window.location.href = "{{ route('dashboard') }}?verified=1";
+        }
+
+    } catch (error) {
+        console.error(error);
+        document.getElementById('card-errors').textContent =
+            "Something went wrong. Please try again.";
+
+        btn.disabled = false;
+        btn.innerText = "Verify & Pay";
+    }
+});
+
+
+
+
+</script>
 
 </body>
 </html>

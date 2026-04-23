@@ -1308,3 +1308,266 @@ document.addEventListener('DOMContentLoaded', function () {
         preview.src = URL.createObjectURL(file);
     });
 });
+
+
+
+
+//patient verification form
+document.addEventListener('DOMContentLoaded', function () {
+    const step1 = document.getElementById('patient-step-1');
+    const step2 = document.getElementById('patient-step-2');
+    const success = document.getElementById('patient-success');
+    const loader = document.getElementById('patient-loader');
+    const step2Pill = document.getElementById('patient-step-2-pill');
+    const nextButton = document.getElementById('patient-next');
+    const backButton = document.getElementById('patient-back');
+    const skipButton = document.getElementById('patient-skip');
+    const submitButton = document.getElementById('patient-submit');
+
+    function showLoader(callback) {
+        if (!loader) return callback();
+        loader.classList.remove('d-none');
+        setTimeout(() => {
+            loader.classList.add('d-none');
+            callback();
+        }, 260);
+    }
+
+    function setInvalid(field, message) {
+        if (!field) return;
+        field.classList.add('is-invalid');
+        const inputGroup = field.closest('.input-group');
+        if (inputGroup) {
+            inputGroup.classList.add('is-invalid-group');
+        }
+        const feedback = field.parentElement?.querySelector('.invalid-feedback') || field.nextElementSibling;
+        if (feedback && feedback.classList.contains('invalid-feedback')) {
+            feedback.textContent = message;
+        }
+    }
+
+    function clearInvalid(field) {
+        if (!field) return;
+        field.classList.remove('is-invalid');
+        const inputGroup = field.closest('.input-group');
+        if (inputGroup) {
+            inputGroup.classList.remove('is-invalid-group');
+        }
+        const feedback = field.parentElement?.querySelector('.invalid-feedback') || field.nextElementSibling;
+        if (feedback && feedback.classList.contains('invalid-feedback')) {
+            feedback.textContent = 'This field is required';
+        }
+    }
+
+    function togglePassword(fieldId, iconElement) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        const showPassword = field.type === 'password';
+        field.type = showPassword ? 'text' : 'password';
+
+        if (iconElement) {
+            iconElement.classList.toggle('ti-eye', showPassword);
+            iconElement.classList.toggle('ti-eye-off', !showPassword);
+        }
+    }
+
+    function validateRequiredFields(fieldIds) {
+        let isValid = true;
+
+        fieldIds.forEach(function (id) {
+            const field = document.getElementById(id);
+            if (!field) return; // ✅ FIX
+
+            if (!field.value.trim()) {
+                setInvalid(field, 'This field is required');
+                if (isValid) {
+                    field.focus();
+                }
+                isValid = false;
+            } else {
+                clearInvalid(field);
+            }
+        });
+
+        return isValid;
+    }
+
+    function validateStep1() {
+        const requiredIds = ['patient-name', 'patient-email', 'patient-password', 'patient-password-confirm', 'patient-phone', 'patient-dob', 'patient-gender', 'patient-blood-group', 'patient-address'];
+        if (!validateRequiredFields(requiredIds)) {
+            return false;
+        }
+
+        const ageField = document.getElementById('patient-dob');
+        if (!ageField) return false;
+
+        const ageValue = ageField.value;
+        if (isNaN(ageValue) || parseInt(ageValue, 10) <= 0) {
+            setInvalid(ageField, 'Please enter a valid age');
+            ageField.focus();
+            return false;
+        }
+
+        clearInvalid(ageField);
+
+        const passwordField = document.getElementById('patient-password');
+        const confirmField = document.getElementById('patient-password-confirm');
+
+        if (!passwordField || !confirmField) return false;
+
+        const password = passwordField.value;
+        const confirm = confirmField.value;
+
+        if (password !== confirm) {
+            setInvalid(confirmField, 'Passwords do not match');
+            confirmField.focus();
+            return false;
+        }
+
+        clearInvalid(confirmField);
+        return true;
+    }
+
+    function showStep(step) {
+        if (step1) step1.classList.toggle('active', step === 1);
+        if (step2) step2.classList.toggle('active', step === 2);
+        if (success) success.classList.toggle('d-none', step !== 3);
+        if (step2Pill) step2Pill.classList.toggle('active', step === 2);
+    }
+
+    if (nextButton) {
+        nextButton.addEventListener('click', function () {
+            if (!validateStep1()) return;
+            showLoader(() => showStep(2));
+        });
+    }
+
+    if (backButton) {
+        backButton.addEventListener('click', function () {
+            showLoader(() => showStep(1));
+        });
+    }
+
+    if (skipButton) {
+        skipButton.addEventListener('click', function () {
+            const data = {
+                name: document.getElementById('patient-name')?.value || '',
+                email: document.getElementById('patient-email')?.value || '',
+                password: document.getElementById('patient-password')?.value || '',
+                password_confirmation: document.getElementById('patient-password-confirm')?.value || '',
+                phone: document.getElementById('patient-phone')?.value || '',
+                age: parseInt(document.getElementById('patient-dob')?.value) || 0,
+                gender: document.getElementById('patient-gender')?.value || '',
+                blood_group: document.getElementById('patient-blood-group')?.value || '',
+                address: document.getElementById('patient-address')?.value || '',
+                is_verified: 0,
+                is_payment_method_verified: 0
+            };
+
+              fetch('/register/patient', {
+	                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    window.location.href = '/login';
+                } else {
+                    alert('Registration failed: ' + (result.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred during registration.');
+            });
+        });
+    }
+
+    if (submitButton) {
+        submitButton.addEventListener('click', function () {
+            const requiredIds = ['cardholder-name', 'card-number', 'expiry-date', 'cvv'];
+            if (!validateRequiredFields(requiredIds)) return;
+
+            const data = {
+                name: document.getElementById('patient-name')?.value || '',
+                email: document.getElementById('patient-email')?.value || '',
+                password: document.getElementById('patient-password')?.value || '',
+                password_confirmation: document.getElementById('patient-password-confirm')?.value || '',
+                phone: document.getElementById('patient-phone')?.value || '',
+                age: parseInt(document.getElementById('patient-dob')?.value) || 0,
+                gender: document.getElementById('patient-gender')?.value || '',
+                blood_group: document.getElementById('patient-blood-group')?.value || '',
+                address: document.getElementById('patient-address')?.value || '',
+                is_verified: 0,
+                is_payment_method_verified: 1
+            };
+
+                fetch('/register/patient', {
+	                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    window.location.href = '/login';
+                } else {
+                    alert('Registration failed: ' + (result.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred during registration.');
+            });
+        });
+    }
+
+    const cardNumber = document.getElementById('card-number');
+    if (cardNumber) {
+        cardNumber.addEventListener('input', function (e) {
+            e.target.value = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+        });
+    }
+
+    const expiry = document.getElementById('expiry-date');
+    if (expiry) {
+        expiry.addEventListener('input', function (e) {
+            e.target.value = e.target.value.replace(/\D/g, '').replace(/^(\d{2})(\d{1,2})$/, '$1/$2');
+        });
+    }
+
+    const cvv = document.getElementById('cvv');
+    if (cvv) {
+        cvv.addEventListener('input', function (e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+    }
+
+    document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            togglePassword(button.dataset.passwordToggle, button.querySelector('i'));
+        });
+    });
+
+    ['patient-name', 'patient-email', 'patient-password', 'patient-password-confirm', 'patient-phone', 'patient-dob', 'patient-gender', 'patient-blood-group', 'patient-address', 'cardholder-name', 'card-number', 'expiry-date', 'cvv']
+    .forEach(function (id) {
+        const field = document.getElementById(id);
+        if (!field) return; // ✅ FIX
+
+        const eventName = field.tagName === 'SELECT' ? 'change' : 'input';
+
+        field.addEventListener(eventName, function () {
+            clearInvalid(field);
+        });
+    });
+});

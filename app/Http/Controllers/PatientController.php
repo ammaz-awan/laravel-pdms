@@ -1,11 +1,13 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Auth;
 use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
 
 class PatientController extends Controller
 {
@@ -24,6 +26,8 @@ class PatientController extends Controller
     {
         if ($request->has('skip')) {
             return redirect()->route('login');
+
+             
         }
 
         $validated = $request->validate([
@@ -47,7 +51,7 @@ class PatientController extends Controller
             'is_active' => true,
         ]);
 
-        Patient::create([
+       $patient = Patient::create([
             'user_id' => $user->id,
             'age' => $validated['age'],
             'gender' => $validated['gender'],
@@ -57,7 +61,10 @@ class PatientController extends Controller
             'dob' => $validated['age'],
             'address' => $validated['address'] ?? null,
             'is_verified' => $validated['is_verified'] ?? false,
-        ]);
+            ]);
+            session([
+                'pending_patient_id' => $patient->id
+            ]);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Registration successful.']);
@@ -98,5 +105,108 @@ class PatientController extends Controller
     public function paymentPage()
 {
     return view('patient.payment-verification');
+}
+
+
+public function markVerified()
+{
+    $patient = Auth::user()->patient;
+
+    $patient->update([
+        'is_payment_method_verified' => 1
+    ]);
+
+    return response()->json(['success' => true]);
+}
+
+
+
+
+public function createIntent(Request $request)
+{
+    Stripe::setApiKey(config('services.stripe.secret'));
+
+    $intent = PaymentIntent::create([
+        'amount' => 100,
+        'currency' => 'usd',
+        'capture_method' => 'manual',
+        'metadata' => [
+            'user_id' => Auth::id(),
+            'source' => $request->source // dashboard
+        ]
+    ]);
+
+    return response()->json([
+        'clientSecret' => $intent->client_secret
+    ]);
+}
+
+
+public function registerIntent(Request $request)
+{
+    Stripe::setApiKey(config('services.stripe.secret'));
+
+    $intent = PaymentIntent::create([
+        'amount' => 100,
+        'currency' => 'usd',
+        'capture_method' => 'manual',
+        'metadata' => [
+            'source' => 'register'
+        ]
+    ]);
+
+    return response()->json([
+        'clientSecret' => $intent->client_secret
+    ]);
+}
+
+
+public function markVerifiedAfterRegister(Request $request)
+{
+    try {
+        $patientId = session('pending_patient_id');
+
+        if (!$patientId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Session expired or invalid registration flow'
+            ], 400);
+        }
+
+        $patient = Patient::find($patientId);
+
+        if (!$patient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Patient not found'
+            ], 404);
+        }
+
+        // Optional: verify request is really from frontend payment success
+        if (!$request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid request'
+            ], 403);
+        }
+
+        $patient->update([
+            'is_payment_method_verified' => 1,
+            'is_verified' => 1
+        ]);
+
+        session()->forget('pending_patient_id');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registration payment verified successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Server error: ' . $e->getMessage()
+        ], 500);
+    }
 }
 }

@@ -15506,3 +15506,107 @@ Author URL: https://themeforest.net/user/dreamstechnologies
 }
 
 
+
+
+/*============================
+patient registration form css
+============================*/
+        .step-indicator {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        .step-pill {
+            border-radius: 1rem;
+            border-color: rgb(46 55 164);
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+            transition: border-color .2s ease, background .2s ease;
+        }
+        .step-pill.active {
+            background: rgba(13, 110, 253, .08);
+            border-color: rgb(46 55 164);
+        }
+        .step-pill .step-number {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #e7f1ff;
+            color:rgb(46 55 164);
+            font-weight: 700;
+            margin-right: .75rem;
+        }
+        .form-step {
+            display: none;
+        }
+        .form-step.active {
+            display: block;
+        }
+        .step-card-icon {
+            width: 48px;
+            height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(13, 110, 253, .1);
+            border-radius: .85rem;
+            color: #0d6efd;
+        }
+        .payment-card {
+            background: linear-gradient(135deg, #0d6efd 0%, #5b8cff 100%);
+            color: white;
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            min-height: 180px;
+            position: relative;
+        }
+        .payment-card .card-chip {
+            width: 44px;
+            height: 34px;
+            border-radius: .6rem;
+            background: rgba(255,255,255,.65);
+            margin-bottom: 1rem;
+        }
+        .payment-card-icons i {
+            font-size: 1.2rem;
+            margin-right: .75rem;
+            opacity: .85;
+        }
+        .form-feedback {
+            display: none;
+        }
+        .form-feedback.active {
+            display: block;
+        }
+        .loader-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9;
+        }
+        .loader-overlay .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        .password-toggle {
+            color: #6c757d;
+            border-left: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .password-toggle:focus {
+            box-shadow: none;
+        }
+        .input-group.is-invalid-group > .input-group-text,
+        .input-group.is-invalid-group > .form-control,
+        .input-group.is-invalid-group > .password-toggle {
+            border-color: var(--bs-form-invalid-border-color);
+        }
+    
