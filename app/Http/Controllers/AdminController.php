@@ -65,7 +65,7 @@ class AdminController extends Controller
     $doctors = Doctor::with('user')
         ->where('verification_status', 'pending')
         ->get();
-
+       
     return view('admin.doctor-verifications', compact('doctors'));
 }
 public function approveDoctor($doctorId)

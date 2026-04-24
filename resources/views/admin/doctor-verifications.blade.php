@@ -4,6 +4,17 @@
 
 @section('content')
 
+@if(session('error'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: "{{ session('error') }}",
+    });
+</script>
+@endif
+
+
 <div class="content">
 
     <h4 class="mb-3">Doctor Verification Requests</h4>
@@ -22,10 +33,17 @@
                     <span class="badge bg-warning">
                         {{ $doctor->verification_status }}
                     </span>
+                   
                 </div>
-
                 <div class="text-end">
 
+                     @if(!$doctor->ai_result)
+                            <a href="{{ route('ai.doctor.analyze', $doctor->id) }}" class="btn btn-sm btn-info">
+                                AI Analysis
+                            </a>
+                        @else
+                            <span class="badge bg-success">AI Done</span>
+                     @endif
                     <!-- VIEW CERTIFICATE -->
                     <a href="{{ asset('storage/' . $doctor->certificate_path) }}"
                        target="_blank"
@@ -112,3 +130,4 @@
 </div>
 
 @endsection
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

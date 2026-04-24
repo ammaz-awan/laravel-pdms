@@ -13,71 +13,53 @@ class DoctorVerificationAIController extends Controller
         $doctor = Doctor::findOrFail($doctorId);
 
         if (!$doctor->certificate_path) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No certificate found'
-            ], 400);
+            return redirect()->back()->with('error', 'No certificate found');
         }
+$filePath = storage_path('app/public/' . $doctor->certificate_path);
+$imageData = base64_encode(file_get_contents($filePath));
 
-        $imageUrl = asset('storage/' . $doctor->certificate_path);
+$response = Http::withHeaders([
+    'Authorization' => 'Bearer ' . config('services.openai.key'),
+    'Content-Type'  => 'application/json',
+])->post('https://api.openai.com/v1/responses', [
 
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' .config('services.openai.key'),
-            'Content-Type'  => 'application/json',
-        ])->post('https://api.openai.com/v1/chat/completions', [
-            'model' => 'gpt-4.1-mini',
-            'messages' => [
+    'model' => 'gpt-4.1-mini',
+
+    'input' => [
+        [
+            'role' => 'user',
+            'content' => [
                 [
-                    'role' => 'user',
-                    'content' => [
-                        [
-                            'type' => 'text',
-                            'text' => "
-You are a medical document verification AI.
-
-Analyze this certificate and return ONLY valid JSON in this format:
+                    'type' => 'input_text',
+                    'text' => "
+Analyze this certificate and return ONLY JSON:
 
 {
   \"risk_score\": number (0-100),
   \"confidence\": number (0-100),
   \"status\": \"valid | suspicious | fake\",
-  \"observations\": [
-    \"point 1\",
-    \"point 2\"
-  ]
+  \"observations\": [\"point 1\", \"point 2\"]
 }
-
-Rules:
-- Be strict
-- Do not add extra text
-- Only return JSON
 "
-                        ],
-                        [
-                            'type' => 'image_url',
-                            'image_url' => [
-                                'url' => $imageUrl
-                            ]
-                        ]
-                    ]
+                ],
+                [
+                    'type' => 'input_image',
+                    'image_url' => 'data:image/png;base64,' . $imageData
                 ]
-            ],
-            'temperature' => 0.2
-        ]);
-
+            ]
+        ]
+    ]
+]);
+     
         $data = $response->json();
 
         // Extract AI message safely
-        $content = $data['choices'][0]['message']['content'] ?? null;
-
+$content = $data['output'][0]['content'][0]['text'] ?? null;
         $parsed = json_decode($content, true);
 
         if (!$parsed) {
-            return response()->json([
-                'success' => false,
-                'message' => 'AI response invalid',
-                'raw' => $data
-            ], 500);
+
+           return redirect()->back()->with('error', 'AI failed to analyze');
         }
 
         // Save clean AI result only
@@ -85,9 +67,6 @@ Rules:
             'ai_result' => json_encode($parsed)
         ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => $parsed
-        ]);
+        return redirect()->back()->with('success', 'AI analysis completed');
     }
 }

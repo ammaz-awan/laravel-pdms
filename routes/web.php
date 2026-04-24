@@ -88,6 +88,12 @@ Route::middleware(['auth'])->group(function () {
     
     Route::post('/mark-verified', [PatientController::class, 'markVerified'])->middleware('auth');
 
+    Route::get('/ai/doctor/{id}/analyze', [
+    DoctorVerificationAIController::class,
+    'analyzeCertificate'
+     ])->name('ai.doctor.analyze')->middleware('auth');
+    
+
     Route::resource('admins', AdminController::class);
     Route::resource('doctors', DoctorController::class);
     Route::resource('patients', PatientController::class);
@@ -120,7 +126,3 @@ Route::post('/doctor/update-verification', [DoctorController::class, 'updateVeri
     ->name('doctor.updateVerification');
 
 
-Route::get('/ai/doctor/{id}/analyze', [
-    DoctorVerificationAIController::class,
-    'analyzeCertificate'
-]);
