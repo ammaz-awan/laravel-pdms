@@ -49,15 +49,60 @@
             </div>
 
             {{-- AI RESULT SECTION --}}
-            @if($doctor->ai_result)
-            <div class="mt-3 p-3 bg-light rounded">
-                <strong>AI Analysis:</strong>
+      @if($doctor->ai_result)
 
-                <pre class="mb-0">
-{{ json_encode($doctor->ai_result, JSON_PRETTY_PRINT) }}
-                </pre>
-            </div>
-            @endif
+@php
+    $ai = json_decode($doctor->ai_result, true);
+@endphp
+
+<div class="mt-3 p-3 bg-light rounded">
+
+    <strong>AI Analysis:</strong>
+
+    @if(is_array($ai))
+
+        {{-- RISK SCORE --}}
+        <p class="mb-2">
+            <strong>Risk Score:</strong>
+
+            <span class="badge 
+                {{ ($ai['risk_score'] ?? 0) > 70 ? 'bg-danger' : 
+                   (($ai['risk_score'] ?? 0) > 40 ? 'bg-warning' : 'bg-success') }}">
+                {{ $ai['risk_score'] ?? 0 }}%
+            </span>
+        </p>
+
+        {{-- CONFIDENCE --}}
+        <p class="mb-1">
+            <strong>Confidence:</strong>
+            {{ $ai['confidence'] ?? 'N/A' }}%
+        </p>
+
+        {{-- STATUS --}}
+        <p class="mb-2">
+            <strong>Status:</strong>
+
+            <span class="badge bg-secondary">
+                {{ $ai['status'] ?? 'N/A' }}
+            </span>
+        </p>
+
+        {{-- OBSERVATIONS --}}
+        <strong>Observations:</strong>
+
+        <ul class="mb-0">
+            @foreach($ai['observations'] ?? [] as $obs)
+                <li>{{ $obs }}</li>
+            @endforeach
+        </ul>
+
+    @else
+        <pre class="mb-0">{{ $doctor->ai_result }}</pre>
+    @endif
+
+</div>
+
+@endif
 
         </div>
     </div>

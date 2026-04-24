@@ -98,19 +98,60 @@
                         </div>
                     </div>
                 @endif
-                @if(Auth::check() && Auth::user()->role === 'doctor' && !optional(Auth::user()->doctor)->is_verified)
-                    <div class="alert alert-danger rounded-3 mb-4 d-flex align-items-start" role="alert">
-                        <i class="ti ti-alert-circle fs-4 me-3"></i>
-                         <div>
-                            <strong>Certificate verification pending.</strong> Your doctor account is registered, but certificate verification is still off. You can complete it now.
-                               <a href=""
-                                    class="btn btn-sm btn-outline-light ms-2 py-1 px-2"
-                                    style="font-size: 12px;">
-                                        Verify Now
-                                </a>
-                        </div>
-                    </div>
-                @endif
+
+                 @if(Auth::check() && Auth::user()->role === 'doctor')
+
+    @php
+        $doctor = Auth::user()->doctor;
+    @endphp
+
+    @if($doctor)
+
+        @if($doctor->verification_status === 'not_submitted')
+
+            <div class="alert alert-danger rounded-3 mb-4 d-flex align-items-start">
+                <i class="ti ti-alert-circle fs-4 me-3"></i>
+                <div>
+                    <strong>Certificate verification pending!</strong>
+                    You have not submitted your certificate yet.
+
+                    <a href="{{ url('/register/doctor?mode=dashboard') }}"
+                       class="btn btn-sm btn-outline-light ms-2 px-2">
+                        Verify Now
+                    </a>
+                </div>
+            </div>
+
+        @elseif($doctor->verification_status === 'pending')
+
+            <div class="alert alert-warning rounded-3 mb-4 d-flex align-items-start">
+                <i class="ti ti-alert-triangle fs-4 me-3"></i>
+                <div>
+                    <strong>Certificate is under review.</strong>
+                    Please wait for admin approval.
+                </div>
+            </div>
+
+        @elseif($doctor->verification_status === 'rejected')
+
+            <div class="alert alert-danger rounded-3 mb-4 d-flex align-items-start">
+                <i class="ti ti-circle-x fs-4 me-3"></i>
+                <div>
+                    <strong>Certificate rejected.</strong>
+                    Please resubmit correct documents.
+
+                    <a href="{{ url('/register/doctor?mode=dashboard') }}"
+                       class="btn btn-sm btn-outline-light ms-2 px-2">
+                        Resubmit
+                    </a>
+                </div>
+            </div>
+
+        @endif
+
+@endif
+
+@endif
                 @yield('content')
             </div>
             <!-- End Content -->

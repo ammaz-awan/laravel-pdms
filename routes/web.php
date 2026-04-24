@@ -16,6 +16,7 @@ use App\Http\Controllers\RatingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\AI\DoctorVerificationAIController;
 
 
 // Authentication Routes
@@ -113,3 +114,13 @@ Route::post('/admin/doctor-verifications/{doctor}/approve', [AdminController::cl
 
 Route::post('/admin/doctor-verifications/{doctor}/reject', [AdminController::class, 'rejectDoctor'])
     ->name('doctor.reject');
+
+Route::post('/doctor/update-verification', [DoctorController::class, 'updateVerification'])
+    ->middleware('auth')
+    ->name('doctor.updateVerification');
+
+
+Route::get('/ai/doctor/{id}/analyze', [
+    DoctorVerificationAIController::class,
+    'analyzeCertificate'
+]);

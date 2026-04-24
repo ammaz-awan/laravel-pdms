@@ -1571,3 +1571,250 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+
+
+//doctor registration form
+// assets/js/script.js
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const step1 = document.getElementById('doctor-step-1');
+    const step2 = document.getElementById('doctor-step-2');
+    const pending = document.getElementById('doctor-pending');
+    const loader = document.getElementById('doctor-loader');
+    const step2Pill = document.getElementById('doctor-step-2-pill');
+
+    const nextButton = document.getElementById('doctor-next');
+    const backButton = document.getElementById('doctor-back');
+    const skipButton = document.getElementById('doctor-skip');
+    const submitButton = document.getElementById('doctor-submit');
+
+    // ❗ Prevent errors on other pages
+    if (!step1 || !step2) return;
+
+    // =========================
+    // MODE DETECTION
+    // =========================
+    const mode = new URLSearchParams(window.location.search).get('mode');
+    const isDashboard = mode === 'dashboard';
+
+    // =========================
+    // HELPERS
+    // =========================
+    function showLoader(callback) {
+        if (!loader) return callback();
+        loader.classList.remove('d-none');
+        setTimeout(() => {
+            loader.classList.add('d-none');
+            callback();
+        }, 260);
+    }
+
+    function setInvalid(field, message) {
+        field.classList.add('is-invalid');
+        const feedback = field.parentElement.querySelector('.invalid-feedback') || field.nextElementSibling;
+        if (feedback) feedback.textContent = message;
+    }
+
+    function clearInvalid(field) {
+        field.classList.remove('is-invalid');
+    }
+
+    function validateRequiredFields(ids) {
+        let valid = true;
+
+        ids.forEach(id => {
+            const field = document.getElementById(id);
+            if (!field || !field.value.trim()) {
+                setInvalid(field, 'This field is required');
+                valid = false;
+            } else {
+                clearInvalid(field);
+            }
+        });
+
+        return valid;
+    }
+
+    function validateStep1() {
+        const ids = [
+            'doctor-name','doctor-email','doctor-password','doctor-password-confirm',
+            'doctor-phone','doctor-specialization','doctor-experience',
+            'doctor-fees','doctor-clinic','doctor-address'
+        ];
+
+        if (!validateRequiredFields(ids)) return false;
+
+        const pass = document.getElementById('doctor-password').value;
+        const confirm = document.getElementById('doctor-password-confirm');
+
+        if (pass !== confirm.value) {
+            setInvalid(confirm, 'Passwords do not match');
+            return false;
+        }
+
+        return true;
+    }
+
+    function validateStep2() {
+        return validateRequiredFields(['doctor-license']);
+    }
+
+    function showStep(step) {
+        step1.classList.toggle('active', step === 1);
+        step2.classList.toggle('active', step === 2);
+        if (pending) pending.classList.toggle('d-none', step !== 3);
+        if (step2Pill) step2Pill.classList.toggle('active', step === 2);
+    }
+
+    // =========================
+    // DASHBOARD MODE
+    // =========================
+    if (isDashboard) {
+        showStep(2);
+        step1.style.display = 'none';
+
+        if (nextButton) nextButton.style.display = 'none';
+        if (skipButton) skipButton.style.display = 'none';
+    }
+
+    // =========================
+    // EVENTS
+    // =========================
+
+    nextButton?.addEventListener('click', function () {
+        if (!validateStep1()) return;
+        showLoader(() => showStep(2));
+    });
+
+    backButton?.addEventListener('click', function () {
+        showLoader(() => showStep(1));
+    });
+
+    skipButton?.addEventListener('click', function () {
+
+	    if (!validateStep1()) return;   
+        const formData = new FormData();
+
+        // Step 1 fields
+        [
+            'name','email','password','password_confirmation',
+            'phone','specialization','experience','fees',
+            'clinic_name','address'
+        ].forEach((key, i) => {
+            const map = {
+                name:'doctor-name',
+                email:'doctor-email',
+                password:'doctor-password',
+                password_confirmation:'doctor-password-confirm',
+                phone:'doctor-phone',
+                specialization:'doctor-specialization',
+                experience:'doctor-experience',
+                fees:'doctor-fees',
+                clinic_name:'doctor-clinic',
+                address:'doctor-address'
+            };
+            formData.append(key, document.getElementById(map[key]).value);
+        });
+
+        formData.append('skip', 1);
+
+        fetch('/register/doctor', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(async res => {
+    const data = await res.json();
+
+    if (!res.ok) {
+        console.log('ERROR:', data); // 👈 VERY IMPORTANT
+        alert(JSON.stringify(data.errors || data.message));
+        return;
+    }
+
+    if (data.success) {
+        window.location.href = '/login';
+    }
+});
+    });
+
+    submitButton?.addEventListener('click', function () {
+
+        if (!validateStep2()) return;
+
+        const formData = new FormData();
+
+        formData.append('license_number', document.getElementById('doctor-license').value);
+
+        const file = document.getElementById('doctor-certificate');
+        if (file && file.files.length > 0) {
+            formData.append('certificate', file.files[0]);
+        }
+
+        const url = isDashboard
+            ? '/doctor/update-verification'
+            : '/register/doctor';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = isDashboard ? '/dashboard' : '/login';
+            }
+        });
+    });
+
+});
+
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const mode = new URLSearchParams(window.location.search).get('mode');
+
+    if (mode === 'dashboard') {
+
+        // Show only step 2
+        document.getElementById('doctor-step-1')?.classList.add('d-none');
+        document.getElementById('doctor-step-2')?.classList.add('active');
+
+        // Hide navigation buttons
+        document.getElementById('doctor-next')?.classList.add('d-none');
+        document.getElementById('doctor-back')?.classList.add('d-none');
+        document.getElementById('doctor-skip')?.classList.add('d-none');
+
+        // Hide step indicator pill (Step 1/2 UI)
+        document.querySelectorAll('.step-pill')?.forEach(el => {
+            el.style.display = 'none';
+        });
+
+        // Hide social login section (Facebook/Google + divider)
+        document.querySelectorAll('.social-btn')?.forEach(el => {
+            el.style.display = 'none';
+        });
+
+        // Hide divider + "or" section (important)
+        document.querySelectorAll('.mb-3, .d-flex.align-items-center.my-3')?.forEach(el => {
+            el.style.display = 'none';
+        });
+
+        // Hide header back/login button
+        document.querySelectorAll('a[href*="login"]')?.forEach(el => {
+            el.style.display = 'none';
+        });
+
+        // OPTIONAL: force scroll to form
+        window.scrollTo(0, 0);
+    }
+});

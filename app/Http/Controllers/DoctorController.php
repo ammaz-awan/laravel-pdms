@@ -6,6 +6,7 @@ use App\Models\Doctor;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class DoctorController extends Controller
 {
@@ -150,4 +151,40 @@ class DoctorController extends Controller
         $doctor->delete();
         return redirect()->route('doctors.index')->with('success', 'Doctor deleted successfully.');
     }
+
+    public function updateVerification(Request $request)
+{
+    $validated = $request->validate([
+        'license_number' => 'required|string|max:255',
+        'certificate' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    ]);
+
+    $doctor =  Auth::user()->doctor;
+
+    if (!$doctor) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Doctor profile not found'
+        ], 404);
+    }
+
+    $certificatePath = $doctor->certificate_path;
+
+    if ($request->hasFile('certificate')) {
+        $certificatePath = $request->file('certificate')
+            ->store('certificates', 'public');
+    }
+
+    $doctor->update([
+        'license_number' => $validated['license_number'],
+        'certificate_path' => $certificatePath,
+        'verification_status' => 'pending',
+        'is_verified' => false,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Verification submitted successfully'
+    ]);
+}
 }
