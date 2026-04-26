@@ -3,521 +3,235 @@
 @section('title', 'Doctor Dashboard')
 
 @section('content')
-        <!-- Page Header -->
-        <div class="d-flex align-items-sm-center justify-content-between flex-wrap gap-2 mb-4">
-            <div>
-                <h4 class="fw-bold mb-0">Doctor Dashboard</h4>
-            </div>
-            <div class="d-flex align-items-center flex-wrap gap-2">
-               <a href="javascript:void(0);" class="btn btn-primary d-inline-flex align-items-center" data-bs-toggle="offcanvas" data-bs-target="#new_appointment"><i class="ti ti-plus me-1"></i>New Appointment</a>
-               <a href="javascript:void(0);" class="btn btn-outline-white bg-white d-inline-flex align-items-center"><i class="ti ti-calendar-time me-1"></i>Schedule Availability</a>
-            </div>
+<div class="d-flex align-items-sm-center justify-content-between flex-wrap gap-2 mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Doctor Dashboard</h4>
+    </div>
+    <div class="d-flex align-items-center flex-wrap gap-2">
+       <a href="{{ route('doctor.appointments') }}" class="btn btn-primary d-inline-flex align-items-center"><i class="ti ti-calendar-check me-1"></i>My Appointments</a>
+       <a href="{{ route('doctor.my-patients') }}" class="btn btn-outline-white bg-white d-inline-flex align-items-center"><i class="ti ti-user-heart me-1"></i>My Patients</a>
+       <a href="#availability-card" class="btn btn-outline-white bg-white d-inline-flex align-items-center"><i class="ti ti-calendar-time me-1"></i>Schedule Availability</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-4 d-flex">
+        <div class="card shadow-sm flex-fill w-100">
+           <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <p class="mb-1">Total Appointments</p>
+                        <h3 class="fw-bold mb-0">{{ $stats['total_appointments'] ?? 0 }}</h3>
+                    </div>
+                    <span class="avatar border border-primary text-primary rounded-2 flex-shrink-0"><i class="ti ti-calendar-heart fs-20"></i></span>
+                </div>
+           </div>
         </div>
-        <!-- End Page Header -->
-
-        <!-- row start -->
-        <div class="row">
-            <!-- col start -->
-            <div class="col-xl-4 d-flex">
-                <div class="card shadow-sm flex-fill w-100">
-                   <div class="card-body">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div>
-                                <p class="mb-1">Total Appointments</p>
-                                <div class="d-flex align-items-center gap-1">
-                                    <h3 class="fw-bold mb-0">{{ $stats['total_appointments'] ?? 0 }}</h3>
-                                    <span class="badge fw-medium bg-success flex-shrink-0">+95%</span>
-                                </div>
-                            </div>
-                            <span class="avatar border border-primary text-primary rounded-2 flex-shrink-0"><i class="ti ti-calendar-heart fs-20"></i></span>
-                        </div>
-                        <div class="d-flex align-items-end">
-                            <div id="s-col-5" class="chart-set"></div>
-                            <span class="badge fw-medium badge-soft-success flex-shrink-0 ms-2">+21% <i class="ti ti-arrow-up ms-1"></i></span>
-                            <p class="ms-1 fs-13 text-truncate">in last 7 Days </p>
-                        </div>
-                   </div>
-                </div>
-            </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col-xl-4 d-flex">
-                <div class="card shadow-sm flex-fill w-100">
-                   <div class="card-body">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div>
-                                <p class="mb-1">Online Consultations</p>
-                                <div class="d-flex align-items-center gap-1">
-                                    <h3 class="fw-bold mb-0">{{ $stats['online_consultations'] ?? 0 }}</h3>
-                                    <span class="badge fw-medium bg-danger flex-shrink-0">-15%</span>
-                                </div>
-                            </div>
-                            <span class="avatar border border-danger text-danger rounded-2 flex-shrink-0"><i class="ti ti-users fs-20"></i></span>
-                        </div>
-                        <div class="d-flex align-items-end">
-                            <div id="s-col-6" class="chart-set"></div>
-                            <span class="badge fw-medium badge-soft-danger flex-shrink-0 ms-2">+21% <i class="ti ti-arrow-down ms-1"></i></span>
-                            <p class="ms-1 fs-13 text-truncate">in last 7 Days </p>
-                        </div>
-                   </div>
-                </div>
-            </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col-xl-4 d-flex">
-                <div class="card shadow-sm flex-fill w-100">
-                   <div class="card-body">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div>
-                                <p class="mb-1">Cancelled Appointments</p>
-                                <div class="d-flex align-items-center gap-1">
-                                    <h3 class="fw-bold mb-0">{{ $stats['cancelled_appointments'] ?? 0 }}</h3>
-                                    <span class="badge fw-medium bg-success flex-shrink-0">+45%</span>
-                                </div>
-                            </div>
-                            <span class="avatar border border-success text-success rounded-2 flex-shrink-0"><i class="ti ti-versions fs-20"></i></span>
-                        </div>
-                        <div class="d-flex align-items-end">
-                            <div id="s-col-7" class="chart-set"></div>
-                            <span class="badge fw-medium badge-soft-success flex-shrink-0 ms-2">+31% <i class="ti ti-arrow-up ms-1"></i></span>
-                            <p class="ms-1 fs-13 text-truncate">in last 7 Days </p>
-                        </div>
-                   </div>
-                </div>
-            </div>
-            <!-- col end -->
-         </div>
-        <!-- row end -->
-
-        <!-- row start -->
-        <div class="row">
-            <!-- col start -->
-            <div class="col-xl-4 d-flex">
-                 <!-- card start -->
-                <div class="card shadow-sm flex-fill w-100">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="fw-bold mb-0 text-truncate">Upcoming Appointments</h5>
-                        <div class="dropdown">
-                            <a href="javascript:void(0);" class="btn btn-sm px-2 border shadow-sm btn-outline-white d-inline-flex align-items-center" data-bs-toggle="dropdown">
-                                Today <i class="ti ti-chevron-down ms-1"></i>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" href="#">Today</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">This Week</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">This Month</a>
-                                </li>
-                            </ul>
-                        </div>
+    </div>
+    <div class="col-xl-4 d-flex">
+        <div class="card shadow-sm flex-fill w-100">
+           <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <p class="mb-1">Pending Appointments</p>
+                        <h3 class="fw-bold mb-0">{{ $stats['pending_appointments'] ?? 0 }}</h3>
                     </div>
-                    {{-- <div class="card-body">
-                        @if(isset($stats['upcoming_appointments']) && count($stats['upcoming_appointments']) > 0)
-                            @foreach($stats['upcoming_appointments'] as $appointment)
-                            <div class="d-flex align-items-center mb-3">
-                                <a href="javascript:void(0);" class="avatar me-2 flex-shrink-0">
-                                    <img src="{{ asset('assets/img/profiles/avatar-06.jpg') }}" alt="img" class="rounded-circle">
-                                </a>
-                                <div>
-                                  <h6 class="fs-14 mb-1 text-truncate"><a href="javascript:void(0);" class="fw-semibold">{{ $appointment->patient->name ?? 'Patient' }}</a></h6>
-                                  <p class="mb-0 fs-13 text-truncate">#{{ $appointment->id ?? 'N/A' }}</p>
-                                </div>
-                            </div>
-                            <h6 class="fs-14 fw-semibold mb-1">{{ $appointment->appointment_type ?? 'General Visit' }}</h6>
-                            <div class="d-flex align-items-center gap-2 flex-wrap mb-3">
-                                <p class="mb-0 d-inline-flex align-items-center"><i class="ti ti-calendar-time text-dark me-1"></i>{{ $appointment->appointment_date ? \Carbon\Carbon::parse($appointment->appointment_date)->format('D, d M Y') : 'N/A' }}</p>
-                                <p class="mb-0 d-inline-flex align-items-center"><i class="ti ti-clock text-dark me-1"></i>{{ $appointment->appointment_time ?? 'N/A' }}</p>
-                            </div>
-                            <div class="row">
-                                <div class="col">
-                                    <h6 class="fs-13 fw-semibold mb-1">Department</h6>
-                                    <p>{{ $appointment->department ?? 'General' }}</p>
-                                </div>
-                                <div class="col">
-                                    <h6 class="fs-13 fw-semibold mb-1">Type</h6>
-                                    <p class="text-truncate">{{ $appointment->consultation_type ?? 'Online Consultation' }}</p>
-                                </div>
-                            </div>
-                            <div class="my-3 border-bottom pb-3">
-                                <a href="javascript:void(0);" class="btn btn-primary w-100">Start Appointment</a>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <a href="javascript:void(0);" class="btn btn-dark w-100"><i class="ti ti-brand-hipchat me-1"></i>Chat Now</a>
-                                <a href="javascript:void(0);" class="btn btn-outline-white w-100"><i class="ti ti-video me-1"></i>Video Consultation</a>
-                            </div>
-                            @endforeach
-                        @else
-                            <p class="text-center text-muted">No upcoming appointments</p>
-                        @endif
-                    </div> --}}
+                    <span class="avatar border border-warning text-warning rounded-2 flex-shrink-0"><i class="ti ti-hourglass fs-20"></i></span>
                 </div>
-                <!-- card end -->
-            </div>
-            <!-- col end -->
-
-             <!-- col start -->
-            <div class="col-xl-8 d-flex">
-                <!-- card start -->
-                <div class="card shadow-sm flex-fill w-100">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="fw-bold mb-0">Appointments</h5>
-                        <div class="dropdown">
-                            <a href="javascript:void(0);" class="btn btn-sm px-2 border shadow-sm btn-outline-white d-inline-flex align-items-center" data-bs-toggle="dropdown">
-                                Monthly <i class="ti ti-chevron-down ms-1"></i>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" href="#">Monthly</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">Weekly</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">Yearly</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="card-body pb-0">
-                        <div class="d-flex align-items-center justify-content-end gap-2 mb-1 flex-wrap mb-3">
-                            <p class="mb-0 d-inline-flex align-items-center"><i class="ti ti-point-filled me-1 fs-18 text-primary"></i>Total Appointments</p>
-                            <p class="mb-0 d-inline-flex align-items-center"><i class="ti ti-point-filled me-1 fs-18 text-success"></i>Completed Appointments</p>
-                        </div>
-                        <div class="chart-set" id="s-col-20"></div>
-                    </div>
-                </div>
-                <!-- card end -->
-            </div>
-            <!-- col end -->
+           </div>
         </div>
-        <!-- row end -->
-
-        <!-- row start -->
-        <div class="row row-cols-1 row-cols-xl-6 row-cols-md-3 row-cols-sm-2">
-            <!-- col start -->
-             <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <span class="avatar bg-primary rounded-2 fs-20 d-inline-flex mb-2"><i class="ti ti-user"></i></span>
-                        <p class="mb-1 text-truncate">Total Patient</p>
-                        <h3 class="fw-bold mb-2">{{ $stats['total_patients'] ?? 0 }}</h3>
-                        <p class="mb-0 text-success text-truncate">+31% Last Week</p>
+    </div>
+    <div class="col-xl-4 d-flex">
+        <div class="card shadow-sm flex-fill w-100">
+           <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <p class="mb-1">Approved Appointments</p>
+                        <h3 class="fw-bold mb-0">{{ $stats['approved_appointments'] ?? 0 }}</h3>
                     </div>
+                    <span class="avatar border border-success text-success rounded-2 flex-shrink-0"><i class="ti ti-check fs-20"></i></span>
                 </div>
-             </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <span class="avatar bg-secondary rounded-2 fs-20 d-inline-flex mb-2"><i class="ti ti-video"></i></span>
-                        <p class="mb-1 text-truncate">Video Consultation</p>
-                        <h3 class="fw-bold mb-2">{{ $stats['video_consultations'] ?? 0 }}</h3>
-                        <p class="mb-0 text-danger text-truncate">-21% Last Week</p>
-                    </div>
-                </div>
-             </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <span class="avatar bg-success rounded-2 fs-20 d-inline-flex mb-2"><i class="ti ti-calendar-up"></i></span>
-                        <p class="mb-1 text-truncate">Rescheduled</p>
-                        <h3 class="fw-bold mb-2">{{ $stats['rescheduled'] ?? 0 }}</h3>
-                        <p class="mb-0 text-success text-truncate">+64% Last Week</p>
-                    </div>
-                </div>
-            </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <span class="avatar bg-danger rounded-2 fs-20 d-inline-flex mb-2"><i class="ti ti-checklist"></i></span>
-                        <p class="mb-1 text-truncate">Pre Visit Bookings</p>
-                        <h3 class="fw-bold mb-2">{{ $stats['pre_visit_bookings'] ?? 0 }}</h3>
-                        <p class="mb-0 text-success text-truncate">+38% Last Week</p>
-                    </div>
-                </div>
-            </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <span class="avatar bg-info rounded-2 fs-20 d-inline-flex mb-2"><i class="ti ti-calendar-share"></i></span>
-                        <p class="mb-1 text-truncate">Walkin Bookings</p>
-                        <h3 class="fw-bold mb-2">{{ $stats['walkin_bookings'] ?? 0 }}</h3>
-                        <p class="mb-0 text-success text-truncate">+95% Last Week</p>
-                    </div>
-                </div>
-            </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <span class="avatar bg-soft-success text-success rounded-2 fs-20 d-inline-flex mb-2"><i class="ti ti-carousel-vertical"></i></span>
-                        <p class="mb-1 text-truncate">Follow Ups</p>
-                        <h3 class="fw-bold mb-2">{{ $stats['follow_ups'] ?? 0 }}</h3>
-                        <p class="mb-0 text-success text-truncate">+76% Last Week</p>
-                    </div>
-                </div>
-            </div>
-            <!-- col end -->
+           </div>
         </div>
-        <!-- row start -->
+    </div>
+</div>
 
-        <!-- row start -->
-        <div class="row">
-            <div class="col-12 d-flex">
-                <div class="card shadow-sm flex-fill w-100">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="fw-bold mb-0">Recent Appointments</h5>
-                        <div class="dropdown">
-                            <a href="javascript:void(0);" class="btn btn-sm px-2 border shadow-sm btn-outline-white d-inline-flex align-items-center" data-bs-toggle="dropdown">
-                                Weekly <i class="ti ti-chevron-down ms-1"></i>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" href="#">Monthly</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">Weekly</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">Yearly</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <!-- Table start -->
-                        <div class="table-responsive table-nowrap">
-                            <table class="table border">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th>Patient</th>
-                                        <th>Date & Time</th>
-                                        <th>Mode</th>
-                                        <th>Status</th>
-                                        <th>Consultation Fees</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if(isset($stats['recent_appointments']) && count($stats['recent_appointments']) > 0)
-                                        @foreach($stats['recent_appointments'] as $appointment)
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <a href="javascript:void(0);" class="avatar me-2">
-                                                        <img src="{{ asset('assets/img/profiles/avatar-06.jpg') }}" alt="img" class="rounded-circle">
-                                                    </a>
-                                                    <div>
-                                                      <h6 class="fs-14 mb-1"><a href="javascript:void(0);" class="fw-medium">{{ $appointment->patient->name ?? 'Patient' }}</a></h6>
-                                                      <p class="mb-0 fs-13">{{ $appointment->patient->phone ?? 'N/A' }}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>{{ $appointment->appointment_date ? \Carbon\Carbon::parse($appointment->appointment_date)->format('d M Y') : 'N/A' }} - {{ $appointment->appointment_time ?? 'N/A' }}</td>
-                                            <td>{{ $appointment->consultation_type ?? 'Online' }}</td>
-                                            <td><span class="badge bg-{{ $appointment->status == 'completed' ? 'success' : ($appointment->status == 'cancelled' ? 'danger' : 'warning') }} fw-medium">{{ ucfirst($appointment->status ?? 'scheduled') }}</span></td>
-                                            <td class="fw-semibold text-dark">${{ $appointment->consultation_fee ?? 0 }}</td>
-                                            <td>
-                                                <a href="javascript:void(0);" class="shadow-sm fs-14 d-inline-flex border rounded-2 p-1 me-1">
-                                                    <i class="ti ti-calendar-plus"></i>
-                                                </a>
-                                                <a href="javascript:void(0);" data-bs-toggle="dropdown" class="shadow-sm fs-14 d-inline-flex border rounded-2 p-1">
-                                                    <i class="ti ti-dots-vertical"></i>
-                                                </a>
-                                                <ul class="dropdown-menu p-2">
-                                                    <li>
-                                                        <a href="javascript:void(0);" class="dropdown-item d-flex align-items-center" data-bs-toggle="offcanvas" data-bs-target="#edit_appointment"><i class="ti ti-edit me-2"></i>Edit</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" class="dropdown-item d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#delete_modal"><i class="ti ti-trash me-2"></i>Delete</a>
-                                                    </li>
-                                                </ul>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    @else
-                                        <tr>
-                                            <td colspan="6" class="text-center text-muted">No recent appointments</td>
-                                        </tr>
-                                    @endif
-                                </tbody>
-                            </table>
-                        </div>
-                        <!-- Table end -->
-                    </div>
+<div class="row">
+    <div class="col-xl-7 d-flex">
+        <div class="card shadow-sm flex-fill w-100">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold mb-0">Recent Appointments</h5>
+                <a href="{{ route('doctor.appointments') }}" class="btn btn-sm btn-light">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive table-nowrap">
+                    <table class="table border align-middle">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Patient</th>
+                                <th>Date & Time</th>
+                                <th>Status</th>
+                                <th>Fee</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse(($stats['recent_appointments'] ?? collect()) as $appointment)
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <h6 class="fs-14 mb-1">{{ $appointment->patient->user->name ?? 'Patient' }}</h6>
+                                            <p class="mb-0 fs-13">{{ $appointment->patient->phone ?? 'N/A' }}</p>
+                                        </div>
+                                    </td>
+                                    <td>{{ $appointment->appointment_date?->format('d M Y') }} - {{ \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ $appointment->status === 'approved' ? 'success' : ($appointment->status === 'cancelled' ? 'danger' : 'warning') }}">
+                                            {{ ucfirst($appointment->status) }}
+                                        </span>
+                                    </td>
+                                    <td>${{ number_format($appointment->fee_snapshot ?? 0, 2) }}</td>
+                                    <td>
+                                        @if($appointment->status === 'pending')
+                                            <div class="d-flex gap-1">
+                                                <form action="{{ route('doctor.appointments.approve', $appointment) }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-success"><i class="ti ti-check"></i></button>
+                                                </form>
+                                                <form action="{{ route('doctor.appointments.reject', $appointment) }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-danger"><i class="ti ti-x"></i></button>
+                                                </form>
+                                            </div>
+                                        @else
+                                            <a href="{{ route('appointments.show', $appointment) }}" class="btn btn-sm btn-light"><i class="ti ti-eye"></i></a>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No recent appointments</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-        <!-- row end -->
+    </div>
 
-        <!-- row start -->
-        <div class="row">
-            <!-- col start -->
-            <div class="col-xl-4 d-flex">
-                <div class="card shadow-sm flex-fill w-100">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="fw-bold mb-0">Availability</h5>
-                        <div class="dropdown">
-                            <a href="javascript:void(0);" class="btn btn-sm px-2 border shadow-sm btn-outline-white d-inline-flex align-items-center" data-bs-toggle="dropdown">
-                                Trustcare Clinic <i class="ti ti-chevron-down ms-1"></i>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" href="javascript:void(0);">CureWell Medical Hub</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="javascript:void(0);">Trustcare Clinic</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="javascript:void(0);">NovaCare Medical</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="javascript:void(0);">Greeny Medical Clinic</a>
-                                </li>
-                            </ul>
+    <div class="col-xl-5 d-flex" id="availability-card">
+        <div class="card shadow-sm flex-fill w-100">
+            <div class="card-header">
+                <h5 class="fw-bold mb-0">Availability</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('doctor.schedule.store') }}" method="POST" class="mb-4">
+                    @csrf
+                    <div class="mb-3">
+                        <label class="form-label">Available Date</label>
+                        <input type="date" name="available_date" class="form-control @error('available_date') is-invalid @enderror" value="{{ old('available_date') }}" required>
+                        @error('available_date') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label">Start Time</label>
+                            <input type="time" name="start_time" class="form-control @error('start_time') is-invalid @enderror" value="{{ old('start_time') }}" required>
+                            @error('start_time') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">End Time</label>
+                            <input type="time" name="end_time" class="form-control @error('end_time') is-invalid @enderror" value="{{ old('end_time') }}" required>
+                            @error('end_time') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
-                    <div class="card-body">
+                    <button type="submit" class="btn btn-light w-100 mt-3 fs-13">Add Availability</button>
+                </form>
+
+                <div id="doctor-dashboard-calendar" style="min-height: 320px;"></div>
+
+                <div class="mt-3">
+                    @forelse(($doctorSchedules ?? collect())->take(6) as $schedule)
                         <div class="d-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
-                            <p class="text-dark fw-semibold mb-0">Mon</p>
-                            <p class="mb-0 d-inline-flex align-items-center"><i class="ti ti-clock me-1"></i>11:00 PM - 12:30 PM</p>
+                            <p class="text-dark fw-semibold mb-0">{{ $schedule->available_date->format('D, d M') }}</p>
+                            <p class="mb-0 d-inline-flex align-items-center"><i class="ti ti-clock me-1"></i>{{ \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }}</p>
                         </div>
-                        <div class="d-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
-                            <p class="text-dark fw-semibold mb-0">Tue</p>
-                            <p class="mb-0 d-inline-flex align-items-center"><i class="ti ti-clock me-1"></i>11:00 PM - 12:30 PM</p>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
-                            <p class="text-dark fw-semibold mb-0">Wed</p>
-                            <p class="mb-0 d-inline-flex align-items-center"><i class="ti ti-clock me-1"></i>11:00 PM - 12:30 PM</p>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
-                            <p class="text-dark fw-semibold mb-0">Thu</p>
-                            <p class="mb-0 d-inline-flex align-items-center"><i class="ti ti-clock me-1"></i>11:00 PM - 12:30 PM</p>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
-                            <p class="text-dark fw-semibold mb-0">Fri</p>
-                            <p class="mb-0 d-inline-flex align-items-center"><i class="ti ti-clock me-1"></i>11:00 PM - 12:30 PM</p>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
-                            <p class="text-dark fw-semibold mb-0">Sat</p>
-                            <p class="mb-0 d-inline-flex align-items-center"><i class="ti ti-clock me-1"></i>11:00 PM - 12:30 PM</p>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between mb-2 pb-2">
-                            <p class="text-dark fw-semibold mb-0">Sun</p>
-                            <p class="mb-0 d-inline-flex align-items-center text-danger"><i class="ti ti-clock me-1"></i>Closed</p>
-                        </div>
-                        <a href="javascript:void(0);" class="btn btn-light w-100 mt-2 fs-13">Edit Availability</a>
-                    </div>
+                    @empty
+                        <p class="text-muted mb-0">No availability added yet.</p>
+                    @endforelse
                 </div>
             </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col-xl-4 col-lg-6 d-flex">
-                <div class="card shadow-sm flex-fill w-100">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="fw-bold mb-0 text-truncate">Appointment Statistics</h5>
-                        <div class="dropdown">
-                            <a href="javascript:void(0);" class="btn btn-sm px-2 border shadow-sm btn-outline-white d-inline-flex align-items-center" data-bs-toggle="dropdown">
-                                Monthly <i class="ti ti-chevron-down ms-1"></i>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" href="#">Monthly</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">Weekly</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">Yearly</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div id="circle-chart-2" class="chart-set"></div>
-                        <div class="d-flex align-items-center justify-content-center gap-2 mt-3">
-                            <div class="text-center">
-                                <p class="d-flex align-items-center mb-1 fs-13"><i class="ti ti-circle-filled text-success fs-10 me-1"></i>Completed</p>
-                                <h5 class="fw-bold mb-0">{{ $stats['completed_appointments'] ?? 0 }}</h5>
-                            </div>
-                            <div class="text-center">
-                                <p class="d-flex align-items-center mb-1 fs-13"><i class="ti ti-circle-filled text-warning fs-10 me-1"></i>Pending</p>
-                                <h5 class="fw-bold mb-0">{{ $stats['pending_appointments'] ?? 0 }}</h5>
-                            </div>
-                            <div class="text-center">
-                                <p class="d-flex align-items-center mb-1 fs-13"><i class="ti ti-circle-filled text-danger fs-10 me-1"></i>Cancelled</p>
-                                <h5 class="fw-bold mb-0">{{ $stats['cancelled_appointments'] ?? 0 }}</h5>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col-xl-4 col-lg-6 d-flex">
-                <div class="card shadow-sm flex-fill w-100">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="fw-bold mb-0">Top Patients</h5>
-                        <div class="dropdown">
-                            <a href="javascript:void(0);" class="btn btn-sm px-2 border shadow-sm btn-outline-white d-inline-flex align-items-center" data-bs-toggle="dropdown">
-                                Weekly <i class="ti ti-chevron-down ms-1"></i>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" href="#">Monthly</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">Weekly</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">Yearly</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        @if(isset($stats['top_patients']) && count($stats['top_patients']) > 0)
-                            @foreach($stats['top_patients'] as $patient)
-                            <div class="d-flex align-items-center justify-content-between mb-4">
-                                <div class="d-flex align-items-center">
-                                    <a href="javascript:void(0);" class="avatar me-2 flex-shrink-0">
-                                        <img src="{{ asset('assets/img/profiles/avatar-06.jpg') }}" alt="img" class="rounded-circle">
-                                    </a>
-                                    <div>
-                                      <h6 class="fs-14 mb-1 text-truncate"><a href="javascript:void(0);" class="fw-medium">{{ $patient->name ?? 'Patient' }}</a></h6>
-                                      <p class="mb-0 fs-13 text-truncate">{{ $patient->phone ?? 'N/A' }}</p>
-                                    </div>
-                                </div>
-                                <span class="badge fw-medium badge-soft-primary border border-primary flex-shrink-0">{{ $patient->appointment_count ?? 0 }} Appointments</span>
-                            </div>
-                            @endforeach
-                        @else
-                            <p class="text-center text-muted">No top patients data</p>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            <!-- col end -->
         </div>
-        <!-- row end -->
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold mb-0">My Patients</h5>
+                <a href="{{ route('doctor.my-patients') }}" class="btn btn-sm btn-light">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive table-nowrap">
+                    <table class="table border align-middle">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Patient</th>
+                                <th>Email</th>
+                                <th>Appointment History</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse(($stats['my_patients'] ?? collect()) as $patient)
+                                <tr>
+                                    <td>{{ $patient->user->name ?? 'Patient' }}</td>
+                                    <td>{{ $patient->user->email ?? 'N/A' }}</td>
+                                    <td>{{ $patient->appointment_history_count ?? 0 }} appointments</td>
+                                    <td>
+                                        <a href="{{ route('patients.show', $patient) }}" class="btn btn-sm btn-light"><i class="ti ti-eye"></i> View</a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No patients have booked with you yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@php
+    $doctorScheduleEvents = ($doctorSchedules ?? collect())->map(function ($schedule) {
+        $date = $schedule->available_date->format('Y-m-d');
+
+        return [
+            'title' => \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') . ' - ' . \Carbon\Carbon::parse($schedule->end_time)->format('g:i A'),
+            'start' => $date . 'T' . \Carbon\Carbon::parse($schedule->start_time)->format('H:i:s'),
+            'end' => $date . 'T' . \Carbon\Carbon::parse($schedule->end_time)->format('H:i:s'),
+        ];
+    })->values();
+@endphp
+
+@section('scripts')
+    <script src="{{ asset('assets/plugins/fullcalendar/index.global.min.js') }}"></script>
+    <script>
+        const scheduleCalendar = new FullCalendar.Calendar(document.getElementById('doctor-dashboard-calendar'), {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek'
+            },
+            events: @json($doctorScheduleEvents),
+        });
+
+        scheduleCalendar.render();
+    </script>
 @endsection

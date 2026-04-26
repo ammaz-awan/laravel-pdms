@@ -16,14 +16,15 @@
                 <p><strong>Doctor:</strong> {{ $appointment->doctor->user->name }}</p>
             </div>
             <div class="col-md-6">
-                <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($appointment->date)->format('M d, Y') }}</p>
-                <p><strong>Time:</strong> {{ \Carbon\Carbon::parse($appointment->time)->format('H:i') }}</p>
+                <p><strong>Date:</strong> {{ $appointment->appointment_date->format('M d, Y') }}</p>
+                <p><strong>Time:</strong> {{ \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') }}</p>
+                <p><strong>Fee:</strong> ${{ number_format($appointment->fee_snapshot ?? $appointment->doctor->fees, 2) }}</p>
                 <p>
                     <strong>Status:</strong>
                     @if($appointment->status == 'pending')
                         <span class="badge bg-warning">Pending</span>
-                    @elseif($appointment->status == 'completed')
-                        <span class="badge bg-success">Completed</span>
+                    @elseif($appointment->status == 'approved')
+                        <span class="badge bg-success">Approved</span>
                     @else
                         <span class="badge bg-danger">Cancelled</span>
                     @endif
@@ -40,7 +41,19 @@
         <hr>
 
         <div class="d-flex gap-2">
-            <a href="{{ route('appointments.edit', $appointment->id) }}" class="btn btn-primary"><i class="ti ti-pencil"></i> Edit</a>
+            @if(auth()->user()->role === 'admin')
+                <a href="{{ route('appointments.edit', $appointment->id) }}" class="btn btn-primary"><i class="ti ti-pencil"></i> Edit</a>
+            @endif
+            @if(in_array(auth()->user()->role, ['admin', 'doctor'], true) && $appointment->status === 'pending')
+                <form action="{{ route('doctor.appointments.approve', $appointment) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="btn btn-success"><i class="ti ti-check"></i> Approve</button>
+                </form>
+                <form action="{{ route('doctor.appointments.reject', $appointment) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="btn btn-danger"><i class="ti ti-x"></i> Reject</button>
+                </form>
+            @endif
             <a href="{{ route('appointments.index') }}" class="btn btn-secondary"><i class="ti ti-arrow-left"></i> Back</a>
         </div>
     </div>

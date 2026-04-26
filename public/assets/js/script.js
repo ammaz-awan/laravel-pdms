@@ -1658,7 +1658,38 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function validateStep2() {
-        return validateRequiredFields(['doctor-license']);
+        const licenseValid = validateRequiredFields(['doctor-license']);
+        const certificateField = document.getElementById('doctor-certificate');
+
+        if (!isDashboard && certificateField && certificateField.files.length === 0) {
+            setInvalid(certificateField, 'Please upload a certificate');
+            return false;
+        }
+
+        if (certificateField && certificateField.files.length > 0) {
+            clearInvalid(certificateField);
+        }
+
+        return licenseValid;
+    }
+
+    function appendDoctorRegistrationStep1(formData) {
+        const fieldMap = {
+            name: 'doctor-name',
+            email: 'doctor-email',
+            password: 'doctor-password',
+            password_confirmation: 'doctor-password-confirm',
+            phone: 'doctor-phone',
+            specialization: 'doctor-specialization',
+            experience: 'doctor-experience',
+            fees: 'doctor-fees',
+            clinic_name: 'doctor-clinic',
+            address: 'doctor-address'
+        };
+
+        Object.entries(fieldMap).forEach(([key, elementId]) => {
+            formData.append(key, document.getElementById(elementId).value);
+        });
     }
 
     function showStep(step) {
@@ -1697,26 +1728,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	    if (!validateStep1()) return;   
         const formData = new FormData();
 
-        // Step 1 fields
-        [
-            'name','email','password','password_confirmation',
-            'phone','specialization','experience','fees',
-            'clinic_name','address'
-        ].forEach((key, i) => {
-            const map = {
-                name:'doctor-name',
-                email:'doctor-email',
-                password:'doctor-password',
-                password_confirmation:'doctor-password-confirm',
-                phone:'doctor-phone',
-                specialization:'doctor-specialization',
-                experience:'doctor-experience',
-                fees:'doctor-fees',
-                clinic_name:'doctor-clinic',
-                address:'doctor-address'
-            };
-            formData.append(key, document.getElementById(map[key]).value);
-        });
+        appendDoctorRegistrationStep1(formData);
 
         formData.append('skip', 1);
 
@@ -1745,9 +1757,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     submitButton?.addEventListener('click', function () {
 
+        if (!isDashboard && !validateStep1()) return;
         if (!validateStep2()) return;
 
         const formData = new FormData();
+
+        if (!isDashboard) {
+            appendDoctorRegistrationStep1(formData);
+        }
 
         formData.append('license_number', document.getElementById('doctor-license').value);
 

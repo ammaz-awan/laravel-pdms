@@ -10,10 +10,7 @@
 
             </a>
 
-            <!-- Logo Small -->
-            {{-- <a href="{{ route('dashboard') }}" class="logo-small">
-                <span class="hospital-icon"></span>
-            </a> --}}
+           
         </div>
         <button class="sidenav-toggle-btn btn border-0 p-0 active" id="toggle_btn"> 
             <i class="ti ti-arrow-left text-body"></i>
@@ -49,22 +46,7 @@
                 $userRole = auth()->user()->role ?? null;
             @endphp
 
-            {{-- <ul>
-                <!-- MAIN MENU -->
-                <li class="menu-title"><span></span></span></li>
-                <li>
-                    <ul>
-                        <!-- Dashboard - Admin Only -->
-                        @if($userRole === 'admin')
-                            <li>
-                                <a href="{{ route('dashboard') }}">
-                                    <i class="ti ti-layout-dashboard"></i><span>Dashboard</span>
-                                </a>
-                            </li>
-                        @endif
-                    </ul>
-                </li>
-            </ul> --}}
+          
 
             <!-- CLINIC SECTION -->
             <ul>
@@ -85,7 +67,7 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('patients.index') }}">
+                                    <a href="{{ route('doctor.my-patients') }}">
                                         <i class="ti ti-user-heart"></i><span>Patients</span>
                                     </a>
                                 </li>
@@ -115,7 +97,6 @@
                                         <i class="ti ti-layout-dashboard"></i><span>Dashboard</span>
                                     </a>
                                 </li>
-                                
                                 <li>
                                     <a href="{{ route('doctor-verifications') }}">
                                         <i class="ti ti-user-check"></i><span>Doctor Verifications</span>

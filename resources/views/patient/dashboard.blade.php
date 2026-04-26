@@ -9,7 +9,7 @@
                 <h4 class="fw-bold mb-0">Patient Dashboard</h4>
             </div>
             <div class="d-flex align-items-center flex-wrap gap-2">
-               <a href="javascript:void(0);" class="btn btn-primary d-inline-flex align-items-center" data-bs-toggle="offcanvas" data-bs-target="#new_appointment"><i class="ti ti-plus me-1"></i>New Appointment</a>
+               <a href="{{ route('appointments.create') }}" class="btn btn-primary d-inline-flex align-items-center"><i class="ti ti-plus me-1"></i>New Appointment</a>
             </div>
         </div>
         <!-- End Page Header -->

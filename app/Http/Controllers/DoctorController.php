@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class DoctorController extends Controller
 {
@@ -18,7 +20,7 @@ class DoctorController extends Controller
             $query->where('specialization', 'like', '%' . $request->search . '%');
         }
 
-        $doctors = $query->paginate(10);
+        $doctors = $query->orderByDesc('is_verified')->paginate(10);
         return view('doctor.index', compact('doctors'));
     }
 
@@ -53,7 +55,7 @@ class DoctorController extends Controller
             // 👇 KEY FIX HERE
                 'certificate' => $isSkip
                 ? 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120'
-                : 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                : 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
                 ]);
 
         // ===============================
@@ -125,8 +127,16 @@ class DoctorController extends Controller
 
     public function show(Doctor $doctor)
     {
-        $doctor->load('user');
-        return view('doctor.show', compact('doctor'));
+        $doctor->load(['user', 'schedules' => function ($query) {
+            $query->orderBy('available_date')->orderBy('start_time');
+        }]);
+
+        $patient = Auth::user()?->patient;
+        $canBookAppointment = Auth::user()?->role === 'patient'
+            && $doctor->is_verified
+            && (bool) $patient?->is_payment_method_verified;
+
+        return view('doctor.show', compact('doctor', 'patient', 'canBookAppointment'));
     }
 
     public function edit(Doctor $doctor)
@@ -152,7 +162,7 @@ class DoctorController extends Controller
         return redirect()->route('doctors.index')->with('success', 'Doctor deleted successfully.');
     }
 
-    public function updateVerification(Request $request)
+public function updateVerification(Request $request)
 {
     $validated = $request->validate([
         'license_number' => 'required|string|max:255',
@@ -180,6 +190,7 @@ class DoctorController extends Controller
         'certificate_path' => $certificatePath,
         'verification_status' => 'pending',
         'is_verified' => false,
+        'ai_result' => null,
     ]);
 
     return response()->json([
@@ -187,4 +198,36 @@ class DoctorController extends Controller
         'message' => 'Verification submitted successfully'
     ]);
 }
+
+    public function myPatients()
+    {
+        abort_unless(Auth::user()?->role === 'doctor', 403);
+
+        $doctor = Auth::user()->doctor;
+
+        $patients = Patient::query()
+            ->select('patients.*')
+            ->distinct()
+            ->join('appointments', 'appointments.patient_id', '=', 'patients.id')
+            ->where('appointments.doctor_id', $doctor->id)
+            ->with([
+                'user',
+                'appointments' => function ($query) use ($doctor) {
+                    $query->where('doctor_id', $doctor->id)
+                        ->with('doctor.user')
+                        ->latest('appointment_date')
+                        ->latest('appointment_time');
+                },
+            ])
+            ->withCount([
+                'appointments as appointment_history_count' => function ($query) use ($doctor) {
+                    $query->where('doctor_id', $doctor->id);
+                },
+            ])
+            ->paginate(10);
+
+        $listScope = 'my patients';
+
+        return view('patient.index', compact('patients', 'listScope'));
+    }
 }

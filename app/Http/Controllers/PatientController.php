@@ -11,10 +11,66 @@ use Stripe\PaymentIntent;
 
 class PatientController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $patients = Patient::with('user')->paginate(10);
-        return view('patient.index', compact('patients'));
+        $user = Auth::user();
+        $listScope = 'patients';
+        $search = trim((string) $request->query('search'));
+
+        if ($user?->role === 'doctor') {
+            $doctorId = $user->doctor?->id;
+
+            $patients = Patient::query()
+                ->select('patients.*')
+                ->distinct()
+                ->join('appointments', 'appointments.patient_id', '=', 'patients.id')
+                ->where('appointments.doctor_id', $doctorId)
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->join('users', 'users.id', '=', 'patients.user_id')
+                        ->where('users.name', 'like', '%' . $search . '%');
+                })
+                ->with([
+                    'user',
+                    'appointments' => function ($query) use ($doctorId) {
+                        $query->where('doctor_id', $doctorId)
+                            ->with('doctor.user')
+                            ->latest('appointment_date')
+                            ->latest('appointment_time');
+                    },
+                ])
+                ->withCount([
+                    'appointments as appointment_history_count' => function ($query) use ($doctorId) {
+                        $query->where('doctor_id', $doctorId);
+                    },
+                ])
+                ->paginate(10)
+                ->withQueryString();
+
+            $listScope = 'my patients';
+        } elseif ($user?->role === 'patient') {
+            $patients = Patient::with('user')
+                ->whereKey($user->patient?->id)
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->whereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', '%' . $search . '%');
+                    });
+                })
+                ->paginate(10)
+                ->withQueryString();
+
+            $listScope = 'your profile';
+        } else {
+            $patients = Patient::with('user')
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->whereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', '%' . $search . '%');
+                    });
+                })
+                ->paginate(10)
+                ->withQueryString();
+        }
+
+        return view('patient.index', compact('patients', 'listScope'));
     }
 
     public function create()
@@ -75,7 +131,33 @@ class PatientController extends Controller
 
     public function show(Patient $patient)
     {
-        $patient->load('user');
+        $user = Auth::user();
+
+        if ($user?->role === 'doctor') {
+            $doctorId = $user->doctor?->id;
+
+            $isLinkedPatient = $patient->appointments()
+                ->where('doctor_id', $doctorId)
+                ->exists();
+
+            abort_unless($isLinkedPatient, 403);
+
+            $patient->load([
+                'user',
+                'appointments' => function ($query) use ($doctorId) {
+                    $query->where('doctor_id', $doctorId)
+                        ->with('doctor.user')
+                        ->latest('appointment_date')
+                        ->latest('appointment_time');
+                },
+            ]);
+        } elseif ($user?->role === 'patient') {
+            abort_unless($patient->id === $user->patient?->id, 403);
+            $patient->load('user');
+        } else {
+            $patient->load('user');
+        }
+
         return view('patient.show', compact('patient'));
     }
 
@@ -98,6 +180,8 @@ class PatientController extends Controller
 
     public function destroy(Patient $patient)
     {
+        abort_unless(Auth::user()?->role === 'admin', 403);
+
         $patient->delete();
         return redirect()->route('patients.index')->with('success', 'Patient deleted successfully.');
     }

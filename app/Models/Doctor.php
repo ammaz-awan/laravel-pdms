@@ -29,6 +29,18 @@ class Doctor extends Model
         return $this->hasMany(Appointment::class);
     }
 
+    public function patients()
+    {
+        return $this->belongsToMany(Patient::class, 'appointments')
+            ->withPivot(['appointment_date', 'appointment_time', 'status', 'notes', 'fee_snapshot'])
+            ->withTimestamps();
+    }
+
+    public function schedules()
+    {
+        return $this->hasMany(DoctorSchedule::class);
+    }
+
     public function ratings()
     {
         return $this->hasMany(Rating::class);

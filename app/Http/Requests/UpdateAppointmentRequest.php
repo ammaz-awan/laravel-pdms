@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateAppointmentRequest extends FormRequest
@@ -12,7 +11,7 @@ class UpdateAppointmentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->role === 'admin';
     }
 
     public function rules(): array
@@ -20,10 +19,10 @@ class UpdateAppointmentRequest extends FormRequest
         return [
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'required|exists:doctors,id',
-            'date' => 'required|date',
-            'time' => 'required|date_format:H:i',
-            'status' => 'in:pending,completed,cancelled',
-            'notes' => 'nullable|string',
+            'appointment_date' => 'required|date',
+            'appointment_time' => 'required|date_format:H:i',
+            'status' => 'required|in:pending,approved,cancelled',
+            'notes' => 'nullable|string|max:1000',
         ];
     }
 }

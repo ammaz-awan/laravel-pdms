@@ -6,14 +6,33 @@ use Illuminate\Database\Eloquent\Model;
 
 class Appointment extends Model
 {
-    protected $fillable = ['patient_id', 'doctor_id', 'date', 'time', 'status', 'notes'];
+    protected $fillable = [
+        'patient_id',
+        'doctor_id',
+        'appointment_date',
+        'appointment_time',
+        'status',
+        'fee_snapshot',
+        'notes',
+    ];
 
     protected function casts(): array
     {
         return [
-            'date' => 'date',
-            'time' => 'datetime:H:i',
+            'appointment_date' => 'date',
+            'appointment_time' => 'datetime:H:i',
+            'fee_snapshot' => 'decimal:2',
         ];
+    }
+
+    public function getDateAttribute()
+    {
+        return $this->appointment_date;
+    }
+
+    public function getTimeAttribute()
+    {
+        return $this->appointment_time;
     }
 
     public function patient()

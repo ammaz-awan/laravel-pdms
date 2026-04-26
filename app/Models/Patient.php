@@ -12,6 +12,7 @@ class Patient extends Model
     {
         return [
             'is_payment_method_verified' => 'boolean',
+            'is_verified' => 'boolean',
         ];
     }
 
@@ -23,6 +24,13 @@ class Patient extends Model
     public function appointments()
     {
         return $this->hasMany(Appointment::class);
+    }
+
+    public function doctors()
+    {
+        return $this->belongsToMany(Doctor::class, 'appointments')
+            ->withPivot(['appointment_date', 'appointment_time', 'status', 'notes', 'fee_snapshot'])
+            ->withTimestamps();
     }
 
     public function ratings()

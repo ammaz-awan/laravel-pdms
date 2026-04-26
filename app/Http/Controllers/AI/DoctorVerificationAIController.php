@@ -58,7 +58,6 @@ $content = $data['output'][0]['content'][0]['text'] ?? null;
         $parsed = json_decode($content, true);
 
         if (!$parsed) {
-
            return redirect()->back()->with('error', 'AI failed to analyze');
         }
 

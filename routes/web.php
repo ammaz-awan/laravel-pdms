@@ -9,6 +9,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\DoctorScheduleController;
 use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\InvoiceController;
@@ -102,6 +103,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('payments', PaymentController::class);
     Route::resource('invoices', InvoiceController::class);
     Route::resource('ratings', RatingController::class);
+
     });
     
     Route::post('/stripe/create-intent', [PatientController::class, 'createIntent'])
@@ -125,4 +127,13 @@ Route::post('/doctor/update-verification', [DoctorController::class, 'updateVeri
     ->middleware('auth')
     ->name('doctor.updateVerification');
 
-
+Route::middleware(['auth'])->group(function () {
+    Route::get('/doctor/appointments', [AppointmentController::class, 'doctorAppointments'])->name('doctor.appointments');
+    Route::get('/doctor/my-patients', [DoctorController::class, 'myPatients'])->name('doctor.my-patients');
+    Route::post('/doctor/schedule', [DoctorScheduleController::class, 'store'])->name('doctor.schedule.store');
+    Route::get('/doctor/{doctor}/schedule', [DoctorScheduleController::class, 'getScheduleByDoctor'])->name('doctor.schedule.show');
+    Route::get('/admin/appointments', [AppointmentController::class, 'adminAppointments'])->name('admin.appointments');
+    Route::post('/appointments/book', [AppointmentController::class, 'store'])->name('appointments.book');
+    Route::post('/doctor/appointments/{appointment}/approve', [AppointmentController::class, 'approve'])->name('doctor.appointments.approve');
+    Route::post('/doctor/appointments/{appointment}/reject', [AppointmentController::class, 'reject'])->name('doctor.appointments.reject');
+});

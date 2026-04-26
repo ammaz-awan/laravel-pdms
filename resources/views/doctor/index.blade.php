@@ -7,7 +7,6 @@
     <div class="card-header">
         <div class="d-flex justify-content-between align-items-center">
             <span><i class="ti ti-stethoscope"></i> Doctor Management</span>
-            {{-- <a href="{{ route('doctors.create') }}" class="btn btn-sm btn-light"><i class="ti ti-plus"></i> Add Doctor</a> --}}
         </div>
     </div>
     <div class="card-body">
@@ -53,10 +52,17 @@
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ route('doctors.show', $doctor->id) }}" class="btn btn-info"><i class="ti ti-eye"></i></a>
-                                    <form action="{{ route('doctors.destroy', $doctor->id) }}" method="POST" style="display:inline;" class="delete-form">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="btn btn-danger" data-doctor-id="{{ $doctor->id }}"><i class="ti ti-trash"></i></button>
-                                    </form>
+                                    @if(auth()->user()->role === 'patient')
+                                        <a href="{{ route('doctors.show', $doctor->id) }}#appointment-booking-card" class="btn btn-primary" title="{{ $doctor->is_verified ? 'Book appointment' : 'Doctor is not verified yet' }}">
+                                            <i class="ti ti-calendar-plus"></i>
+                                        </a>
+                                    @endif
+                                    @if(auth()->user()->role === 'admin')
+                                        <form action="{{ route('doctors.destroy', $doctor->id) }}" method="POST" style="display:inline;" class="delete-form">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="btn btn-danger" data-doctor-id="{{ $doctor->id }}"><i class="ti ti-trash"></i></button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

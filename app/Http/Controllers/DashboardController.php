@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Appointment;
+use App\Models\DoctorSchedule;
 use App\Models\Payment;
 
 class DashboardController extends Controller
@@ -29,6 +30,10 @@ class DashboardController extends Controller
             return view('admin.dashboard', compact('stats', 'user'));
         } elseif ($user->role === 'doctor') {
             $doctorId = $user->doctor?->id;
+            $doctorSchedules = $doctorId
+                ? DoctorSchedule::where('doctor_id', $doctorId)->orderBy('available_date')->orderBy('start_time')->get()
+                : collect();
+
             $stats = [
                 'total_appointments' => $doctorId ? Appointment::where('doctor_id', $doctorId)->count() : 0,
                 'online_consultations' => 0,
@@ -41,15 +46,25 @@ class DashboardController extends Controller
                 'pre_visit_bookings' => 0,
                 'walkin_bookings' => 0,
                 'follow_ups' => 0,
-                'completed_appointments' => $doctorId ? Appointment::where('doctor_id', $doctorId)->where('status', 'completed')->count() : 0,
+                'approved_appointments' => $doctorId ? Appointment::where('doctor_id', $doctorId)->where('status', 'approved')->count() : 0,
                 'pending_appointments' => $doctorId ? Appointment::where('doctor_id', $doctorId)->where('status', 'pending')->count() : 0,
-                'upcoming_appointments' => $doctorId ? Appointment::with(['patient'])->where('doctor_id', $doctorId)->where('date', '>=', today())->orderBy('date')->take(3)->get() : collect(),
-                'recent_appointments' => $doctorId ? Appointment::with(['patient'])->where('doctor_id', $doctorId)->latest()->take(5)->get() : collect(),
+                'upcoming_appointments' => $doctorId ? Appointment::with(['patient.user'])->where('doctor_id', $doctorId)->where('appointment_date', '>=', today())->orderBy('appointment_date')->take(3)->get() : collect(),
+                'recent_appointments' => $doctorId ? Appointment::with(['patient.user'])->where('doctor_id', $doctorId)->latest()->take(5)->get() : collect(),
+                'my_patients' => $doctorId ? Patient::query()->select('patients.*')->distinct()
+                    ->join('appointments', 'appointments.patient_id', '=', 'patients.id')
+                    ->where('appointments.doctor_id', $doctorId)
+                    ->with('user')
+                    ->withCount(['appointments as appointment_history_count' => function($q) use ($doctorId) {
+                        $q->where('doctor_id', $doctorId);
+                    }])
+                    ->latest('patients.id')
+                    ->take(5)
+                    ->get() : collect(),
                 'top_patients' => $doctorId ? Patient::withCount(['appointments' => function($q) use ($doctorId) {
                     $q->where('doctor_id', $doctorId);
                 }])->having('appointments_count', '>', 0)->orderBy('appointments_count', 'desc')->take(5)->get() : collect(),
             ];
-            return view('doctor.dashboard', compact('stats', 'user'));
+            return view('doctor.dashboard', compact('stats', 'user', 'doctorSchedules'));
         } elseif ($user->role === 'patient') {
             $patientId = $user->patient?->id;
             $stats = [
@@ -74,7 +89,7 @@ class DashboardController extends Controller
                     $q->where('patient_id', $patientId);
                 })->with(['appointment.doctor'])->latest()->take(5)->get()->map(function($payment) {
                     return (object) [
-                        'doctor_name' => $payment->appointment->doctor->name ?? 'Doctor',
+                        'doctor_name' => $payment->appointment->doctor->user->name ?? 'Doctor',
                         'specialization' => $payment->appointment->doctor->specialization ?? 'Specialist',
                         'amount' => $payment->amount,
                         'status' => $payment->status ?? 'success'

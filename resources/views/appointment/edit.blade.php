@@ -23,22 +23,22 @@
             </div>
 
             <div class="mb-3">
-                <label for="date" class="form-label">Date *</label>
-                <input type="date" class="form-control @error('date') is-invalid @enderror" id="date" name="date" value="{{ old('date', $appointment->date->format('Y-m-d')) }}" required>
-                @error('date') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <label for="appointment_date" class="form-label">Date *</label>
+                <input type="date" class="form-control @error('appointment_date') is-invalid @enderror" id="appointment_date" name="appointment_date" value="{{ old('appointment_date', $appointment->appointment_date->format('Y-m-d')) }}" required>
+                @error('appointment_date') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-3">
-                <label for="time" class="form-label">Time *</label>
-                <input type="time" class="form-control @error('time') is-invalid @enderror" id="time" name="time" value="{{ old('time', $appointment->time->format('H:i')) }}" required>
-                @error('time') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <label for="appointment_time" class="form-label">Time *</label>
+                <input type="time" class="form-control @error('appointment_time') is-invalid @enderror" id="appointment_time" name="appointment_time" value="{{ old('appointment_time', \Carbon\Carbon::parse($appointment->appointment_time)->format('H:i')) }}" required>
+                @error('appointment_time') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-3">
                 <label for="status" class="form-label">Status</label>
                 <select class="form-control" id="status" name="status">
                     <option value="pending" {{ old('status', $appointment->status) == 'pending' ? 'selected' : '' }}>Pending</option>
-                    <option value="completed" {{ old('status', $appointment->status) == 'completed' ? 'selected' : '' }}>Completed</option>
+                    <option value="approved" {{ old('status', $appointment->status) == 'approved' ? 'selected' : '' }}>Approved</option>
                     <option value="cancelled" {{ old('status', $appointment->status) == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                 </select>
             </div>

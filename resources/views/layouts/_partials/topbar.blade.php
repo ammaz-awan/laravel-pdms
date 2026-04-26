@@ -55,7 +55,7 @@
                     <!-- AI Assistance -->
 
                     <!-- Appointment -->
-                    @if(auth()->user()->role === 'admin' || auth()->user()->role === 'doctor')
+                    @if(auth()->user()->role === 'patient')
 						<div class="header-item">
 							<div class="dropdown me-2">
 								<a href="{{ route('appointments.create') }}" class="btn topbar-link"><i class="ti ti-calendar-due"></i></a>

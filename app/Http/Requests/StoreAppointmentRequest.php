@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreAppointmentRequest extends FormRequest
@@ -12,18 +11,16 @@ class StoreAppointmentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->role === 'patient';
     }
 
     public function rules(): array
     {
         return [
-            'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'required|exists:doctors,id',
-            'date' => 'required|date|after_or_equal:today',
-            'time' => 'required|date_format:H:i',
-            'status' => 'in:pending,completed,cancelled',
-            'notes' => 'nullable|string',
+            'appointment_date' => 'required|date|after_or_equal:today',
+            'appointment_time' => 'required|date_format:H:i',
+            'notes' => 'nullable|string|max:1000',
         ];
     }
 }
