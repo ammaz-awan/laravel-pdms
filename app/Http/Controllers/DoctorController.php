@@ -95,7 +95,7 @@ class DoctorController extends Controller
             'certificate_path' => $certificatePath,
 
             // IMPORTANT LOGIC
-            'verification_status' => $isSkip ? 'pending' : 'pending',
+            'verification_status' => $isSkip ? 'not_submitted' : 'not_submitted',
             'is_verified' => 0,
             'rating_avg' => 0,
         ]);
