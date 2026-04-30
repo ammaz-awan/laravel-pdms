@@ -14,6 +14,11 @@ class Appointment extends Model
         'status',
         'fee_snapshot',
         'notes',
+        'payment_status',
+        'paid_at',
+        'payout_status',
+        'refunded_at',
+
     ];
 
     protected function casts(): array

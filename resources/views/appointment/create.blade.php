@@ -274,6 +274,7 @@
                 <div id="doctor-availability-calendar" style="min-height: 380px;"></div>
             </div>
         </div>
+       
     </div>
 </div>
 @endsection
@@ -501,5 +502,8 @@
 
             currentCalendar.render();
         }
+
+
+
     </script>
 @endsection

@@ -11,6 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
+use App\Models\Payment;
 
 class AppointmentController extends Controller
 {
@@ -92,10 +95,11 @@ class AppointmentController extends Controller
         $this->ensureDoctorCanReceiveBookings($doctor);
         $this->validateScheduleSlot($doctor, $request->appointment_date, $request->appointment_time);
 
-        $alreadyBooked = Appointment::where('doctor_id', $doctor->id)
-            ->whereDate('appointment_date', $request->appointment_date)
-            ->where('appointment_time', $request->appointment_time)
-            ->exists();
+                $alreadyBooked = Appointment::where('doctor_id', $doctor->id)
+                ->whereDate('appointment_date', $request->appointment_date)
+                ->where('appointment_time', $request->appointment_time)
+                ->whereNotIn('status', ['cancelled'])
+                ->exists();
 
         if ($alreadyBooked) {
             throw ValidationException::withMessages([
@@ -297,4 +301,115 @@ class AppointmentController extends Controller
 
         abort(403);
     }
+
+
+
+    private function stripe()
+{
+    return new \Stripe\StripeClient(config('services.stripe.secret'));
 }
+
+
+public function createPaymentIntent(Appointment $appointment)
+{
+    if (auth::user()->role !== 'patient') {
+        abort(403);
+    }
+
+    if ($appointment->status !== 'approved') {
+        return response()->json(['error' => 'Appointment not approved'], 400);
+    }
+
+    if ($appointment->payment_status === 'paid') {
+        return response()->json(['error' => 'Already paid'], 400);
+    }
+
+    \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+
+    $amount = (float) $appointment->fee_snapshot * 100;
+
+  $existingPayment = Payment::where('appointment_id', $appointment->id)->first();
+
+        if ($existingPayment && $existingPayment->payment_intent_id) {
+            $intent = \Stripe\PaymentIntent::retrieve($existingPayment->payment_intent_id);
+        } else {
+            $intent = \Stripe\PaymentIntent::create([
+                'amount' => (int) $amount,
+                'currency' => 'usd',
+                'metadata' => [
+                    'appointment_id' => $appointment->id
+                ]
+            ]);
+        }
+
+    Payment::updateOrCreate(
+        ['appointment_id' => $appointment->id],
+        [
+            'payment_intent_id' => $intent->id,
+            'amount' => $appointment->fee_snapshot,
+            'status' => 'unpaid'
+        ]
+    );
+
+    return response()->json([
+        'clientSecret' => $intent->client_secret
+    ]);
+}
+
+public function confirmPayment(Request $request)
+{
+    \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+
+    $intent = \Stripe\PaymentIntent::retrieve($request->payment_intent_id);
+
+    if ($intent->status !== 'succeeded') {
+        return response()->json(['error' => 'Payment not completed'], 400);
+    }
+
+    $appointment = Appointment::findOrFail($intent->metadata->appointment_id);
+
+    // IMPORTANT FIX
+        $appointment->payment_status = 'paid';
+        $appointment->paid_at = now();
+        $appointment->save();
+
+    Payment::where('appointment_id', $appointment->id)
+    ->update([
+        'status' => 'paid',
+        'payment_intent_id' => $intent->id
+    ]);
+
+    return response()->json(['success' => true]);
+}
+
+private function canJoinCall(Appointment $appointment)
+{
+    return $appointment->status === 'approved'
+        && $appointment->payment_status === 'paid';
+}
+
+
+public function refundPayment(Appointment $appointment)
+{
+    if ($appointment->payment_status !== 'paid') {
+        return back()->with('error', 'Not paid yet');
+    }
+
+    $payment = Payment::where('appointment_id', $appointment->id)->first();
+
+    $this->stripe()->refunds->create([
+        'payment_intent' => $payment->payment_intent_id
+    ]);
+
+    $appointment->update([
+        'payment_status' => 'refunded',
+        'refunded_at' => now(),
+        'status' => 'cancelled'
+    ]);
+
+    return back()->with('success', 'Refund issued');
+}
+
+    }
+
+

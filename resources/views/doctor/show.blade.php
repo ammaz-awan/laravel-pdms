@@ -248,6 +248,30 @@
             grid-template-columns: 1fr;
         }
     }
+    /* 🔥 Allow full event text (no cut-off) */
+#doctor-view-calendar .fc .fc-daygrid-event {
+    white-space: normal !important;
+    overflow: visible !important;
+    display: block !important;
+}
+
+/* 🔥 Prevent clipping inside day cell */
+#doctor-view-calendar .fc .fc-daygrid-day-frame {
+    overflow: visible !important;
+}
+
+/* 🔥 Allow event container to expand */
+#doctor-view-calendar .fc .fc-daygrid-day-events {
+    overflow: visible !important;
+    max-height: none !important;
+}
+
+/* 🔥 Improve readability */
+#doctor-view-calendar .fc-event-title,
+#doctor-view-calendar .fc-event-time {
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
 </style>
 @endsection
 
@@ -536,36 +560,54 @@
 
             allowedDates = data.dates || [];
 
-            const calendar = new FullCalendar.Calendar(document.getElementById('doctor-view-calendar'), {
-                initialView: 'dayGridMonth',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek'
-                },
-                dayCellDidMount: function(info) {
-                    info.el.classList.add(allowedDates.includes(info.dateStr) ? 'fc-day-available' : 'fc-day-unavailable');
-                },
-                datesSet: function() {
-                    updateSelectedCalendarDay(document.getElementById('doctor-view-calendar'));
-                },
-                events: data.events || [],
-                dateClick: function(info) {
-                    if (!bookingAllowed || !allowedDates.includes(info.dateStr)) {
-                        return;
+        const calendar = new FullCalendar.Calendar(document.getElementById('doctor-view-calendar'), {
+                    initialView: 'dayGridMonth',
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek'
+                    },
+
+                    events: data.events || [],
+
+                    eventContent: function(arg) {
+                        return {
+                            html: `
+                                <div style="font-size:12px; font-weight:600;">
+                                    🕒 
+                                </div>
+                            `
+                        };
+                    },
+
+                    dayCellDidMount: function(info) {
+                        info.el.classList.add(
+                            allowedDates.includes(info.dateStr)
+                                ? 'fc-day-available'
+                                : 'fc-day-unavailable'
+                        );
+                    },
+
+                    datesSet: function() {
+                        updateSelectedCalendarDay(document.getElementById('doctor-view-calendar'));
+                    },
+
+                    dateClick: function(info) {
+                        if (!bookingAllowed || !allowedDates.includes(info.dateStr)) {
+                            return;
+                        }
+
+                        if (dateInput) {
+                            dateInput.value = info.dateStr;
+                        }
+
+                        selectedCalendarDate = info.dateStr;
+                        updateSelectedCalendarDay(document.getElementById('doctor-view-calendar'));
+                        loadSlots(info.dateStr);
                     }
+                });
 
-                    if (dateInput) {
-                        dateInput.value = info.dateStr;
-                    }
-
-                    selectedCalendarDate = info.dateStr;
-                    updateSelectedCalendarDay(document.getElementById('doctor-view-calendar'));
-                    loadSlots(info.dateStr);
-                }
-            });
-
-            calendar.render();
+             calendar.render();
 
             if (dateInput) {
                 dateInput.min = new Date().toISOString().split('T')[0];

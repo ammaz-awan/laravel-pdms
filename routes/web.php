@@ -106,7 +106,7 @@ Route::middleware(['auth'])->group(function () {
 
     });
     
-    Route::post('/stripe/create-intent', [PatientController::class, 'createIntent'])
+Route::post('/stripe/create-intent', [PatientController::class, 'createIntent'])
     ->middleware('throttle:10,1');
 Route::post('/stripe/register-intent', [PatientController::class, 'registerIntent'])
     ->middleware('throttle:10,1');    
@@ -136,4 +136,23 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/appointments/book', [AppointmentController::class, 'store'])->name('appointments.book');
     Route::post('/doctor/appointments/{appointment}/approve', [AppointmentController::class, 'approve'])->name('doctor.appointments.approve');
     Route::post('/doctor/appointments/{appointment}/reject', [AppointmentController::class, 'reject'])->name('doctor.appointments.reject');
+});
+
+
+
+
+Route::middleware(['auth'])->group(function () {
+
+    Route::post('/appointments/{appointment}/payment-intent',
+        [AppointmentController::class, 'createPaymentIntent']
+    )->name('appointments.payment.intent');
+
+    Route::post('/appointments/payment/confirm',
+        [AppointmentController::class, 'confirmPayment']
+    )->name('appointments.payment.confirm');
+
+    Route::post('/appointments/{appointment}/refund',
+        [AppointmentController::class, 'refundPayment']
+    )->name('appointments.payment.refund');
+
 });

@@ -67,7 +67,7 @@
 
         <div class="d-flex gap-2">
             {{-- <a href="{{ route('patients.edit', $patient->id) }}" class="btn btn-primary"><i class="ti ti-pencil"></i> Edit</a> --}}
-            <a href="{{ route('patients.index') }}" class="btn btn-secondary"><i class="ti ti-arrow-left"></i> Back</a>
+            <a href="{{ route('patients.index') }}" class="btn btn-primary"><i class="ti ti-arrow-left"></i> Back</a>
         </div>
     </div>
 </div>
