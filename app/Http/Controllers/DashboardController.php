@@ -8,6 +8,8 @@ use App\Models\Patient;
 use App\Models\Appointment;
 use App\Models\DoctorSchedule;
 use App\Models\Payment;
+use App\Models\Prescription;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -67,34 +69,54 @@ class DashboardController extends Controller
             return view('doctor.dashboard', compact('stats', 'user', 'doctorSchedules'));
         } elseif ($user->role === 'patient') {
             $patientId = $user->patient?->id;
+
+            // Find any appointment with an active call (started within last 30 min)
+            $activeCallAppt = $patientId ? Appointment::with(['doctor.user'])
+                ->where('patient_id', $patientId)
+                ->where('status', 'approved')
+                ->where('payment_status', 'paid')
+                ->whereNotNull('call_started_at')
+                ->where('call_started_at', '>=', Carbon::now()->subSeconds(1800))
+                ->first() : null;
+
             $stats = [
                 'total_appointments' => $patientId ? Appointment::where('patient_id', $patientId)->count() : 0,
-                'online_consultations' => 0,
-                'blood_pressure' => '120/80', // This would come from medical records
-                'heart_rate' => 72, // This would come from medical records
-                'weight' => 70, // This would come from medical records
-                'height' => 170, // This would come from medical records
-                'bmi' => '22.5', // This would come from medical records
-                'pulse' => 72, // This would come from medical records
-                'spo2' => 98, // This would come from medical records
-                'temperature' => 98.6, // This would come from medical records
+                'online_consultations' => $patientId ? Appointment::where('patient_id', $patientId)->whereNotNull('agora_channel')->count() : 0,
+                'blood_pressure' => '120/80',
+                'heart_rate' => 72,
+                'weight' => null,
+                'height' => null,
+                'bmi' => null,
+                'pulse' => null,
+                'spo2' => null,
+                'temperature' => null,
                 'my_doctors' => $patientId ? Doctor::whereHas('appointments', function($q) use ($patientId) {
                     $q->where('patient_id', $patientId);
-                })->withCount(['appointments' => function($q) use ($patientId) {
+                })->with('user')->withCount(['appointments as appointments_count' => function($q) use ($patientId) {
                     $q->where('patient_id', $patientId);
                 }])->get() : collect(),
-                'prescriptions' => collect(), // This would come from prescriptions table
-                'recent_activities' => collect(), // This would come from activities/medical records
+                'prescriptions' => $patientId ? Prescription::where('patient_id', $patientId)
+                    ->with(['doctor.user'])
+                    ->latest()
+                    ->take(5)
+                    ->get() : collect(),
+                'upcoming_appointments' => $patientId ? Appointment::with(['doctor.user'])
+                    ->where('patient_id', $patientId)
+                    ->where('appointment_date', '>=', today())
+                    ->whereIn('status', ['approved', 'pending'])
+                    ->orderBy('appointment_date')
+                    ->orderBy('appointment_time')
+                    ->take(5)
+                    ->get() : collect(),
+                'recent_appointments' => $patientId ? Appointment::with(['doctor.user'])
+                    ->where('patient_id', $patientId)
+                    ->latest()
+                    ->take(10)
+                    ->get() : collect(),
+                'active_call_appointment' => $activeCallAppt,
                 'recent_transactions' => $patientId ? Payment::whereHas('appointment', function($q) use ($patientId) {
                     $q->where('patient_id', $patientId);
-                })->with(['appointment.doctor'])->latest()->take(5)->get()->map(function($payment) {
-                    return (object) [
-                        'doctor_name' => $payment->appointment->doctor->user->name ?? 'Doctor',
-                        'specialization' => $payment->appointment->doctor->specialization ?? 'Specialist',
-                        'amount' => $payment->amount,
-                        'status' => $payment->status ?? 'success'
-                    ];
-                }) : collect(),
+                })->with(['appointment.doctor.user'])->latest()->take(5)->get() : collect(),
             ];
             return view('patient.dashboard', compact('stats', 'user'));
         }

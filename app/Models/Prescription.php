@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Prescription extends Model
 {
-    protected $fillable = ['appointment_id', 'doctor_id', 'patient_id', 'notes', 'medicines'];
+    protected $fillable = ['appointment_id', 'doctor_id', 'patient_id', 'diagnosis', 'notes', 'medicines'];
 
     protected function casts(): array
     {

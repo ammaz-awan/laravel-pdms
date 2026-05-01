@@ -18,7 +18,10 @@ class Appointment extends Model
         'paid_at',
         'payout_status',
         'refunded_at',
-
+        'call_started_at',
+        'completed_at',
+        'agora_channel',
+        'agora_uid',
     ];
 
     protected function casts(): array
@@ -27,6 +30,10 @@ class Appointment extends Model
             'appointment_date' => 'date',
             'appointment_time' => 'datetime:H:i',
             'fee_snapshot' => 'decimal:2',
+            'call_started_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'paid_at' => 'datetime',
+            'refunded_at' => 'datetime',
         ];
     }
 

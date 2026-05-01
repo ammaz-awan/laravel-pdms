@@ -41,7 +41,51 @@ class AppointmentController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('patient.user', fn($u) => $u->where('name', 'like', "%{$search}%"))
+                  ->orWhereHas('doctor.user',  fn($u) => $u->where('name', 'like', "%{$search}%"));
+            });
+        }
+
         $appointments = $query->paginate(10)->withQueryString();
+
+        // AJAX request: return JSON for dynamic table rendering
+        if ($request->expectsJson()) {
+            $userRole = $user->role;
+            $rows = $appointments->map(function ($a) use ($userRole) {
+                $statusColor = match($a->status) {
+                    'approved'  => 'success',
+                    'cancelled' => 'danger',
+                    default     => 'warning',
+                };
+                return [
+                    'id'           => $a->id,
+                    'doctor'       => $a->doctor->user->name,
+                    'patient'      => $a->patient->user->name,
+                    'date'         => $a->appointment_date->format('M d, Y'),
+                    'time'         => \Carbon\Carbon::parse($a->appointment_time)->format('h:i A'),
+                    'fee'          => '$' . number_format($a->fee_snapshot ?? $a->doctor->fees, 2),
+                    'status'       => $a->status,
+                    'status_color' => $statusColor,
+                    'show_url'     => route('appointments.show', $a->id),
+                    'edit_url'     => $userRole === 'admin' ? route('appointments.edit', $a->id) : null,
+                    'is_pending'   => $a->status === 'pending',
+                    'approve_url'  => in_array($userRole, ['admin', 'doctor']) ? route('doctor.appointments.approve', $a->id) : null,
+                    'reject_url'   => in_array($userRole, ['admin', 'doctor']) ? route('doctor.appointments.reject', $a->id) : null,
+                    'delete_url'   => $userRole === 'admin' ? route('appointments.destroy', $a->id) : null,
+                ];
+            });
+
+            return response()->json([
+                'rows'        => $rows,
+                'total'       => $appointments->total(),
+                'current_page'=> $appointments->currentPage(),
+                'last_page'   => $appointments->lastPage(),
+                'links'       => (string) $appointments->withQueryString()->links(),
+            ]);
+        }
 
         return view('appointment.index', compact('appointments', 'listScope'));
     }

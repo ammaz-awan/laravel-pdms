@@ -55,4 +55,9 @@ return [
     'openai' => [
         'key' => env('OPENAI_API_KEY'),
     ],
+    
+    'agora' => [
+        'app_id' => env('AGORA_APP_ID', ''),
+        'app_certificate' => env('AGORA_APP_CERTIFICATE', ''),
+    ],
 ];

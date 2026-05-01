@@ -3,464 +3,402 @@
 @section('title', 'Patient Dashboard')
 
 @section('content')
-        <!-- Page Header -->
-        <div class="d-flex align-items-sm-center justify-content-between flex-wrap gap-2 mb-4">
+
+{{-- Page Header --}}
+<div class="d-flex align-items-sm-center justify-content-between flex-wrap gap-2 mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Patient Dashboard</h4>
+        <p class="text-muted mb-0">Welcome, {{ $user->name }}</p>
+    </div>
+    <div class="d-flex align-items-center flex-wrap gap-2">
+        <a href="{{ route('appointments.create') }}" class="btn btn-primary d-inline-flex align-items-center">
+            <i class="ti ti-plus me-1"></i>New Appointment
+        </a>
+    </div>
+</div>
+
+{{-- ===== TOP 4 STAT CARDS ===== --}}
+<div class="row">
+    <div class="col-xl-3 col-md-6 d-flex">
+        <div class="card flex-fill w-100 shadow-sm">
+           <div class="card-body">
+              <div class="d-flex align-items-center mb-3">
+                <span class="avatar bg-primary rounded-circle fs-20 d-inline-flex flex-shrink-0">
+                    <i class="ti ti-calendar-heart"></i>
+                </span>
+                <div class="ms-2">
+                    <p class="mb-1 text-truncate">Total Appointments</p>
+                    <h3 class="fw-bold mb-0">{{ $stats['total_appointments'] ?? 0 }}</h3>
+                </div>
+              </div>
+              <p class="fs-13 mb-0 text-muted">All time bookings</p>
+           </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 d-flex">
+        <div class="card flex-fill w-100 shadow-sm">
+           <div class="card-body">
+              <div class="d-flex align-items-center mb-3">
+                <span class="avatar bg-success rounded-circle fs-20 d-inline-flex flex-shrink-0">
+                    <i class="ti ti-video"></i>
+                </span>
+                <div class="ms-2">
+                    <p class="mb-1 text-truncate">Online Consultations</p>
+                    <h3 class="fw-bold mb-0">{{ $stats['online_consultations'] ?? 0 }}</h3>
+                </div>
+              </div>
+              <p class="fs-13 mb-0 text-muted">Video call sessions</p>
+           </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 d-flex">
+        <div class="card flex-fill w-100 shadow-sm">
+           <div class="card-body">
+              <div class="d-flex align-items-center mb-3">
+                <span class="avatar bg-danger rounded-circle fs-20 d-inline-flex flex-shrink-0">
+                    <i class="ti ti-heart-rate-monitor"></i>
+                </span>
+                <div class="ms-2">
+                    <p class="mb-1 text-truncate">Blood Pressure</p>
+                    <h3 class="fw-bold mb-0">{{ $stats['blood_pressure'] ?? '120/80' }}</h3>
+                </div>
+              </div>
+              <p class="fs-13 mb-0 text-muted">mmHg (last recorded)</p>
+           </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 d-flex">
+        <div class="card flex-fill w-100 shadow-sm">
+           <div class="card-body">
+              <div class="d-flex align-items-center mb-3">
+                <span class="avatar bg-warning rounded-circle fs-20 d-inline-flex flex-shrink-0">
+                    <i class="ti ti-heart"></i>
+                </span>
+                <div class="ms-2">
+                    <p class="mb-1 text-truncate">Heart Rate</p>
+                    <h3 class="fw-bold mb-0">{{ $stats['heart_rate'] ?? 72 }}</h3>
+                </div>
+              </div>
+              <p class="fs-13 mb-0 text-muted">bpm (last recorded)</p>
+           </div>
+        </div>
+    </div>
+</div>
+
+{{-- ===== UPCOMING CALLS BANNER (only if there's a live/upcoming call) ===== --}}
+@if(isset($stats['active_call_appointment']))
+    @php $activeAppt = $stats['active_call_appointment']; @endphp
+    <div class="alert alert-success d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3" role="alert">
+        <div class="d-flex align-items-center gap-2">
+            <i class="ti ti-video fs-20"></i>
             <div>
-                <h4 class="fw-bold mb-0">Patient Dashboard</h4>
-            </div>
-            <div class="d-flex align-items-center flex-wrap gap-2">
-               <a href="{{ route('appointments.create') }}" class="btn btn-primary d-inline-flex align-items-center"><i class="ti ti-plus me-1"></i>New Appointment</a>
+                <strong>Active Call!</strong>
+                Dr. {{ $activeAppt->doctor->user->name }} is waiting —
+                {{ $activeAppt->appointment_date->format('d M') }}
+                {{ \Carbon\Carbon::parse($activeAppt->appointment_time)->format('h:i A') }}
             </div>
         </div>
-        <!-- End Page Header -->
+        <a href="{{ route('appointments.call', $activeAppt->id) }}" class="btn btn-success btn-sm">
+            <i class="ti ti-video me-1"></i>Join Now
+        </a>
+    </div>
+@endif
 
-        <!-- row start -->
-        <div class="row">
-            <!-- col start -->
-            <div class="col-xl-3 col-md-6 d-flex">
-                <div class="card flex-fill w-100 shadow-sm">
-                   <div class="card-body">
-                      <div class="d-flex align-items-center mb-4">
-                        <span class="avatar bg-primary rounded-circle fs-20 d-inline-flex flex-shrink-0"><i class="ti ti-calendar-heart"></i></span>
-                        <div class="ms-2">
-                            <p class="mb-1 text-truncate">Total Appointments</p>
-                            <h3 class="fw-bold mb-0">{{ $stats['total_appointments'] ?? 0 }}</h3>
-                        </div>
-                      </div>
-                      <div class="d-flex align-items-center">
-                        <span class="badge fw-medium bg-success flex-shrink-0 me-2">+95%</span>
-                        <p class="fs-13 mb-0">in last 7 Days </p>
-                      </div>
-                   </div>
-                </div>
-            </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col-xl-3 col-md-6 d-flex">
-                <div class="card flex-fill w-100 shadow-sm">
-                   <div class="card-body">
-                      <div class="d-flex align-items-center mb-4">
-                        <span class="avatar bg-danger rounded-circle fs-20 d-inline-flex flex-shrink-0"><i class="ti ti-users"></i></span>
-                        <div class="ms-2">
-                            <p class="mb-1 text-truncate">Online Consultations</p>
-                            <h3 class="fw-bold mb-0">{{ $stats['online_consultations'] ?? 0 }}</h3>
-                        </div>
-                      </div>
-                      <div class="d-flex align-items-center">
-                        <span class="badge fw-medium bg-danger flex-shrink-0 me-2">-15%</span>
-                        <p class="fs-13 mb-0">in last 7 Days</p>
-                      </div>
-                   </div>
-                </div>
-            </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col-xl-3 col-md-6 d-flex">
-                <div class="card flex-fill w-100 shadow-sm">
-                   <div class="card-body">
-                      <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div>
-                            <p class="mb-1 text-truncate">Blood Pressure</p>
-                            <span class="badge fw-medium bg-success flex-shrink-0 me-2">+95%</span>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            <h3 class="fw-bold mb-0 me-1">{{ $stats['blood_pressure'] ?? '120/80' }}</h3>
-                            <p class="mb-0">mmHg</p>
-                        </div>
-                      </div>
-                      <div id="s-col-8" class="chart-set"></div>
-                   </div>
-                </div>
-            </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col-xl-3 col-md-6 d-flex">
-                <div class="card flex-fill w-100 shadow-sm">
-                   <div class="card-body">
-                      <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div>
-                            <p class="mb-1 text-truncate">Heart Rate</p>
-                            <span class="badge fw-medium bg-success flex-shrink-0 me-2">+95%</span>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            <h3 class="fw-bold mb-0 me-1">{{ $stats['heart_rate'] ?? 72 }}</h3>
-                            <p class="mb-0">bpm</p>
-                        </div>
-                      </div>
-                      <div id="s-col-9" class="chart-set"></div>
-                   </div>
-                </div>
-            </div>
-            <!-- col end -->
-        </div>
-        <!-- row start -->
-
-        <!-- row start -->
-        <div class="row">
-            <!-- col start -->
-            <div class="col-xl-4 col-lg-6 d-flex">
-                <div class="card shadow-sm flex-fill w-100">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="fw-bold mb-0">My Doctors</h5>
-                    </div>
-                    <div class="card-body">
-                        @if(isset($stats['my_doctors']) && count($stats['my_doctors']) > 0)
-                            @foreach($stats['my_doctors'] as $doctor)
-                            <div class="d-flex align-items-center justify-content-between mb-3">
-                                <div class="d-flex align-items-center">
-                                    <a href="javascript:void(0);" class="avatar me-2 flex-shrink-0">
-                                        <img src="{{ asset('assets/img/doctors/doctor-01.jpg') }}" alt="img" class="rounded-circle">
-                                    </a>
-                                    <div>
-                                      <h6 class="fs-14 mb-1 text-truncate"><a href="javascript:void(0);" class="fw-semibold">{{ $doctor->name ?? 'Doctor' }}</a></h6>
-                                      <p class="mb-0 fs-13 text-truncate">{{ $doctor->specialization ?? 'General' }}</p>
-                                    </div>
-                                </div>
-                                <span class="badge fw-medium badge-soft-danger border border-danger flex-shrink-0">{{ $doctor->appointment_count ?? 0 }} Bookings</span>
-                            </div>
-                            @endforeach
-                        @else
-                            <p class="text-center text-muted">No doctors found</p>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col-xl-4 col-lg-6 d-flex">
-                <div class="card shadow-sm flex-fill w-100">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="fw-bold mb-0">Prescriptions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="overflow-auto">
-                            @if(isset($stats['prescriptions']) && count($stats['prescriptions']) > 0)
-                                @foreach($stats['prescriptions'] as $prescription)
-                                <div class="d-flex align-items-center justify-content-between mb-3">
-                                    <div class="d-flex align-items-center flex-shrink-0">
-                                        <a href="javascript:void(0);" class="avatar me-2 flex-shrink-0 bg-light rounded-circle text-dark">
-                                           <i class="ti ti-file-description text-body fs-20"></i>
-                                        </a>
-                                        <div>
-                                          <h6 class="fs-14 mb-1 text-truncate"><a href="javascript:void(0);" class="fw-semibold">{{ $prescription->title ?? 'Prescription' }}</a></h6>
-                                          <p class="mb-0 fs-13 text-truncate">{{ $prescription->date ? \Carbon\Carbon::parse($prescription->date)->format('d M Y') : 'N/A' }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center shadow-sm me-2 p-1"><i class="ti ti-eye"></i></a>
-                                        <a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center shadow-sm p-1"><i class="ti ti-download"></i></a>
-                                    </div>
-                                </div>
-                                @endforeach
-                            @else
-                                <p class="text-center text-muted">No prescriptions found</p>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col-xl-4 d-flex">
-                <div class="card shadow-sm flex-fill w-100">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="fw-bold mb-0">Recent Activity</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="recent-activity">
-                            @if(isset($stats['recent_activities']) && count($stats['recent_activities']) > 0)
-                                @foreach($stats['recent_activities'] as $activity)
-                                <div class="d-flex align-items-center mb-3">
-                                    <span><i class="ti ti-point-filled fs-24 text-{{ $activity->type ?? 'success' }}"></i></span>
-                                    <div class="ms-2">
-                                      <p class="mb-1 text-truncate">{{ $activity->description ?? 'Activity' }}</p>
-                                      <p class="fs-13 mb-0">{{ $activity->date ? \Carbon\Carbon::parse($activity->date)->format('d M Y, h:i A') : 'N/A' }}</p>
-                                    </div>
-                                </div>
-                                @endforeach
-                            @else
-                                <div class="d-flex align-items-center mb-3">
-                                    <span><i class="ti ti-point-filled fs-24 text-success"></i></span>
-                                    <div class="ms-2">
-                                      <p class="mb-1 text-truncate">Appointment with <a href="javascript:void(0);" class="fw-semibold">Primary Care Physician</a></p>
-                                      <p class="fs-13 mb-0">24 Mar 2025, 10:55 AM</p>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center mb-3">
-                                    <span><i class="ti ti-point-filled fs-24 text-danger"></i></span>
-                                    <div class="ms-2">
-                                      <p class="mb-1 text-truncate"><a href="javascript:void(0);" class="fw-semibold">Blood Pressure Check</a> (Home Monitoring)</p>
-                                      <p class="fs-13 mb-0">24 Apr 2025, 11:00 AM</p>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center mb-3">
-                                    <span><i class="ti ti-point-filled fs-24 text-warning"></i></span>
-                                    <div class="ms-2">
-                                      <p class="mb-1"><a href="javascript:void(0);" class="fw-semibold">Physical Therapy Session</a> Knee strengthening exercises</p>
-                                      <p class="fs-13 mb-0">24 Apr 2025, 11:00 AM</p>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center mb-0">
-                                    <span><i class="ti ti-point-filled fs-24 text-info"></i></span>
-                                    <div class="ms-2">
-                                      <p class="mb-1"><a href="javascript:void(0);" class="fw-semibold">Discuss dietary changes</a> to manage blood sugar levels and weight</p>
-                                      <p class="fs-13 mb-0">24 Apr 2025, 11:00 AM</p>
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- col end -->
-        </div>
-        <!-- row end -->
-
-        <!-- card start -->
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h5 class="fw-bold mb-0">Vitals</h5>
+{{-- ===== MY DOCTORS + PRESCRIPTIONS + RECENT ACTIVITY ===== --}}
+<div class="row">
+    {{-- My Doctors --}}
+    <div class="col-xl-4 col-lg-6 d-flex">
+        <div class="card shadow-sm flex-fill w-100">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold mb-0">My Doctors</h5>
             </div>
             <div class="card-body">
-                <!-- row start -->
-                <div class="row row-gap-3 row-cols-1 row-cols-xl-6 row-cols-md-3 row-cols-sm-2">
-                    <!-- col start -->
-                    <div class="col d-flex">
-                        <div class="p-3 border shadow-sm flex-fill w-100 rounded-2">
-                            <div class="d-flex align-items-center">
-                                <span class="avatar bg-primary rounded-circle flex-shrink-0"><img src="{{ asset('assets/img/icons/weight.svg') }}" alt="img" class="w-auto h-auto"></span>
-                                <div class="ms-1">
-                                    <p class="mb-1">Weight</p>
-                                    <p class="text-truncate"><span class="fs-18 fw-bold text-dark">{{ $stats['weight'] ?? 70 }}</span> Kg</p>
-                                </div>
+                @forelse(($stats['my_doctors'] ?? collect()) as $doctor)
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="avatar me-2 flex-shrink-0 bg-light rounded-circle d-inline-flex align-items-center justify-content-center">
+                                <i class="ti ti-stethoscope text-primary fs-18"></i>
+                            </span>
+                            <div>
+                                <h6 class="fs-14 mb-1 text-truncate fw-semibold">Dr. {{ $doctor->user->name ?? 'Doctor' }}</h6>
+                                <p class="mb-0 fs-13 text-muted text-truncate">{{ $doctor->specialization ?? 'General' }}</p>
                             </div>
                         </div>
+                        <span class="badge fw-medium badge-soft-danger border border-danger flex-shrink-0">
+                            {{ $doctor->appointments_count ?? 0 }} Bookings
+                        </span>
                     </div>
-                    <!-- col end -->
-
-                    <!-- col start -->
-                    <div class="col d-flex">
-                        <div class="p-3 border shadow-sm flex-fill w-100 rounded-2">
-                            <div class="d-flex align-items-center">
-                                <span class="avatar bg-primary rounded-circle flex-shrink-0"><img src="{{ asset('assets/img/icons/rotate-left.svg') }}" alt="img" class="w-auto h-auto"></span>
-                                <div class="ms-1">
-                                    <p class="mb-1">Height</p>
-                                    <p class="text-truncate"><span class="fs-18 fw-bold text-dark">{{ $stats['height'] ?? 170 }}</span> Cm</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- col end -->
-
-                    <!-- col start -->
-                    <div class="col d-flex">
-                        <div class="p-3 border shadow-sm flex-fill w-100 rounded-2">
-                            <div class="d-flex align-items-center">
-                                <span class="avatar bg-primary rounded-circle flex-shrink-0"><img src="{{ asset('assets/img/icons/user-cirlce-add.svg') }}" alt="img" class="w-auto h-auto"></span>
-                                <div class="ms-1">
-                                    <p class="mb-1">BMI</p>
-                                    <p class="text-truncate"><span class="fs-18 fw-bold text-dark">{{ $stats['bmi'] ?? '22.5' }}</span> kg/cm</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- col end -->
-
-                    <!-- col start -->
-                    <div class="col d-flex">
-                        <div class="p-3 border shadow-sm flex-fill w-100 rounded-2">
-                            <div class="d-flex align-items-center">
-                                <span class="avatar bg-primary rounded-circle flex-shrink-0"><img src="{{ asset('assets/img/icons/driver-2.svg') }}" alt="img" class="w-auto h-auto"></span>
-                                <div class="ms-1">
-                                    <p class="mb-1">Pulse</p>
-                                    <p class="text-truncate"><span class="fs-18 fw-bold text-dark">{{ $stats['pulse'] ?? 72 }}</span></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- col end -->
-
-                    <!-- col start -->
-                    <div class="col d-flex">
-                        <div class="p-3 border shadow-sm flex-fill w-100 rounded-2">
-                            <div class="d-flex align-items-center">
-                                <span class="avatar bg-primary rounded-circle flex-shrink-0"><img src="{{ asset('assets/img/icons/wind.svg') }}" alt="img" class="w-auto h-auto"></span>
-                                <div class="ms-1">
-                                    <p class="mb-1">SPO2</p>
-                                    <p class="text-truncate"><span class="fs-18 fw-bold text-dark">{{ $stats['spo2'] ?? 98 }}</span>%</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- col end -->
-
-                    <!-- col start -->
-                    <div class="col d-flex">
-                        <div class="p-3 border shadow-sm flex-fill w-100 rounded-2">
-                            <div class="d-flex align-items-center">
-                                <span class="avatar bg-primary rounded-circle flex-shrink-0"><img src="{{ asset('assets/img/icons/sun.svg') }}" alt="img" class="w-auto h-auto"></span>
-                                <div class="ms-1">
-                                    <p class="mb-1 text-truncate">Temprature</p>
-                                    <p class="text-truncate"><span class="fs-18 fw-bold text-dark">{{ $stats['temperature'] ?? 98.6 }}</span> F</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- col end -->
-                </div>
-                <!-- row end -->
+                @empty
+                    <p class="text-center text-muted py-3">No doctors found</p>
+                @endforelse
             </div>
         </div>
-        <!-- card end -->
+    </div>
 
-        <!-- row start -->
-        <div class="row">
-            <!-- col start -->
-            <div class="col-lg-6 d-flex">
-                <div class="card shadow-sm flex-fill w-100">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="fw-bold mb-0">Consultation By Department</h5>
-                        <div class="dropdown">
-                            <a href="javascript:void(0);" class="btn btn-sm px-2 border shadow-sm btn-outline-white d-inline-flex align-items-center" data-bs-toggle="dropdown">
-                                Monthly <i class="ti ti-chevron-down ms-1"></i>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" href="#">Monthly</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">Weekly</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">Yearly</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="card-body pb-0">
-                        <div id="s-col-10" class="chart-set"></div>
-                    </div>
-                </div>
+    {{-- Prescriptions --}}
+    <div class="col-xl-4 col-lg-6 d-flex">
+        <div class="card shadow-sm flex-fill w-100">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold mb-0">My Prescriptions</h5>
             </div>
-            <!-- col end -->
-
-            <!-- col start -->
-            <div class="col-lg-6 d-flex">
-                <div class="card shadow-sm flex-fill w-100">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="fw-bold mb-0">Recent Transactions</h5>
-                        <div class="dropdown">
-                            <a href="javascript:void(0);" class="btn btn-sm px-2 border shadow-sm btn-outline-white d-inline-flex align-items-center" data-bs-toggle="dropdown">
-                                Weekly <i class="ti ti-chevron-down ms-1"></i>
+            <div class="card-body">
+                @forelse(($stats['prescriptions'] ?? collect()) as $rx)
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center flex-shrink-0">
+                            <span class="avatar me-2 flex-shrink-0 bg-light rounded-circle d-inline-flex align-items-center justify-content-center">
+                                <i class="ti ti-file-description text-body fs-18"></i>
+                            </span>
+                            <div>
+                                <h6 class="fs-14 mb-1 text-truncate fw-semibold">
+                                    Dr. {{ $rx->doctor->user->name ?? 'Doctor' }}
+                                </h6>
+                                <p class="mb-0 fs-12 text-muted">{{ $rx->created_at->format('d M Y') }}</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <a href="{{ route('prescriptions.show', $rx->id) }}"
+                               class="btn btn-outline-white d-inline-flex align-items-center shadow-sm p-1">
+                                <i class="ti ti-eye"></i>
                             </a>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" href="#">Monthly</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">Weekly</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">Yearly</a>
-                                </li>
-                            </ul>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <!-- Table start -->
-                        <div class="table-responsive table-nowrap">
-                            <table class="table">
-                                <tbody>
-                                    @if(isset($stats['recent_transactions']) && count($stats['recent_transactions']) > 0)
-                                        @foreach($stats['recent_transactions'] as $transaction)
-                                        <tr class="border">
-                                            <td class="ps-0">
-                                                <div class="d-flex align-items-center">
-                                                    <a href="javascript:void(0);" class="avatar me-2">
-                                                        <img src="{{ asset('assets/img/doctors/doctor-06.jpg') }}" alt="img" class="rounded-circle">
-                                                    </a>
-                                                    <div>
-                                                      <h6 class="fs-14 mb-1"><a href="javascript:void(0);" class="fw-semibold">{{ $transaction->doctor_name ?? 'Doctor' }}</a></h6>
-                                                      <p class="mb-0 fs-13">{{ $transaction->specialization ?? 'Specialist' }}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <h6 class="fs-14 fw-semibold">Consultation Fees</h6>
-                                                <p class="fs-13">${{ $transaction->amount ?? 0 }}</p>
-                                            </td>
-                                            <td class="pe-0 text-end"><span class="badge fs-13 py-1 badge-soft-{{ $transaction->status == 'success' ? 'success' : 'danger' }} border border-{{ $transaction->status == 'success' ? 'success' : 'danger' }} rounded text-{{ $transaction->status == 'success' ? 'success' : 'danger' }} fw-medium">{{ ucfirst($transaction->status ?? 'pending') }}</span></td>
-                                        </tr>
-                                        @endforeach
-                                    @else
-                                        <tr class="border">
-                                            <td class="ps-0">
-                                                <div class="d-flex align-items-center">
-                                                    <a href="javascript:void(0);" class="avatar me-2">
-                                                        <img src="{{ asset('assets/img/doctors/doctor-06.jpg') }}" alt="img" class="rounded-circle">
-                                                    </a>
-                                                    <div>
-                                                      <h6 class="fs-14 mb-1"><a href="javascript:void(0);" class="fw-semibold">Dr. John Smith</a></h6>
-                                                      <p class="mb-0 fs-13">Neurosurgeon</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <h6 class="fs-14 fw-semibold">Consultation Fees</h6>
-                                                <p class="fs-13">$450</p>
-                                            </td>
-                                            <td class="pe-0 text-end"><span class="badge fs-13 py-1 badge-soft-success border border-success rounded text-success fw-medium">Success</span></td>
-                                        </tr>
-                                        <tr class="border">
-                                            <td class="ps-0">
-                                                <div class="d-flex align-items-center">
-                                                    <a href="javascript:void(0);" class="avatar me-2">
-                                                        <img src="{{ asset('assets/img/doctors/doctor-07.jpg') }}" alt="img" class="rounded-circle">
-                                                    </a>
-                                                    <div>
-                                                      <h6 class="fs-14 mb-1"><a href="javascript:void(0);" class="fw-semibold">Dr. Lisa White</a></h6>
-                                                      <p class="mb-0 fs-13">Oncologist</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <h6 class="fs-14 fw-semibold">Consultation Fees</h6>
-                                                <p class="fs-13">$350</p>
-                                            </td>
-                                            <td class="pe-0 text-end"><span class="badge fs-13 py-1 badge-soft-success border border-success rounded text-success fw-medium">Success</span></td>
-                                        </tr>
-                                        <tr class="border">
-                                            <td class="ps-0">
-                                                <div class="d-flex align-items-center">
-                                                    <a href="javascript:void(0);" class="avatar me-2">
-                                                        <img src="{{ asset('assets/img/doctors/doctor-08.jpg') }}" alt="img" class="rounded-circle">
-                                                    </a>
-                                                    <div>
-                                                      <h6 class="fs-14 mb-1"><a href="javascript:void(0);" class="fw-semibold">Dr. Patricia Brown</a></h6>
-                                                      <p class="mb-0 fs-13">Pulmonologist</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <h6 class="fs-14 fw-semibold">Consultation Fees</h6>
-                                                <p class="fs-13">$400</p>
-                                            </td>
-                                            <td class="pe-0 text-end"><span class="badge fs-13 py-1 badge-soft-danger border border-danger rounded text-danger fw-medium">Failed</span></td>
-                                        </tr>
-                                    @endif
-                                </tbody>
-                            </table>
-                        </div>
-                        <!-- Table end -->
-                    </div>
-                </div>
+                @empty
+                    <p class="text-center text-muted py-3">No prescriptions found</p>
+                @endforelse
             </div>
-            <!-- col end -->
         </div>
-        <!-- row end -->
+    </div>
+
+    {{-- Recent Appointments / Activity --}}
+    <div class="col-xl-4 d-flex">
+        <div class="card shadow-sm flex-fill w-100">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold mb-0">Upcoming Appointments</h5>
+                <a href="{{ route('appointments.index') }}" class="btn btn-sm btn-light">All</a>
+            </div>
+            <div class="card-body p-0">
+                @forelse(($stats['upcoming_appointments'] ?? collect()) as $appt)
+                    <div class="p-3 border-bottom">
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="avatar avatar-sm me-2 bg-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0">
+                                <i class="ti ti-stethoscope text-primary fs-14"></i>
+                            </span>
+                            <div>
+                                <h6 class="fs-14 fw-semibold mb-0">Dr. {{ $appt->doctor->user->name ?? 'Doctor' }}</h6>
+                                <p class="mb-0 fs-12 text-muted">{{ $appt->doctor->specialization ?? '' }}</p>
+                            </div>
+                        </div>
+                        <p class="fs-12 text-muted mb-2">
+                            <i class="ti ti-calendar me-1"></i>{{ $appt->appointment_date->format('d M Y') }}
+                            <i class="ti ti-clock ms-2 me-1"></i>{{ \Carbon\Carbon::parse($appt->appointment_time)->format('h:i A') }}
+                        </p>
+                        @php
+                            $patLive = $appt->call_started_at && \Carbon\Carbon::now()->lt($appt->call_started_at->addSeconds(1800));
+                        @endphp
+                        @if($patLive)
+                            <a href="{{ route('appointments.call', $appt->id) }}" class="btn btn-success btn-sm w-100">
+                                <i class="ti ti-video me-1"></i>Join Video Call
+                            </a>
+                        @elseif($appt->payment_status !== 'paid')
+                            <a href="{{ route('appointments.show', $appt) }}" class="btn btn-warning btn-sm w-100">
+                                <i class="ti ti-credit-card me-1"></i>Pay Now
+                            </a>
+                        @else
+                            <a href="{{ route('appointments.show', $appt) }}" class="btn btn-outline-white btn-sm w-100">
+                                <i class="ti ti-eye me-1"></i>View Details
+                            </a>
+                        @endif
+                    </div>
+                @empty
+                    <div class="p-4 text-center text-muted">
+                        <i class="ti ti-calendar-off fs-36 d-block mb-2 text-light-emphasis"></i>
+                        No upcoming appointments
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ===== VITALS ===== --}}
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="fw-bold mb-0">Vitals</h5>
+    </div>
+    <div class="card-body">
+        <div class="row row-gap-3 row-cols-2 row-cols-sm-3 row-cols-xl-6">
+            <div class="col d-flex">
+                <div class="p-3 border shadow-sm flex-fill w-100 rounded-2">
+                    <div class="d-flex align-items-center">
+                        <span class="avatar bg-primary rounded-circle flex-shrink-0">
+                            <img src="{{ asset('assets/img/icons/weight.svg') }}" alt="Weight" class="w-auto h-auto">
+                        </span>
+                        <div class="ms-1">
+                            <p class="mb-1">Weight</p>
+                            <p class="text-truncate mb-0"><span class="fs-18 fw-bold text-dark">{{ $stats['weight'] ?? '—' }}</span> Kg</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col d-flex">
+                <div class="p-3 border shadow-sm flex-fill w-100 rounded-2">
+                    <div class="d-flex align-items-center">
+                        <span class="avatar bg-primary rounded-circle flex-shrink-0">
+                            <img src="{{ asset('assets/img/icons/rotate-left.svg') }}" alt="Height" class="w-auto h-auto">
+                        </span>
+                        <div class="ms-1">
+                            <p class="mb-1">Height</p>
+                            <p class="text-truncate mb-0"><span class="fs-18 fw-bold text-dark">{{ $stats['height'] ?? '—' }}</span> Cm</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col d-flex">
+                <div class="p-3 border shadow-sm flex-fill w-100 rounded-2">
+                    <div class="d-flex align-items-center">
+                        <span class="avatar bg-primary rounded-circle flex-shrink-0">
+                            <img src="{{ asset('assets/img/icons/user-cirlce-add.svg') }}" alt="BMI" class="w-auto h-auto">
+                        </span>
+                        <div class="ms-1">
+                            <p class="mb-1">BMI</p>
+                            <p class="text-truncate mb-0"><span class="fs-18 fw-bold text-dark">{{ $stats['bmi'] ?? '—' }}</span> kg/cm</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col d-flex">
+                <div class="p-3 border shadow-sm flex-fill w-100 rounded-2">
+                    <div class="d-flex align-items-center">
+                        <span class="avatar bg-primary rounded-circle flex-shrink-0">
+                            <img src="{{ asset('assets/img/icons/driver-2.svg') }}" alt="Pulse" class="w-auto h-auto">
+                        </span>
+                        <div class="ms-1">
+                            <p class="mb-1">Pulse</p>
+                            <p class="text-truncate mb-0"><span class="fs-18 fw-bold text-dark">{{ $stats['pulse'] ?? '—' }}</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col d-flex">
+                <div class="p-3 border shadow-sm flex-fill w-100 rounded-2">
+                    <div class="d-flex align-items-center">
+                        <span class="avatar bg-primary rounded-circle flex-shrink-0">
+                            <img src="{{ asset('assets/img/icons/wind.svg') }}" alt="SPO2" class="w-auto h-auto">
+                        </span>
+                        <div class="ms-1">
+                            <p class="mb-1">SPO2</p>
+                            <p class="text-truncate mb-0"><span class="fs-18 fw-bold text-dark">{{ $stats['spo2'] ?? '—' }}</span>%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col d-flex">
+                <div class="p-3 border shadow-sm flex-fill w-100 rounded-2">
+                    <div class="d-flex align-items-center">
+                        <span class="avatar bg-primary rounded-circle flex-shrink-0">
+                            <img src="{{ asset('assets/img/icons/sun.svg') }}" alt="Temp" class="w-auto h-auto">
+                        </span>
+                        <div class="ms-1">
+                            <p class="mb-1 text-truncate">Temperature</p>
+                            <p class="text-truncate mb-0"><span class="fs-18 fw-bold text-dark">{{ $stats['temperature'] ?? '—' }}</span> F</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ===== RECENT TRANSACTIONS ===== --}}
+<div class="row">
+    <div class="col-12 d-flex">
+        <div class="card shadow-sm flex-fill w-100">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold mb-0">Recent Appointments</h5>
+                <a href="{{ route('appointments.index') }}" class="btn btn-sm btn-light">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive table-nowrap">
+                    <table class="table border align-middle">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Doctor</th>
+                                <th>Date &amp; Time</th>
+                                <th>Fees</th>
+                                <th>Payment</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse(($stats['recent_appointments'] ?? collect()) as $appt)
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="avatar avatar-sm me-2 bg-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0">
+                                                <i class="ti ti-stethoscope text-primary fs-14"></i>
+                                            </span>
+                                            <div>
+                                                <h6 class="fs-14 mb-0 fw-semibold">Dr. {{ $appt->doctor->user->name ?? 'Doctor' }}</h6>
+                                                <p class="mb-0 fs-12 text-muted">{{ $appt->doctor->specialization ?? '' }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="fs-13">
+                                        {{ $appt->appointment_date?->format('d M Y') }}<br>
+                                        <span class="text-muted">{{ \Carbon\Carbon::parse($appt->appointment_time)->format('h:i A') }}</span>
+                                    </td>
+                                    <td class="fw-semibold text-dark">${{ number_format($appt->fee_snapshot ?? 0, 2) }}</td>
+                                    <td>
+                                        @if($appt->payment_status === 'paid')
+                                            <span class="badge badge-soft-success border border-success fw-medium">Paid</span>
+                                        @elseif($appt->payment_status === 'refunded')
+                                            <span class="badge badge-soft-warning border border-warning fw-medium">Refunded</span>
+                                        @else
+                                            <span class="badge badge-soft-danger border border-danger fw-medium">Unpaid</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($appt->status === 'approved')
+                                            <span class="badge bg-success fw-medium">Approved</span>
+                                        @elseif($appt->status === 'cancelled')
+                                            <span class="badge bg-danger fw-medium">Cancelled</span>
+                                        @elseif($appt->status === 'completed')
+                                            <span class="badge bg-info fw-medium">Completed</span>
+                                        @else
+                                            <span class="badge bg-warning fw-medium">Pending</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @php
+                                            $rLive = $appt->call_started_at && \Carbon\Carbon::now()->lt($appt->call_started_at->addSeconds(1800));
+                                        @endphp
+                                        @if($rLive)
+                                            <a href="{{ route('appointments.call', $appt->id) }}" class="btn btn-sm btn-success">
+                                                <i class="ti ti-video me-1"></i>Join
+                                            </a>
+                                        @else
+                                            <a href="{{ route('appointments.show', $appt) }}" class="btn btn-sm btn-light">
+                                                <i class="ti ti-eye"></i>
+                                            </a>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No appointments yet</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 @endsection

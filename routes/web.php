@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Admin;
 use App\Models\Doctor;
 use App\Models\Patient;
+use App\Http\Controllers\AgoraCallController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\PatientController;
@@ -155,4 +156,37 @@ Route::middleware(['auth'])->group(function () {
         [AppointmentController::class, 'refundPayment']
     )->name('appointments.payment.refund');
 
+});
+
+// -----------------------------------------------------------------------
+// Video Call & Live Prescription Routes
+// -----------------------------------------------------------------------
+Route::middleware(['auth'])->group(function () {
+
+    // Doctor starts call
+    Route::post('/doctor/appointments/{id}/start-call', [AgoraCallController::class, 'startCall'])
+        ->name('doctor.appointments.start-call');
+
+    // Both doctor and patient join (renders video-call view)
+    Route::get('/appointments/{id}/join-call', [AgoraCallController::class, 'joinCall'])
+        ->name('appointments.call');
+
+    // Doctor ends call
+    Route::post('/appointments/{id}/end-call', [AgoraCallController::class, 'endCall'])
+        ->name('appointments.end-call');
+
+    // Call status polling (JSON) — used by the video call page to detect auto-end
+    Route::get('/appointments/{id}/call-status', [AgoraCallController::class, 'callStatus'])
+        ->name('appointments.call-status');
+
+    // Live prescription – doctor writes (POST), both read (GET)
+    Route::post('/appointments/{id}/prescription', [PrescriptionController::class, 'liveStore'])
+        ->name('appointments.prescription.store');
+
+    Route::get('/appointments/{id}/prescription', [PrescriptionController::class, 'liveShow'])
+        ->name('appointments.prescription.show');
+
+    // ── Dev-only debug routes (disabled automatically in production) ──
+    Route::get('/agora/debug-token', [AgoraCallController::class, 'debugToken'])
+        ->name('agora.debug-token');
 });

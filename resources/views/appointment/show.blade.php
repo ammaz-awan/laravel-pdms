@@ -79,6 +79,80 @@
             <a href="{{ route('appointments.index') }}" class="btn btn-primary">
                 <i class="ti ti-arrow-left"></i> Back
             </a>
+
+            {{-- ===== VIDEO CALL BUTTONS ===== --}}
+            @php
+                $appointmentScheduledAt = \Carbon\Carbon::parse(
+                    $appointment->appointment_date->format('Y-m-d') . ' ' .
+                    \Carbon\Carbon::parse($appointment->appointment_time)->format('H:i:s')
+                );
+                $earliestStart = $appointmentScheduledAt->copy()->subMinutes(5);
+                $sessionEndTime = $appointmentScheduledAt->copy()->addMinutes(30);
+                $now = \Carbon\Carbon::now();
+
+                // Check if current time is within the appointment window
+                $isWithinTimeWindow = $now->gte($earliestStart) && $now->lte($sessionEndTime);
+
+                $canStartCall = auth()->user()->role === 'doctor'
+                    && $appointment->doctor->user_id === auth()->id()
+                    && $appointment->status === 'approved'
+                    && $appointment->payment_status === 'paid'
+                    && !$appointment->call_started_at;
+
+                $callActive = $appointment->call_started_at
+                    && \Carbon\Carbon::now()->lt($appointment->call_started_at->addSeconds(1800));
+
+                $canJoinCall = $appointment->status === 'approved'
+                    && $appointment->payment_status === 'paid'
+                    && $callActive
+                    && (
+                        (auth()->user()->role === 'doctor' && $appointment->doctor->user_id === auth()->id())
+                        || (auth()->user()->role === 'patient' && $appointment->patient->user_id === auth()->id())
+                    );
+            @endphp
+
+            {{-- Time availability message --}}
+            @if(auth()->user()->role === 'doctor' 
+                && $appointment->doctor->user_id === auth()->id() 
+                && $appointment->status === 'approved' 
+                && $appointment->payment_status === 'paid' 
+                && !$appointment->call_started_at)
+                <div class="alert alert-info mb-2">
+                    <i class="ti ti-info-circle me-1"></i>
+                    <strong>Video call available:</strong> {{ $earliestStart->format('h:i A') }} - {{ $sessionEndTime->format('h:i A') }}
+                    @if(!$isWithinTimeWindow)
+                        <br><small class="text-muted">You can start the call within this time window (30 minutes from appointment time).</small>
+                    @endif
+                </div>
+            @endif
+
+            @if($canStartCall)
+                <form action="{{ route('doctor.appointments.start-call', $appointment->id) }}" method="POST" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-success">
+                        <i class="ti ti-video me-1"></i> Start Video Call
+                    </button>
+                </form>
+            @endif
+
+            @if($canJoinCall)
+                <a href="{{ route('appointments.call', $appointment->id) }}" class="btn btn-primary">
+                    <i class="ti ti-video me-1"></i>
+                    {{ auth()->user()->role === 'doctor' ? 'Rejoin Call' : 'Join Video Call' }}
+                </a>
+            @endif
+
+            @if(auth()->user()->role === 'doctor'
+                && $appointment->doctor->user_id === auth()->id()
+                && $callActive)
+                <form action="{{ route('appointments.end-call', $appointment->id) }}" method="POST"
+                    onsubmit="return confirm('End this video call?')">
+                    @csrf
+                    <button type="submit" class="btn btn-danger">
+                        <i class="ti ti-phone-off me-1"></i> End Call
+                    </button>
+                </form>
+            @endif
         </div>
 
         {{-- ✅ PATIENT PAYMENT SECTION (ONLY ONE PLACE) --}}

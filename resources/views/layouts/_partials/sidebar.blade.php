@@ -43,45 +43,52 @@
             </div>
 
             @php
-                $userRole = auth()->user()->role ?? null;
+                $userRole   = auth()->user()->role ?? null;
+                // Helper: returns 'active' CSS class when the current route name starts with $prefix
+                // or the current URL starts with $url.
+                $nav = function (string $routeName) use (&$nav): string {
+                    try {
+                        return request()->routeIs($routeName) ? 'active' : '';
+                    } catch (\Throwable $e) {
+                        return '';
+                    }
+                };
             @endphp
-
-          
 
             <!-- CLINIC SECTION -->
             <ul>
                 <li class="menu-title"><span></span></li>
                 <li>
                     <ul>
-                        <!-- Doctor Menu -->
+                        <!-- ───── Doctor Menu ───── -->
                         @if($userRole === 'doctor')
                             <ul>
-                                <li class="active">
+                                <li class="{{ $nav('dashboard') }}">
                                     <a href="{{ route('dashboard') }}">
                                         <i class="ti ti-layout-dashboard"></i><span>Dashboard</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('appointments.*') }}">
                                     <a href="{{ route('appointments.index') }}">
                                         <i class="ti ti-calendar-check"></i><span>Appointments</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('doctor.my-patients') }}">
                                     <a href="{{ route('doctor.my-patients') }}">
                                         <i class="ti ti-user-heart"></i><span>Patients</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('prescriptions.*') }}">
                                     <a href="{{ route('prescriptions.index') }}">
                                         <i class="ti ti-prescription"></i><span>Prescriptions</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('invoices.*') }}">
                                     <a href="{{ route('invoices.index') }}">
                                         <i class="ti ti-file-invoice"></i><span>Invoices</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('payments.*') }}">
                                     <a href="{{ route('payments.index') }}">
                                         <i class="ti ti-cards"></i><span>Payments</span>
                                     </a>
@@ -89,52 +96,50 @@
                             </ul>
                         @endif
 
-                        <!-- Admin Menu -->
+                        <!-- ───── Admin Menu ───── -->
                         @if($userRole === 'admin')
                             <ul>
-                                <li class="active">
+                                <li class="{{ $nav('dashboard') }}">
                                     <a href="{{ route('dashboard') }}">
                                         <i class="ti ti-layout-dashboard"></i><span>Dashboard</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('doctor-verifications') }}">
                                     <a href="{{ route('doctor-verifications') }}">
                                         <i class="ti ti-user-check"></i><span>Doctor Verifications</span>
                                     </a>
                                 </li>
-                                <li>
-                                <li>
+                                <li class="{{ $nav('doctors.*') }}">
                                     <a href="{{ route('doctors.index') }}">
                                         <i class="ti ti-user-plus"></i><span>Doctors</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('patients.*') }}">
                                     <a href="{{ route('patients.index') }}">
                                         <i class="ti ti-user-heart"></i><span>Patients</span>
                                     </a>
                                 </li>
-                                <li>
-
+                                <li class="{{ $nav('appointments.*') }}">
                                     <a href="{{ route('appointments.index') }}">
                                         <i class="ti ti-calendar-check"></i><span>Appointments</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('prescriptions.*') }}">
                                     <a href="{{ route('prescriptions.index') }}">
                                         <i class="ti ti-prescription"></i><span>Prescriptions</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('invoices.*') }}">
                                     <a href="{{ route('invoices.index') }}">
                                         <i class="ti ti-file-invoice"></i><span>Invoices</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('payments.*') }}">
                                     <a href="{{ route('payments.index') }}">
                                         <i class="ti ti-cards"></i><span>Payments</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('ratings.*') }}">
                                     <a href="{{ route('ratings.index') }}">
                                         <i class="ti ti-star"></i><span>Ratings</span>
                                     </a>
@@ -142,32 +147,32 @@
                             </ul>
                         @endif
 
-                        <!-- Patient Menu -->
+                        <!-- ───── Patient Menu ───── -->
                         @if($userRole === 'patient')
                             <ul>
-                                <li class="active">
+                                <li class="{{ $nav('dashboard') }}">
                                     <a href="{{ route('dashboard') }}">
                                         <i class="ti ti-layout-dashboard"></i><span>Dashboard</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('appointments.*') }}">
                                     <a href="{{ route('appointments.index') }}">
                                         <i class="ti ti-calendar-check"></i><span>Appointments</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('doctors.*') }}">
                                     <a href="{{ route('doctors.index') }}">
                                         <i class="ti ti-stethoscope"></i><span>Doctors</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('prescriptions.*') }}">
                                     <a href="{{ route('prescriptions.index') }}">
                                         <i class="ti ti-prescription"></i><span>Prescriptions</span>
                                     </a>
                                 </li>
-                                <li>
+                                <li class="{{ $nav('invoices.*') }}">
                                     <a href="{{ route('invoices.index') }}">
-                                        <i class="ti ti-star"></i><span>Invoices</span>
+                                        <i class="ti ti-file-invoice"></i><span>Invoices</span>
                                     </a>
                                 </li>
                                 <li>
