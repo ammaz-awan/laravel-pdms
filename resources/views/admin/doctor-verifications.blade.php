@@ -281,7 +281,6 @@
 <div class="content verification-shell">
     <div>
         <h4 class="verification-title">Doctor Verification Requests</h4>
-        <p class="verification-subtitle">Review certificates, run AI insights, and approve or reject each doctor request with confidence.</p>
     </div>
     
     @foreach($doctors as $doctor)

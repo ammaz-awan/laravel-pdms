@@ -345,7 +345,7 @@
                         </div>
                     </div>
                 </div>
-
+                
                 <hr>
 
                 <h6 class="fw-semibold">Upcoming Availability</h6>

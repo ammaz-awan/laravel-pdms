@@ -42,7 +42,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <button id="filter-reset" class="btn btn-outline-secondary w-100">
+                <button id="filter-reset" class="btn btn-outline-primary w-100">
                     <i class="ti ti-x"></i> Reset
                 </button>
             </div>

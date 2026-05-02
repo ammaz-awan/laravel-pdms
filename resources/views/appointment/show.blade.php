@@ -4,7 +4,7 @@
 
 @section('content')
 
-  
+
 
 <div class="card">
     <div class="card-header">
@@ -37,8 +37,10 @@
                         <span class="badge bg-warning">Pending</span>
                     @elseif($appointment->status == 'approved')
                         <span class="badge bg-success">Approved</span>
+                    @elseif($appointment->status == 'rejected')
+                        <span class="badge bg-danger">Rejected</span>
                     @else
-                        <span class="badge bg-danger">Cancelled</span>
+                        <span class="badge bg-secondary">{{ ucfirst($appointment->status) }}</span>
                     @endif
                 </p>
             </div>
