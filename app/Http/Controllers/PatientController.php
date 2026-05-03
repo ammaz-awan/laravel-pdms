@@ -166,17 +166,7 @@ class PatientController extends Controller
         return view('patient.edit', compact('patient'));
     }
 
-    // public function profile(Patient $patient)
-    // {
-    //     $patient->load('user');
-    //     return view('patient.profile', compact('patient'));
-    // }
-
-    // public function update(UpdatePatientRequest $request, Patient $patient)
-    // {
-    //     $patient->update($request->validated());
-    //     return redirect()->route('patients.index')->with('success', 'Patient updated successfully.');
-    // }
+   
 
     public function destroy(Patient $patient)
     {

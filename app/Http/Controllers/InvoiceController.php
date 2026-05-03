@@ -3,49 +3,83 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
-use App\Http\Requests\StoreInvoiceRequest;
-use App\Http\Requests\UpdateInvoiceRequest;
+use App\Models\Appointment;
+use App\Models\Payment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class InvoiceController extends Controller
 {
+    // ─── Role-aware index ───────────────────────────────────────────────────
+
     public function index()
     {
-        $invoices = Invoice::with('patient.user')->paginate(10);
+        $user = Auth::user();
+        $this->authorize('viewAny', Invoice::class);
+
+        if ($user->role === 'admin') {
+            $invoices = Invoice::with([
+                'patient.user',
+                'appointment.doctor.user',
+                'payment',
+            ])->latest()->paginate(15);
+        } elseif ($user->role === 'doctor') {
+            // Invoices for appointments handled by this doctor
+            $invoices = Invoice::with(['patient.user', 'appointment', 'payment'])
+                ->whereHas('appointment', function ($q) use ($user) {
+                    $q->where('doctor_id', $user->doctor->id);
+                })
+                ->latest()
+                ->paginate(15);
+        } else {
+            // patient
+            $invoices = Invoice::with(['appointment.doctor.user', 'payment'])
+                ->where('patient_id', $user->patient->id)
+                ->latest()
+                ->paginate(15);
+        }
+
         return view('invoice.index', compact('invoices'));
     }
 
-    public function create()
-    {
-        return view('invoice.create');
-    }
-
-    public function store(StoreInvoiceRequest $request)
-    {
-        Invoice::create($request->validated());
-        return redirect()->route('invoices.index')->with('success', 'Invoice created successfully.');
-    }
+    // ─── Role-aware show ────────────────────────────────────────────────────
 
     public function show(Invoice $invoice)
     {
-        $invoice->load('patient.user');
+        $this->authorize('view', $invoice);
+
+        $invoice->load(
+            'patient.user',
+            'appointment.doctor.user',
+            'appointment.patient.user',
+            'payment'
+        );
+
         return view('invoice.show', compact('invoice'));
     }
 
-    public function edit(Invoice $invoice)
-    {
-        return view('invoice.edit', compact('invoice'));
-    }
+    // ─── Static factory: create invoice after payment succeeds ─────────────
+    // Called from AppointmentController::confirmPayment()
 
-    public function update(UpdateInvoiceRequest $request, Invoice $invoice)
+    public static function createFromPayment(Payment $payment): Invoice
     {
-        $invoice->update($request->validated());
-        return redirect()->route('invoices.index')->with('success', 'Invoice updated successfully.');
-    }
+        $appointment = $payment->appointment()->with('patient')->firstOrFail();
 
-    public function destroy(Invoice $invoice)
-    {
-        $invoice->delete();
-        return redirect()->route('invoices.index')->with('success', 'Invoice deleted successfully.');
+        // Idempotent: never duplicate for the same payment
+        $existing = Invoice::where('payment_id', $payment->id)->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        return Invoice::create([
+            'payment_id'     => $payment->id,
+            'appointment_id' => $appointment->id,
+            'patient_id'     => $appointment->patient_id,
+            'invoice_number' => Invoice::generateNumber(),
+            'total_amount'   => $payment->amount,
+            'issued_date'    => now()->toDateString(),
+            'status'         => 'paid',
+        ]);
     }
 }
+

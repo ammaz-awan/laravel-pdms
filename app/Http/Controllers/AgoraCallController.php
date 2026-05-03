@@ -119,15 +119,13 @@ class AgoraCallController extends Controller
             return back()->with('error', 'The call has not been started by the doctor yet.');
         }
 
-        // Check call hasn't expired (30 min)
-        if (Carbon::now()->gt($appointment->call_started_at->addSeconds(self::CALL_DURATION_SECONDS))) {
+        if ($this->completeExpiredCall($appointment)) {
             return back()->with('error', 'This call session has expired.');
         }
 
         $channel   = $appointment->agora_channel;
         $expiredTs = $appointment->call_started_at->timestamp + self::CALL_DURATION_SECONDS;
-        $role      = $isDoctor ? AgoraTokenBuilder::ROLE_PUBLISHER : AgoraTokenBuilder::ROLE_SUBSCRIBER;
-        $token     = $this->generateToken($channel, $user->id, $role, $expiredTs);
+        $token     = $this->generateToken($channel, $user->id, AgoraTokenBuilder::ROLE_PUBLISHER, $expiredTs);
 
         $appId = config('agora.app_id');
         
@@ -202,9 +200,12 @@ class AgoraCallController extends Controller
             ? $appointment->call_started_at->timestamp + self::CALL_DURATION_SECONDS
             : null;
 
-        $isActive = $appointment->status === 'approved'
+        $expired = $this->completeExpiredCall($appointment);
+
+        $isActive = ! $expired
+            && $appointment->status === 'approved'
             && $appointment->call_started_at
-            && Carbon::now()->lte($appointment->call_started_at->addSeconds(self::CALL_DURATION_SECONDS));
+            && Carbon::now()->lte($appointment->call_started_at->copy()->addSeconds(self::CALL_DURATION_SECONDS));
 
         return response()->json([
             'active'     => $isActive,
@@ -291,5 +292,25 @@ class AgoraCallController extends Controller
         ]);
 
         return $token;
+    }
+
+    private function completeExpiredCall(Appointment $appointment): bool
+    {
+        if (! $appointment->call_started_at) {
+            return false;
+        }
+
+        $expired = Carbon::now()->gt(
+            $appointment->call_started_at->copy()->addSeconds(self::CALL_DURATION_SECONDS)
+        );
+
+        if ($expired && $appointment->status === 'approved') {
+            $appointment->update([
+                'status'       => 'completed',
+                'completed_at' => Carbon::now(),
+            ]);
+        }
+
+        return $expired;
     }
 }

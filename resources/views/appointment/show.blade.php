@@ -144,7 +144,7 @@
                 </a>
             @endif
 
-            @if(auth()->user()->role === 'doctor'
+            {{-- @if(auth()->user()->role === 'doctor'
                 && $appointment->doctor->user_id === auth()->id()
                 && $callActive)
                 <form action="{{ route('appointments.end-call', $appointment->id) }}" method="POST"
@@ -154,7 +154,7 @@
                         <i class="ti ti-phone-off me-1"></i> End Call
                     </button>
                 </form>
-            @endif
+            @endif --}}
         </div>
 
         {{-- ✅ PATIENT PAYMENT SECTION (ONLY ONE PLACE) --}}

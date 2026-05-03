@@ -283,10 +283,10 @@
                             </div>
 
                             <!-- Item-->
-                            <a href="{{ route('payments.index') }}" class="dropdown-item">
+                            {{-- <a href="{{ route('payments.index') }}" class="dropdown-item">
                                 <i class="ti ti-transition-right me-1 align-middle"></i>
                                 <span class="align-middle">Transactions</span>
-                            </a>
+                            </a> --}}
 
 
 

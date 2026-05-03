@@ -88,11 +88,11 @@
                                         <i class="ti ti-file-invoice"></i><span>Invoices</span>
                                     </a>
                                 </li>
-                                <li class="{{ $nav('payments.*') }}">
+                                {{-- <li class="{{ $nav('payments.*') }}">
                                     <a href="{{ route('payments.index') }}">
                                         <i class="ti ti-cards"></i><span>Payments</span>
                                     </a>
-                                </li>
+                                </li> --}}
                             </ul>
                         @endif
 

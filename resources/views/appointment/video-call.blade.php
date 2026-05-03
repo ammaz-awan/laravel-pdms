@@ -3,190 +3,440 @@
 @section('title', 'Video Consultation')
 
 @push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
 <style>
 /* ================================================================
-   VIDEO CALL PAGE — Medical Blue/White Theme
+   VIDEO CALL PAGE — Google Meet Style UI
    ================================================================ */
-
 :root {
-    --vc-primary:     #1a6fc4;
-    --vc-primary-dk:  #145aa0;
-    --vc-accent:      #0dcaf0;
-    --vc-bg:          #f0f4f9;
-    --vc-card:        #ffffff;
-    --vc-border:      #d0dce8;
-    --vc-text:        #1e2d3d;
-    --vc-muted:       #6c8093;
-    --vc-danger:      #dc3545;
-    --vc-success:     #198754;
+    --primary: #1a6fc4;
+    --primary-dk: #145aa0;
+    --bg-dark: #0f0f0f;
+    --bg-card: #1a1a1a;
+    --bg-light: #2a2a2a;
+    --text-primary: #ffffff;
+    --text-secondary: #e0e0e0;
+    --border-color: #404040;
+    --success: #198754;
+    --danger: #dc3545;
+    --warning: #ffc107;
 }
 
-body { background: var(--vc-bg); }
+/* Light mode (override for light theme) */
+body.light-theme {
+    --bg-dark: #ffffff;
+    --bg-card: #f5f5f5;
+    --bg-light: #e8e8e8;
+    --text-primary: #202124;
+    --text-secondary: #5f6368;
+    --border-color: #dadce0;
+}
 
-/* ---------- top header bar ---------- */
-.vc-header {
-    background: var(--vc-primary);
-    color: #fff;
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 2px 8px rgba(0,0,0,.25);
-}
-.vc-header .appt-meta { font-size: .85rem; opacity: .88; }
-.vc-header .timer-badge {
-    background: rgba(255,255,255,.18);
-    border: 1px solid rgba(255,255,255,.35);
-    border-radius: 20px;
-    padding: 4px 14px;
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: 1px;
-}
-.vc-header .status-pill {
-    border-radius: 20px;
-    padding: 3px 12px;
-    font-size: .8rem;
-    font-weight: 600;
-}
-.status-active  { background: #198754; color: #fff; }
-.status-waiting { background: #ffc107; color: #000; }
-.status-ended   { background: #6c757d; color: #fff; }
-
-/* ---------- main 2-column grid ---------- */
-.vc-body {
-    display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: 16px;
-    padding: 16px;
-    height: calc(100vh - 60px);
-    max-width: 1400px;
-    margin: 0 auto;
+* {
     box-sizing: border-box;
 }
 
-@media (max-width: 1024px) {
-    .vc-body {
-        grid-template-columns: 1fr;
-        height: auto;
-    }
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* ---------- left column: video area ---------- */
-.vc-left {
+/* ===== FULLSCREEN CALL CONTAINER ===== */
+.video-call-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    background: var(--bg-dark);
+    z-index: 1000;
 }
 
-.video-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+/* ===== TOP BAR ===== */
+.call-header {
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    height: 56px;
+    min-height: 56px;
+    flex-shrink: 0;
+}
+
+.call-header-title {
+    display: flex;
+    align-items: center;
     gap: 12px;
     flex: 1;
+    min-width: 0;
 }
 
-@media (max-width: 600px) {
-    .video-grid { grid-template-columns: 1fr; }
+.call-header-title .title-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.video-box {
-    background: #1e2d3d;
-    border-radius: 14px;
+.call-header-title .title-main {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.call-header-title .title-meta {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.call-header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.call-timer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5px;
+}
+
+.call-timer i {
+    font-size: 1rem;
+    animation: pulse-timer 2s infinite;
+}
+
+@keyframes pulse-timer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.call-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: rgba(25, 135, 84, 0.2);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: var(--success);
+    font-weight: 600;
+}
+
+.call-status.ended {
+    background: rgba(108, 117, 125, 0.2);
+    color: #adb5bd;
+}
+
+/* ===== MAIN VIDEO AREA ===== */
+.call-content {
+    flex: 1;
     position: relative;
-    min-height: 240px;
-    box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    overflow: hidden;
+    background: #000000;
+}
+
+.video-main {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #000000;
 }
 
-.video-box video,
-.video-box div[id] {
+.video-main video,
+.video-main div[id] {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.video-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    color: #808080;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    z-index: 1;
+}
+
+.video-placeholder i {
+    font-size: 4rem;
+    opacity: 0.6;
+}
+
+.video-placeholder span {
+    font-size: 1rem;
+    opacity: 0.7;
+}
+
+/* ===== FLOATING SELF VIDEO ===== */
+.video-self-container {
+    position: absolute;
+    bottom: 100px;
+    right: 16px;
+    width: 220px;
+    height: 165px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000000;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    transition: all 0.3s ease;
+}
+
+.video-self-container:hover {
+    transform: scale(1.03);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.video-self-container video,
+.video-self-container div[id] {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover;
     position: absolute;
-    top: 0; left: 0;
+    top: 0;
+    left: 0;
 }
 
-.video-label {
+.video-self-label {
     position: absolute;
-    bottom: 10px;
-    left: 12px;
-    background: rgba(0,0,0,.55);
-    color: #fff;
-    font-size: .78rem;
-    padding: 3px 10px;
-    border-radius: 12px;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 4px;
     z-index: 10;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
 }
 
-.video-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #8aa4bb;
-    font-size: .9rem;
-    gap: 8px;
-}
-.video-placeholder i { font-size: 2.4rem; }
-
-/* ---------- control bar ---------- */
-.control-bar {
-    background: var(--vc-card);
-    border-radius: 14px;
-    padding: 12px 20px;
+/* ===== BOTTOM CONTROL BAR ===== */
+.call-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 14px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    padding: 12px 16px;
+    border-radius: 12px;
+    z-index: 200;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.ctrl-btn {
+.control-btn {
     width: 48px;
     height: 48px;
     border-radius: 50%;
     border: none;
+    background: #3d3d3d;
+    color: white;
+    font-size: 1.2rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
     cursor: pointer;
-    transition: transform .15s, box-shadow .15s;
+    transition: all 0.2s ease;
+    position: relative;
 }
-.ctrl-btn:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,.2); }
 
-.btn-mic    { background: #e8f0fe; color: var(--vc-primary); }
-.btn-mic.muted { background: #fee2e2; color: var(--vc-danger); }
-.btn-cam    { background: #e8f0fe; color: var(--vc-primary); }
-.btn-cam.off { background: #fee2e2; color: var(--vc-danger); }
-.btn-end    { background: var(--vc-danger); color: #fff; width: 56px; height: 56px; font-size: 1.3rem; }
+.control-btn:hover {
+    background: #4d4d4d;
+    transform: scale(1.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
 
-/* ---------- right column: prescription ---------- */
-.vc-right {
-    background: var(--vc-card);
-    border-radius: 16px;
-    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+.control-btn.active {
+    background: #27c752;
+}
+
+.control-btn.active:hover {
+    background: #1fb842;
+}
+
+.control-btn.off,
+.control-btn.muted {
+    background: #da3633;
+}
+
+.control-btn.off:hover,
+.control-btn.muted:hover {
+    background: #d23d3a;
+}
+
+.control-btn.end-call {
+    background: #ea4335;
+    width: 56px;
+    height: 56px;
+    font-size: 1.4rem;
+}
+
+.control-btn.end-call:hover {
+    background: #d33827;
+}
+
+.control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Tooltip */
+.control-btn[title]::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.control-btn:hover[title]::after {
+    opacity: 1;
+}
+
+/* ===== PRESCRIPTION PANEL (Doctor Only - Sidebar) ===== */
+.rx-sidebar {
+    position: fixed;
+    right: -400px;
+    top: 0;
+    width: 400px;
+    height: 100vh;
+    background: var(--bg-card);
+    border-left: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    border: 1px solid var(--vc-border);
+    transition: right 0.3s ease;
+    z-index: 1200;
+    box-shadow: -2px 0 16px rgba(0, 0, 0, 0.3);
+}
+
+.rx-sidebar.open {
+    right: 0;
+}
+
+.rx-toggle-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 1190;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.rx-toggle-btn:hover {
+    background: var(--primary-dk);
+    transform: scale(1.1);
+}
+
+.rx-sidebar.open ~ .rx-toggle-btn {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .rx-header {
-    background: var(--vc-primary);
-    color: #fff;
-    padding: 14px 18px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dk) 100%);
+    color: white;
+    padding: 16px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    min-height: 56px;
 }
-.rx-header i { font-size: 1.2rem; }
-.rx-header h5 { margin: 0; font-size: 1rem; font-weight: 700; }
+
+.rx-header h5 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rx-header .close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.rx-header .close-btn:hover {
+    transform: scale(1.2);
+}
 
 .rx-body {
     flex: 1;
@@ -197,337 +447,346 @@ body { background: var(--vc-bg); }
     gap: 14px;
 }
 
+.rx-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
 .rx-field label {
-    font-size: .78rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    color: var(--vc-muted);
+    color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: .5px;
-    margin-bottom: 4px;
-    display: block;
+    letter-spacing: 0.5px;
 }
 
 .rx-field textarea,
 .rx-field input {
-    width: 100%;
-    border: 1px solid var(--vc-border);
-    border-radius: 8px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
     padding: 8px 10px;
-    font-size: .88rem;
+    font-size: 0.88rem;
+    color: var(--text-primary);
     resize: vertical;
-    transition: border-color .2s;
-    color: var(--vc-text);
+    transition: all 0.2s;
+    font-family: inherit;
 }
+
+.rx-field textarea::placeholder,
+.rx-field input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
 .rx-field textarea:focus,
 .rx-field input:focus {
     outline: none;
-    border-color: var(--vc-primary);
-    box-shadow: 0 0 0 3px rgba(26,111,196,.12);
+    border-color: var(--primary);
+    background: var(--bg-dark);
+    box-shadow: 0 0 0 3px rgba(26, 111, 196, 0.1);
 }
 
-/* Medicines dynamic list */
-.med-list { display: flex; flex-direction: column; gap: 8px; }
+.med-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
 .med-row {
     display: grid;
-    grid-template-columns: 1fr 80px 80px 30px;
+    grid-template-columns: 1fr 80px 80px 32px;
     gap: 6px;
     align-items: center;
 }
 
 .med-row input {
-    border: 1px solid var(--vc-border);
-    border-radius: 6px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
     padding: 6px 8px;
-    font-size: .82rem;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+    font-family: inherit;
 }
+
 .med-row input:focus {
     outline: none;
-    border-color: var(--vc-primary);
+    border-color: var(--primary);
+    background: var(--bg-dark);
 }
 
 .btn-add-med {
     background: none;
-    border: 1px dashed var(--vc-primary);
-    color: var(--vc-primary);
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: .82rem;
+    border: 2px dashed var(--primary);
+    color: var(--primary);
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 0.82rem;
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     width: 100%;
-    justify-content: center;
-    transition: background .15s;
+    transition: all 0.2s;
+    margin-top: 8px;
 }
-.btn-add-med:hover { background: #e8f0fe; }
+
+.btn-add-med:hover {
+    background: rgba(26, 111, 196, 0.1);
+}
 
 .btn-del-med {
     background: none;
     border: none;
-    color: var(--vc-danger);
+    color: var(--danger);
     cursor: pointer;
     font-size: 1rem;
     padding: 0;
-    line-height: 1;
+    transition: transform 0.2s;
 }
 
-/* readonly view for patients */
-.rx-readonly .rx-section {
-    padding: 10px 12px;
-    background: #f8fafc;
-    border-radius: 8px;
-    border: 1px solid var(--vc-border);
+.btn-del-med:hover {
+    transform: scale(1.2);
 }
-.rx-readonly .rx-section h6 {
-    font-size: .75rem;
-    font-weight: 700;
-    color: var(--vc-muted);
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    margin-bottom: 6px;
-}
-.rx-readonly .rx-section p { margin: 0; font-size: .88rem; color: var(--vc-text); }
 
-.med-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
-.med-table th { background: #e8f0fe; color: var(--vc-primary); padding: 5px 8px; text-align: left; }
-.med-table td { padding: 5px 8px; border-bottom: 1px solid var(--vc-border); }
-
-/* save button area */
 .rx-footer {
+    border-top: 1px solid var(--border-color);
     padding: 12px 16px;
-    border-top: 1px solid var(--vc-border);
     display: flex;
-    gap: 10px;
     align-items: center;
+    justify-content: space-between;
+    gap: 10px;
 }
 
 .btn-save-rx {
-    background: var(--vc-primary);
-    color: #fff;
+    background: var(--primary);
+    color: white;
     border: none;
-    border-radius: 8px;
-    padding: 9px 22px;
-    font-size: .88rem;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 0.88rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background .2s;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    transition: background 0.2s;
+    white-space: nowrap;
 }
-.btn-save-rx:hover { background: var(--vc-primary-dk); }
-.btn-save-rx:disabled { opacity: .6; cursor: not-allowed; }
+
+.btn-save-rx:hover:not(:disabled) {
+    background: var(--primary-dk);
+}
+
+.btn-save-rx:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 
 .save-status {
-    font-size: .8rem;
-    color: var(--vc-muted);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
 }
-.save-status.ok  { color: var(--vc-success); }
-.save-status.err { color: var(--vc-danger); }
 
-/* call-ended overlay */
-.call-ended-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.75);
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
+.save-status.ok {
+    color: var(--success);
 }
-.call-ended-overlay.show { display: flex; }
-.call-ended-card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 40px 50px;
-    text-align: center;
-    box-shadow: 0 8px 40px rgba(0,0,0,.3);
+
+.save-status.err {
+    color: var(--danger);
 }
-.call-ended-card i { font-size: 3rem; color: var(--vc-success); }
-.call-ended-card h3 { margin: 12px 0 6px; }
-.call-ended-card p { color: var(--vc-muted); font-size: .9rem; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .call-header-title .title-meta {
+        display: none;
+    }
+
+    .video-self-container {
+        width: 140px;
+        height: 105px;
+        bottom: 90px;
+        right: 12px;
+    }
+
+    .call-controls {
+        bottom: 16px;
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .control-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1rem;
+    }
+
+    .control-btn.end-call {
+        width: 52px;
+        height: 52px;
+    }
+
+    .rx-sidebar {
+        width: 100%;
+        right: -100%;
+    }
+}
+
+/* ===== THEME AGNOSTIC FIXES ===== */
+@media (prefers-color-scheme: light) {
+    body:not(.light-theme) {
+        --bg-dark: #ffffff;
+        --bg-card: #f5f5f5;
+        --bg-light: #e8e8e8;
+        --text-primary: #202124;
+        --text-secondary: #5f6368;
+        --border-color: #dadce0;
+    }
+}
 </style>
 @endpush
 
 @section('content')
-{{-- Call-ended overlay --}}
-<div class="call-ended-overlay" id="callEndedOverlay">
-    <div class="call-ended-card">
-        <i class="ti ti-circle-check"></i>
-        <h3>Consultation Ended</h3>
-        <p>The video call has been completed.</p>
-        <a href="{{ route('appointments.show', $appointment) }}"
-           class="btn btn-primary mt-3">View Appointment</a>
-    </div>
-</div>
-
-{{-- Header bar --}}
-<div class="vc-header">
-    <div>
-        <div class="fw-bold fs-5">
-            <i class="ti ti-video me-1"></i> Video Consultation
-        </div>
-        <div class="appt-meta">
-            Dr. {{ $appointment->doctor->user->name }} &nbsp;·&nbsp;
-            {{ $appointment->patient->user->name }} &nbsp;·&nbsp;
-            {{ $appointment->appointment_date->format('M d, Y') }}
-            {{ \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') }}
-        </div>
-    </div>
-
-    <div class="d-flex align-items-center gap-3">
-        <span class="timer-badge" id="callTimer">00:00</span>
-        <span class="status-pill status-active" id="callStatusPill">● Live</span>
-    </div>
-</div>
-
-{{-- Main body --}}
-<div class="vc-body">
-
-    {{-- ===== Left: video + controls ===== --}}
-    <div class="vc-left">
-        <div class="video-grid">
-            {{-- Local video --}}
-            <div class="video-box" id="local-video">
-                <div class="video-placeholder">
-                    <i class="ti ti-user-circle"></i>
-                    <span>Connecting camera…</span>
+<div class="video-call-container">
+    <!-- Top Bar -->
+    <div class="call-header">
+        <div class="call-header-title">
+            <div class="title-text">
+                <div class="title-main">
+                    @if (auth()->user()->role === 'doctor')
+                        Patient. {{ $appointment->patient->user->name }}
+                    @else
+                        Dr. {{ $appointment->doctor->user->name }}
+                    @endif
                 </div>
-                <span class="video-label">
-                    {{ $callData['is_doctor'] ? 'You (Doctor)' : 'You (Patient)' }}
-                </span>
-            </div>
 
-            {{-- Remote video --}}
-            <div class="video-box" id="remote-video">
-                <div class="video-placeholder">
-                    <i class="ti ti-user-circle"></i>
-                    <span>Waiting for
-                        {{ $callData['is_doctor'] ? 'Patient' : 'Doctor' }}…
-                    </span>
+                
+                <div class="title-meta">
+                    {{ $appointment->appointment_date->format('M d') }} · 
+                    {{ \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') }}
                 </div>
-                <span class="video-label">
-                    {{ $callData['is_doctor'] ? $appointment->patient->user->name : 'Dr. '.$appointment->doctor->user->name }}
-                </span>
             </div>
         </div>
 
-        {{-- Control bar --}}
-        <div class="control-bar">
-            <button class="ctrl-btn btn-mic" id="btnMic" title="Toggle Mic">
+        <div class="call-header-right">
+            <div class="call-timer">
+                <i class="ti ti-clock"></i>
+                <span id="callTimer">00:00</span>
+            </div>
+            <div class="call-status" id="callStatus">
+                <span id="statusDot">●</span>
+                <span id="statusText">Live</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Video Area -->
+    <div class="call-content">
+        <!-- Remote User Video (Main) -->
+        <div class="video-main" id="remote-video">
+            <div class="video-placeholder" id="remotePlaceholder">
+                <i class="ti ti-user-circle"></i>
+                <span>Waiting for {{ $callData['is_doctor'] ? 'Patient' : 'Doctor' }}…</span>
+            </div>
+        </div>
+
+        <!-- Self Video (Floating) -->
+        <div class="video-self-container" id="local-video">
+            <div class="video-placeholder" id="localPlaceholder">
+                <i class="ti ti-user-circle"></i>
+            </div>
+            <div class="video-self-label">
+                {{ $callData['is_doctor'] ? 'You' : 'You' }}
+            </div>
+        </div>
+
+        <!-- Control Bar (Bottom Center) -->
+        <div class="call-controls">
+            <button class="control-btn active" id="btnMic" title="Mute/Unmute">
                 <i class="ti ti-microphone" id="micIcon"></i>
             </button>
-            <button class="ctrl-btn btn-cam" id="btnCam" title="Toggle Camera">
+            <button class="control-btn active" id="btnCam" title="Camera On/Off">
                 <i class="ti ti-video" id="camIcon"></i>
             </button>
-
-            @if($callData['is_doctor'])
-            <button class="ctrl-btn btn-end" id="btnEnd" title="End Call">
+            <button class="control-btn end-call" id="btnEnd" title="End Call">
                 <i class="ti ti-phone-off"></i>
             </button>
-            @endif
         </div>
     </div>
+</div>
 
-    {{-- ===== Right: prescription panel ===== --}}
-    <div class="vc-right">
-        <div class="rx-header">
-            <i class="ti ti-notes-medical"></i>
-            <h5>
-                @if($callData['is_doctor'])
-                    Prescription &nbsp;<small style="font-weight:400;opacity:.8">(edit)</small>
-                @else
-                    Prescription &nbsp;<small style="font-weight:400;opacity:.8">(read-only)</small>
-                @endif
-            </h5>
+<!-- Prescription Sidebar (Doctor Only) -->
+@if($callData['is_doctor'])
+<div class="rx-sidebar" id="rxSidebar">
+    <div class="rx-header">
+        <h5>
+            <i class="ti ti-prescription"></i>
+            Prescription
+        </h5>
+        <button class="close-btn" onclick="document.getElementById('rxSidebar').classList.remove('open')">
+            <i class="ti ti-x"></i>
+        </button>
+    </div>
+
+    <form id="rxForm" class="rx-body" autocomplete="off">
+        <div class="rx-field">
+            <label>Diagnosis</label>
+            <textarea id="rxDiagnosis" rows="3"
+                placeholder="Enter diagnosis…">{{ $appointment->prescription->diagnosis ?? '' }}</textarea>
         </div>
 
-        {{-- DOCTOR EDIT FORM --}}
-        @if($callData['is_doctor'])
-        <form id="rxForm" class="rx-body" autocomplete="off">
-            <div class="rx-field">
-                <label>Diagnosis</label>
-                <textarea id="rxDiagnosis" rows="3"
-                    placeholder="Enter diagnosis…">{{ $appointment->prescription->diagnosis ?? '' }}</textarea>
-            </div>
-
-            <div class="rx-field">
-                <label>Medicines</label>
-                <div class="med-list" id="medList">
-                    @forelse($appointment->prescription->medicines ?? [] as $med)
-                    <div class="med-row">
-                        <input type="text" placeholder="Medicine name" value="{{ $med['name'] ?? '' }}" data-field="name">
-                        <input type="text" placeholder="Dosage"        value="{{ $med['dosage'] ?? '' }}" data-field="dosage">
-                        <input type="text" placeholder="Duration"      value="{{ $med['duration'] ?? '' }}" data-field="duration">
-                        <button type="button" class="btn-del-med" title="Remove">
-                            <i class="ti ti-trash"></i>
-                        </button>
-                    </div>
-                    @empty
-                    {{-- empty; JS will add rows --}}
-                    @endforelse
+        <div class="rx-field">
+            <label>Medicines</label>
+            <div class="med-list" id="medList">
+                @forelse($appointment->prescription->medicines ?? [] as $med)
+                <div class="med-row">
+                    <input type="text" placeholder="Medicine name" value="{{ $med['name'] ?? '' }}" data-field="name">
+                    <input type="text" placeholder="Dosage" value="{{ $med['dosage'] ?? '' }}" data-field="dosage">
+                    <input type="text" placeholder="Duration" value="{{ $med['duration'] ?? '' }}" data-field="duration">
+                    <button type="button" class="btn-del-med" title="Remove">
+                        <i class="ti ti-trash"></i>
+                    </button>
                 </div>
-                <button type="button" class="btn-add-med mt-2" id="btnAddMed">
-                    <i class="ti ti-plus"></i> Add Medicine
-                </button>
+                @empty
+                @endforelse
             </div>
-
-            <div class="rx-field">
-                <label>Additional Notes</label>
-                <textarea id="rxNotes" rows="3"
-                    placeholder="Additional notes…">{{ $appointment->prescription->notes ?? '' }}</textarea>
-            </div>
-        </form>
-
-        <div class="rx-footer">
-            <button class="btn-save-rx" id="btnSaveRx">
-                <i class="ti ti-device-floppy"></i> Save Prescription
+            <button type="button" class="btn-add-med" id="btnAddMed">
+                <i class="ti ti-plus"></i> Add Medicine
             </button>
-            <span class="save-status" id="saveStatus"></span>
         </div>
 
-        {{-- PATIENT READ-ONLY VIEW --}}
-        @else
-        <div class="rx-body rx-readonly" id="patientRxView">
-            <div class="rx-section">
-                <h6>Diagnosis</h6>
-                <p id="pDiagnosis">—</p>
-            </div>
-            <div class="rx-section">
-                <h6>Medicines</h6>
-                <div id="pMedicines">
-                    <table class="med-table">
-                        <thead>
-                            <tr><th>Medicine</th><th>Dosage</th><th>Duration</th></tr>
-                        </thead>
-                        <tbody id="pMedTbody">
-                            <tr><td colspan="3" style="color:#aaa;text-align:center">Loading…</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="rx-section">
-                <h6>Notes</h6>
-                <p id="pNotes">—</p>
-            </div>
+        <div class="rx-field">
+            <label>Additional Notes</label>
+            <textarea id="rxNotes" rows="3"
+                placeholder="Additional notes…">{{ $appointment->prescription->notes ?? '' }}</textarea>
         </div>
-        <div class="rx-footer" style="justify-content:center">
-            <small class="text-muted">
-                <i class="ti ti-refresh me-1"></i>
-                Auto-refreshes every 10 seconds
-            </small>
-        </div>
-        @endif
+    </form>
+
+    <div class="rx-footer">
+        <button class="btn-save-rx" id="btnSaveRx">
+            <i class="ti ti-device-floppy"></i> Save
+        </button>
+        <span class="save-status" id="saveStatus"></span>
     </div>
+</div>
 
-</div>{{-- /.vc-body --}}
+<!-- Prescription Toggle Button (Doctor Only) -->
+<button class="rx-toggle-btn" id="rxToggleBtn" title="Prescription">
+    <i class="ti ti-prescription"></i>
+</button>
+@endif
 @endsection
 
 @push('scripts')
-{{-- Agora RTC SDK --}}
+{{-- External Libraries --}}
 <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.22.0.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.js"></script>
 
 <script>
 /* ================================================================
@@ -546,39 +805,73 @@ const RX_STORE_URL    = "{{ route('appointments.prescription.store', ['id' => $a
 const RX_FETCH_URL    = "{{ route('appointments.prescription.show', ['id' => $appointment->id]) }}";
 const APPT_SHOW_URL   = "{{ route('appointments.show', $appointment) }}";
 
-// DEBUG: Log config values to console
-console.log('=== AGORA CONFIG DEBUG ===');
-console.log('App ID:', AGORA_APP_ID);
-console.log('App ID length:', AGORA_APP_ID ? AGORA_APP_ID.length : 'N/A');
-console.log('Channel:', AGORA_CHANNEL);
-console.log('UID:', AGORA_UID);
-console.log('Token present:', !!AGORA_TOKEN);
-console.log('Token prefix (first 35 chars):', AGORA_TOKEN ? AGORA_TOKEN.substring(0, 35) : 'NULL');
-console.log('App ID embedded in token:', AGORA_TOKEN ? AGORA_TOKEN.substring(3, 35) : 'NULL');
-console.log('App ID matches token:', AGORA_TOKEN ? (AGORA_APP_ID === AGORA_TOKEN.substring(3, 35) ? '✓ MATCH' : '✗ MISMATCH!') : 'N/A');
-console.log('Token expires at:', new Date(EXPIRES_AT * 1000).toISOString());
-console.log('Token expired?:', EXPIRES_AT * 1000 < Date.now() ? '✗ YES - TOKEN IS EXPIRED!' : '✓ No');
-console.log('==========================');
+// ========== 30-MINUTE HARD CALL DURATION ==========
+const MAX_CALL_DURATION_MS = 30 * 60 * 1000; // 30 minutes in milliseconds
+let callStartTime = null;
+let callDurationTimer = null;
+let callEnded = false;
 
 /* ================================================================
-   TIMER
+   TOASTR CONFIGURATION
+   ================================================================ */
+toastr.options = {
+    positionClass: 'toast-top-right',
+    timeOut: 4000,
+    extendedTimeOut: 2000,
+    progressBar: true,
+    closeButton: true,
+};
+
+/* ================================================================
+   TIMER (displays elapsed time & manages 30-min auto-end)
    ================================================================ */
 let startTime = Date.now();
 const timerEl = document.getElementById('callTimer');
 
 function updateTimer() {
-    const remaining = Math.max(0, EXPIRES_AT * 1000 - Date.now());
-    const elapsed   = Date.now() - startTime;
+    if (!callStartTime) return;
+    
+    const elapsed = Date.now() - callStartTime;
     const m = String(Math.floor(elapsed / 60000)).padStart(2, '0');
     const s = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
     timerEl.textContent = m + ':' + s;
 
-    if (remaining <= 0) {
-        clearInterval(timerInterval);
-        handleCallEnded();
+    // Check if 30 minutes have passed
+    if (elapsed >= MAX_CALL_DURATION_MS && !callEnded) {
+        callEnded = true;
+        handleCallDurationExpired();
     }
 }
-const timerInterval = setInterval(updateTimer, 1000);
+
+function startCallTimer() {
+    callStartTime = Date.now();
+    callDurationTimer = setInterval(updateTimer, 1000);
+    updateTimer(); // Update immediately
+}
+
+function stopCallTimer() {
+    if (callDurationTimer) {
+        clearInterval(callDurationTimer);
+        callDurationTimer = null;
+    }
+}
+
+function handleCallDurationExpired() {
+    stopCallTimer();
+    
+    Swal.fire({
+        title: 'Call Ended',
+        text: 'Your 30-minute session has ended.',
+        icon: 'info',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        confirmButtonText: 'Return to Appointment',
+    }).then(() => {
+        window.location.href = APPT_SHOW_URL;
+    });
+
+    endCallImmediately();
+}
 
 /* ================================================================
    AGORA RTC
@@ -588,80 +881,30 @@ let localTracks = { audio: null, video: null };
 let micMuted = false;
 let camOff   = false;
 
-async function initAgora() {
-    // ── ISOLATION TEST ──────────────────────────────────────────────
-    // To isolate whether the issue is the App ID or the token:
-    // 1. Set ISOLATION_TEST = true  → joins with null token ("App ID only" mode)
-    //    - If this SUCCEEDS → token format is wrong (App ID is valid)
-    //    - If this FAILS with same error → App ID is invalid/not found in Agora Console
-    // 2. Set ISOLATION_TEST = false → normal mode with token (production)
-    // NOTE: Your Agora project must have App Certificate DISABLED for null-token join to work.
-    const ISOLATION_TEST = false;
-    if (ISOLATION_TEST) {
-        console.warn('⚠️  ISOLATION TEST MODE: joining without token to test App ID validity');
-        try {
-            await client.join(AGORA_APP_ID, 'test_isolation_123', null, null);
-            console.log('✅ ISOLATION TEST PASSED: App ID is valid! The issue is the token format.');
-            await client.leave();
-        } catch (err) {
-            console.error('❌ ISOLATION TEST FAILED: App ID is invalid or not found!', err.message);
-            console.error('→ Action required: Log in to https://console.agora.io and verify project with App ID:', AGORA_APP_ID);
-        }
-        return;
-    }
-    // ── END ISOLATION TEST ──────────────────────────────────────────
-
-    // Validate required config before joining
-    if (!AGORA_APP_ID) {
-        console.error('❌ FATAL: Agora App ID is missing or empty!', {
-            app_id: AGORA_APP_ID,
-            channel: AGORA_CHANNEL,
-            uid: AGORA_UID
-        });
-        alert('ERROR: Agora App ID is not configured. Please check your .env file.');
-        return;
-    }
-
-    if (!AGORA_TOKEN) {
-        console.error('❌ FATAL: Agora Token is missing or empty!');
-        alert('ERROR: Agora authentication token is missing.');
-        return;
-    }
-
+async function subscribeToRemoteUser(user, mediaType) {
     try {
-        await client.join(AGORA_APP_ID, AGORA_CHANNEL, AGORA_TOKEN, AGORA_UID);
+        await client.subscribe(user, mediaType);
 
-        // Create local tracks
-        [localTracks.audio, localTracks.video] =
-            await AgoraRTC.createMicrophoneAndCameraTracks();
-
-        // Play local video in #local-video
-        const localBox = document.getElementById('local-video');
-        // Remove placeholder
-        localBox.querySelector('.video-placeholder')?.remove();
-        localTracks.video.play('local-video');
-
-        // Publish
-        await client.publish([localTracks.audio, localTracks.video]);
-
-        // Start server-side session polling (auto-ends call if doctor ends or time expires)
-        startStatusPolling();
-
-        // Handle remote users already in channel
-        client.remoteUsers.forEach(handleRemoteUser);
-
-        // Subscribe to new remote users
-        client.on('user-published', async (user, mediaType) => {
-            await client.subscribe(user, mediaType);
-            if (mediaType === 'video') {
-                const remoteBox = document.getElementById('remote-video');
-                remoteBox.querySelector('.video-placeholder')?.remove();
-                user.videoTrack.play('remote-video');
+        if (mediaType === 'video' && user.videoTrack) {
+            const remoteBox = document.getElementById('remote-video');
+            remoteBox.querySelector('.video-placeholder')?.remove();
+            user.videoTrack.play('remote-video');
         }
-        if (mediaType === 'audio') {
+
+        if (mediaType === 'audio' && user.audioTrack) {
             user.audioTrack.play();
         }
-    });
+    } catch (error) {
+        console.error('Could not subscribe to remote user:', {
+            uid: user.uid,
+            mediaType,
+            error,
+        });
+    }
+}
+
+function registerAgoraEvents() {
+    client.on('user-published', subscribeToRemoteUser);
 
     client.on('user-unpublished', (user, mediaType) => {
         if (mediaType === 'video') {
@@ -671,46 +914,91 @@ async function initAgora() {
                     <div class="video-placeholder">
                         <i class="ti ti-user-circle"></i>
                         <span>Camera paused</span>
-                    </div>
-                    <span class="video-label">${remoteBox.querySelector('.video-label')?.textContent ?? ''}</span>`;
+                    </div>`;
             }
         }
     });
 
     client.on('user-left', () => {
-        document.getElementById('remote-video').querySelector('.video-placeholder') ??
-            (document.getElementById('remote-video').innerHTML = `
-                <div class="video-placeholder">
-                    <i class="ti ti-user-circle"></i>
-                    <span>Participant left</span>
-                </div>`);
+        const remoteBox = document.getElementById('remote-video');
+        remoteBox.innerHTML = `
+            <div class="video-placeholder">
+                <i class="ti ti-user-circle"></i>
+                <span>Participant left</span>
+            </div>`;
     });
+}
+
+async function initAgora() {
+    // Validate required config before joining
+    if (!AGORA_APP_ID) {
+        console.error('❌ FATAL: Agora App ID is missing or empty!');
+        toastr.error('Agora App ID is not configured. Please check your .env file.');
+        return;
+    }
+
+    if (!AGORA_TOKEN) {
+        console.error('❌ FATAL: Agora Token is missing or empty!');
+        toastr.error('Agora authentication token is missing.');
+        return;
+    }
+
+    try {
+        registerAgoraEvents();
+
+        await client.join(AGORA_APP_ID, AGORA_CHANNEL, AGORA_TOKEN, AGORA_UID);
+        
+        // Start the 30-minute call timer immediately after joining
+        startCallTimer();
+        toastr.success('Connected to video call');
+
+        // Subscribe to remote users already in the channel before local device setup.
+        for (const user of client.remoteUsers) {
+            if (user.hasVideo) {
+                await subscribeToRemoteUser(user, 'video');
+            }
+            if (user.hasAudio) {
+                await subscribeToRemoteUser(user, 'audio');
+            }
+        }
+
+        try {
+            [localTracks.audio, localTracks.video] =
+                await AgoraRTC.createMicrophoneAndCameraTracks();
+
+            const localBox = document.getElementById('local-video');
+            localBox.querySelector('.video-placeholder')?.remove();
+            localTracks.video.play('local-video');
+
+            await client.publish([localTracks.audio, localTracks.video]);
+        } catch (deviceError) {
+            console.error('Local camera/microphone setup failed:', deviceError);
+            toastr.warning('Camera or microphone could not start, but you can still watch the call.');
+        }
+
+        // Start server-side session polling
+        startStatusPolling();
+        
     } catch (error) {
         console.error('❌ Agora initialization failed:', error);
         const errorMsg = error?.message || String(error);
-        showAlert('Video call connection failed: ' + errorMsg, 'danger');
-        throw error; // Re-throw to be caught by the .catch() handler
+        toastr.error('Video call connection failed: ' + errorMsg);
+        throw error;
     }
 }
 
 async function handleRemoteUser(user) {
-    await client.subscribe(user, 'video');
-    await client.subscribe(user, 'audio');
-    const remoteBox = document.getElementById('remote-video');
-    remoteBox.querySelector('.video-placeholder')?.remove();
-    user.videoTrack?.play('remote-video');
-    user.audioTrack?.play();
+    if (user.hasVideo) {
+        await subscribeToRemoteUser(user, 'video');
+    }
+    if (user.hasAudio) {
+        await subscribeToRemoteUser(user, 'audio');
+    }
 }
 
 initAgora().catch(err => {
     console.error('❌ Agora init error:', err);
-    console.log('Failed configuration:', {
-        app_id: AGORA_APP_ID,
-        channel: AGORA_CHANNEL,
-        uid: AGORA_UID,
-        has_token: !!AGORA_TOKEN,
-    });
-    showAlert('Could not connect to video call: ' + err.message, 'danger');
+    toastr.error('Could not connect to video call: ' + err.message);
 });
 
 /* ================================================================
@@ -719,39 +1007,76 @@ initAgora().catch(err => {
 
 // Mute / unmute mic
 document.getElementById('btnMic').addEventListener('click', async () => {
-    micMuted = !micMuted;
-    await localTracks.audio?.setMuted(micMuted);
-    const btn  = document.getElementById('btnMic');
-    const icon = document.getElementById('micIcon');
-    btn.classList.toggle('muted', micMuted);
-    icon.className = micMuted ? 'ti ti-microphone-off' : 'ti ti-microphone';
+    try {
+        micMuted = !micMuted;
+        await localTracks.audio?.setMuted(micMuted);
+        const btn  = document.getElementById('btnMic');
+        const icon = document.getElementById('micIcon');
+        btn.classList.toggle('muted', micMuted);
+        icon.className = micMuted ? 'ti ti-microphone-off' : 'ti ti-microphone';
+    } catch (err) {
+        toastr.error('Could not toggle microphone: ' + err.message);
+    }
 });
 
 // Toggle camera
 document.getElementById('btnCam').addEventListener('click', async () => {
-    camOff = !camOff;
-    await localTracks.video?.setMuted(camOff);
-    const btn  = document.getElementById('btnCam');
-    const icon = document.getElementById('camIcon');
-    btn.classList.toggle('off', camOff);
-    icon.className = camOff ? 'ti ti-video-off' : 'ti ti-video';
+    try {
+        camOff = !camOff;
+        await localTracks.video?.setMuted(camOff);
+        const btn  = document.getElementById('btnCam');
+        const icon = document.getElementById('camIcon');
+        btn.classList.toggle('off', camOff);
+        icon.className = camOff ? 'ti ti-video-off' : 'ti ti-video';
+    } catch (err) {
+        toastr.error('Could not toggle camera: ' + err.message);
+    }
 });
 
-// End call (doctor only)
-if (IS_DOCTOR) {
-    document.getElementById('btnEnd')?.addEventListener('click', async () => {
-        if (!confirm('End this consultation?')) return;
-        await leaveCall();
-        await fetch(END_CALL_URL, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' }
-        });
-        handleCallEnded();
+// End call (doctor only or patients can leave)
+document.getElementById('btnEnd')?.addEventListener('click', async () => {
+    Swal.fire({
+        title: 'Leave Call?',
+        text: IS_DOCTOR ? 'End this consultation for both participants?' : 'Leave this call?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Leave',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#d33',
+    }).then(async (result) => {
+        if (!result.isConfirmed) return;
+        
+        try {
+            await leaveCall();
+            if (IS_DOCTOR) {
+                await fetch(END_CALL_URL, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' }
+                });
+            }
+            handleCallEnded();
+        } catch (err) {
+            toastr.error('Error ending call: ' + err.message);
+        }
     });
+});
+
+async function endCallImmediately() {
+    try {
+        await leaveCall();
+        if (IS_DOCTOR) {
+            await fetch(END_CALL_URL, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' }
+            }).catch(() => {}); // Ignore errors on auto-end
+        }
+    } catch (err) {
+        console.error('Error in endCallImmediately:', err);
+    }
 }
 
 async function leaveCall() {
-    clearInterval(timerInterval);
+    stopCallTimer();
     localTracks.audio?.close();
     localTracks.video?.close();
     await client.leave();
@@ -761,49 +1086,44 @@ function handleCallEnded() {
     document.getElementById('callStatusPill').className = 'status-pill status-ended';
     document.getElementById('callStatusPill').textContent = '● Ended';
     document.getElementById('callEndedOverlay').classList.add('show');
-    leaveCall().catch(() => {});
-}
-
-// Auto end at token expiry (client-side safety net)
-const msUntilExpiry = EXPIRES_AT * 1000 - Date.now();
-if (msUntilExpiry > 0) {
-    setTimeout(() => handleCallEnded(), msUntilExpiry);
+    
+    // Disable all controls
+    document.getElementById('btnMic').disabled = true;
+    document.getElementById('btnCam').disabled = true;
+    document.getElementById('btnEnd').disabled = true;
 }
 
 /* ================================================================
    SERVER-SIDE SESSION POLLING
    Polls /appointments/{id}/call-status every 20 seconds.
-   If the server says active=false (doctor ended call, admin cancelled,
-   or 30-min window expired), auto-ends the call on both sides.
+   If the server says active=false, auto-ends the call on both sides.
    ================================================================ */
 const CALL_STATUS_URL = "{{ route('appointments.call-status', ['id' => $appointment->id]) }}";
 let statusPollInterval = null;
 
 async function pollCallStatus() {
+    if (callEnded) return; // Don't poll if call already ended
+    
     try {
-        const res  = await fetch(CALL_STATUS_URL, {
+        const res = await fetch(CALL_STATUS_URL, {
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
         });
-        if (!res.ok) return; // network hiccup – stay connected
+        if (!res.ok) return;
         const data = await res.json();
 
-        if (!data.active) {
+        if (!data.active && !callEnded) {
+            callEnded = true;
             clearInterval(statusPollInterval);
+            toastr.warning('Call ended by the doctor or system');
             handleCallEnded();
         }
-    } catch (_) { /* silent – don't disconnect on transient error */ }
+    } catch (err) {
+        console.warn('Call status poll failed:', err.message);
+    }
 }
 
-// Start polling once Agora has joined (set inside initAgora success path)
 function startStatusPolling() {
-    statusPollInterval = setInterval(pollCallStatus, 20_000);
-}
-
-// Patch leaveCall to also stop polling
-const _origLeaveCall = leaveCall;
-async function leaveCall() {
-    clearInterval(statusPollInterval);
-    return _origLeaveCall();
+    statusPollInterval = setInterval(pollCallStatus, 20000);
 }
 
 /* ================================================================
@@ -811,16 +1131,26 @@ async function leaveCall() {
    ================================================================ */
 if (IS_DOCTOR) {
 
-    // Add medicine row
+    const rxSidebar = document.getElementById('rxSidebar');
+    const rxToggleBtn = document.getElementById('rxToggleBtn');
+
+    rxToggleBtn?.addEventListener('click', () => {
+        rxSidebar?.classList.toggle('open');
+    });
+
     document.getElementById('btnAddMed')?.addEventListener('click', addMedRow);
 
     function addMedRow(data = {}) {
         const row = document.createElement('div');
         row.className = 'med-row';
+        const name = esc(data.name ?? '');
+        const dosage = esc(data.dosage ?? '');
+        const duration = esc(data.duration ?? '');
+
         row.innerHTML = `
-            <input type="text" placeholder="Medicine name" value="${data.name    ?? ''}" data-field="name">
-            <input type="text" placeholder="Dosage"        value="${data.dosage  ?? ''}" data-field="dosage">
-            <input type="text" placeholder="Duration"      value="${data.duration ?? ''}" data-field="duration">
+            <input type="text" placeholder="Medicine name" value="${name}" data-field="name">
+            <input type="text" placeholder="Dosage" value="${dosage}" data-field="dosage">
+            <input type="text" placeholder="Duration" value="${duration}" data-field="duration">
             <button type="button" class="btn-del-med" title="Remove">
                 <i class="ti ti-trash"></i>
             </button>`;
@@ -828,12 +1158,14 @@ if (IS_DOCTOR) {
         document.getElementById('medList').appendChild(row);
     }
 
-    // Wire up existing delete buttons
+    if (!document.querySelector('#medList .med-row')) {
+        addMedRow();
+    }
+
     document.querySelectorAll('.btn-del-med').forEach(btn =>
         btn.addEventListener('click', () => btn.closest('.med-row').remove())
     );
 
-    // Save prescription
     document.getElementById('btnSaveRx')?.addEventListener('click', saveRx);
 
     async function saveRx() {
@@ -846,7 +1178,7 @@ if (IS_DOCTOR) {
         const medicines = [];
         document.querySelectorAll('#medList .med-row').forEach(row => {
             const name = row.querySelector('[data-field="name"]').value.trim();
-            if (!name) return; // skip rows with no medicine name
+            if (!name) return;
             medicines.push({
                 name,
                 dosage:   row.querySelector('[data-field="dosage"]').value.trim(),
@@ -860,7 +1192,7 @@ if (IS_DOCTOR) {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': CSRF_TOKEN,
-                    'Accept':       'application/json',
+                    'Accept': 'application/json',
                 },
                 body: JSON.stringify({
                     diagnosis: document.getElementById('rxDiagnosis').value,
@@ -870,18 +1202,19 @@ if (IS_DOCTOR) {
             });
             const data = await res.json();
             if (!res.ok) {
-                // Laravel validation errors come as data.errors (object), other errors as data.error (string)
                 if (data.errors) {
-                    const msgs = Object.values(data.errors).flat().join(' ');
+                    const msgs = Object.values(data.errors).flat().join(', ');
                     throw new Error(msgs);
                 }
                 throw new Error(data.message ?? data.error ?? 'Save failed');
             }
             status.textContent = '✓ Saved';
             status.className   = 'save-status ok';
+            toastr.success('Prescription saved successfully');
         } catch (err) {
             status.textContent = '✗ ' + err.message;
             status.className   = 'save-status err';
+            toastr.error('Prescription save failed: ' + err.message);
         } finally {
             btn.disabled = false;
         }
@@ -889,41 +1222,11 @@ if (IS_DOCTOR) {
 }
 
 /* ================================================================
-   PRESCRIPTION — PATIENT SIDE (polling)
+   PRESCRIPTION — PATIENT SIDE (polling) — DISABLED DURING CALL
+   Patient sees prescriptions only after call ends on appointment page
    ================================================================ */
-if (!IS_DOCTOR) {
-
-    async function fetchRx() {
-        try {
-            const res  = await fetch(RX_FETCH_URL, {
-                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }
-            });
-            const data = await res.json();
-            if (!res.ok || !data.prescription) return;
-
-            const rx = data.prescription;
-            document.getElementById('pDiagnosis').textContent = rx.diagnosis || '—';
-            document.getElementById('pNotes').textContent     = rx.notes     || '—';
-
-            const tbody = document.getElementById('pMedTbody');
-            const meds  = rx.medicines ?? [];
-            if (meds.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="color:#aaa;text-align:center">No medicines added yet</td></tr>';
-            } else {
-                tbody.innerHTML = meds.map(m =>
-                    `<tr>
-                        <td>${esc(m.name)}</td>
-                        <td>${esc(m.dosage)}</td>
-                        <td>${esc(m.duration)}</td>
-                    </tr>`
-                ).join('');
-            }
-        } catch (e) { /* silent */ }
-    }
-
-    fetchRx();
-    setInterval(fetchRx, 10000);   // poll every 10 s
-}
+// Patient prescription fetching during call is intentionally disabled
+// Patients will view prescriptions on the appointment details page after the call ends
 
 /* ================================================================
    UTILITIES
@@ -932,13 +1235,32 @@ function esc(str) {
     return (str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function showAlert(msg, type = 'danger') {
-    const el = document.createElement('div');
-    el.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
-    el.style.zIndex = 99999;
-    el.textContent = msg;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 6000);
+// Override the earlier implementation so call shutdown uses the
+// elements that actually exist in this template.
+function handleCallEnded() {
+    const callStatus = document.getElementById('callStatus');
+    const statusText = document.getElementById('statusText');
+    const statusDot = document.getElementById('statusDot');
+
+    if (callStatus) {
+        callStatus.classList.add('ended');
+    }
+
+    if (statusText) {
+        statusText.textContent = 'Ended';
+    }
+
+    if (statusDot) {
+        statusDot.textContent = '●';
+    }
+
+    document.getElementById('btnMic').disabled = true;
+    document.getElementById('btnCam').disabled = true;
+    document.getElementById('btnEnd')?.setAttribute('disabled', 'disabled');
+
+    setTimeout(() => {
+        window.location.href = APPT_SHOW_URL;
+    }, 1500);
 }
 </script>
 @endpush

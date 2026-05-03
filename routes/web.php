@@ -100,9 +100,32 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('doctors', DoctorController::class);
     Route::resource('patients', PatientController::class);
     Route::resource('appointments', AppointmentController::class);
-    Route::resource('prescriptions', PrescriptionController::class);
+
+    // Prescriptions – immutable records (view-only after creation)
+    Route::get('prescriptions',          [PrescriptionController::class, 'index'])->name('prescriptions.index');
+    Route::get('prescriptions/{prescription}', [PrescriptionController::class, 'show'])->name('prescriptions.show');
+
+    // Invoices – immutable records (view-only after auto-creation)
+    Route::get('invoices',               [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('invoices/{invoice}',     [InvoiceController::class, 'show'])->name('invoices.show');
+
+    // ── Panel-scoped aliases (redirect to same controllers) ──────────────────
+    Route::get('patient/prescriptions',           [PrescriptionController::class, 'index'])->name('patient.prescriptions.index');
+    Route::get('patient/prescriptions/{id}',      [PrescriptionController::class, 'show'])->name('patient.prescriptions.show');
+    Route::get('patient/invoices',                [InvoiceController::class, 'index'])->name('patient.invoices.index');
+    Route::get('patient/invoices/{id}',           [InvoiceController::class, 'show'])->name('patient.invoices.show');
+
+    Route::get('admin/prescriptions',             [PrescriptionController::class, 'index'])->name('admin.prescriptions.index');
+    Route::get('admin/prescriptions/{id}',        [PrescriptionController::class, 'show'])->name('admin.prescriptions.show');
+    Route::get('admin/invoices',                  [InvoiceController::class, 'index'])->name('admin.invoices.index');
+    Route::get('admin/invoices/{id}',             [InvoiceController::class, 'show'])->name('admin.invoices.show');
+
+    Route::get('doctor/prescriptions',            [PrescriptionController::class, 'index'])->name('doctor.prescriptions.index');
+    Route::get('doctor/prescriptions/{id}',       [PrescriptionController::class, 'show'])->name('doctor.prescriptions.show');
+    Route::get('doctor/invoices',                 [InvoiceController::class, 'index'])->name('doctor.invoices.index');
+    Route::get('doctor/invoices/{id}',            [InvoiceController::class, 'show'])->name('doctor.invoices.show');
+
     Route::resource('payments', PaymentController::class);
-    Route::resource('invoices', InvoiceController::class);
     Route::resource('ratings', RatingController::class);
 
     });

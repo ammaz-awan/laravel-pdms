@@ -423,6 +423,12 @@ public function confirmPayment(Request $request)
         'payment_intent_id' => $intent->id
     ]);
 
+    // Auto-create invoice for this payment (idempotent)
+    $payment = Payment::where('appointment_id', $appointment->id)->first();
+    if ($payment) {
+        \App\Http\Controllers\InvoiceController::createFromPayment($payment);
+    }
+
     return response()->json(['success' => true]);
 }
 
