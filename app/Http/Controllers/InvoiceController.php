@@ -3,46 +3,67 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
-use App\Models\Appointment;
 use App\Models\Payment;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class InvoiceController extends Controller
 {
-    // ─── Role-aware index ───────────────────────────────────────────────────
+    // ─── INDEX ───────────────────────────────────────────────
 
     public function index()
     {
         $user = Auth::user();
+
         $this->authorize('viewAny', Invoice::class);
 
         if ($user->role === 'admin') {
+
             $invoices = Invoice::with([
                 'patient.user',
                 'appointment.doctor.user',
                 'payment',
             ])->latest()->paginate(15);
+
         } elseif ($user->role === 'doctor') {
-            // Invoices for appointments handled by this doctor
-            $invoices = Invoice::with(['patient.user', 'appointment', 'payment'])
-                ->whereHas('appointment', function ($q) use ($user) {
-                    $q->where('doctor_id', $user->doctor->id);
-                })
-                ->latest()
-                ->paginate(15);
+
+            $doctorId = optional($user->doctor)->id;
+
+            if (!$doctorId) {
+                abort(403, 'Doctor profile missing.');
+            }
+
+            $invoices = Invoice::with([
+                'patient.user',
+                'appointment',
+                'payment',
+            ])
+            ->whereHas('appointment', function ($q) use ($doctorId) {
+                $q->where('doctor_id', $doctorId);
+            })
+            ->latest()
+            ->paginate(15);
+
         } else {
-            // patient
-            $invoices = Invoice::with(['appointment.doctor.user', 'payment'])
-                ->where('patient_id', $user->patient->id)
-                ->latest()
-                ->paginate(15);
+
+            $patientId = optional($user->patient)->id;
+
+            if (!$patientId) {
+                abort(403, 'Patient profile missing.');
+            }
+
+            $invoices = Invoice::with([
+                'appointment.doctor.user',
+                'payment',
+            ])
+            ->where('patient_id', $patientId)
+            ->latest()
+            ->paginate(15);
         }
 
         return view('invoice.index', compact('invoices'));
     }
 
-    // ─── Role-aware show ────────────────────────────────────────────────────
+    // ─── SHOW ───────────────────────────────────────────────
 
     public function show(Invoice $invoice)
     {
@@ -58,14 +79,12 @@ class InvoiceController extends Controller
         return view('invoice.show', compact('invoice'));
     }
 
-    // ─── Static factory: create invoice after payment succeeds ─────────────
-    // Called from AppointmentController::confirmPayment()
+    // ─── CREATE FROM PAYMENT (UNCHANGED BUT SAFE) ───────────
 
     public static function createFromPayment(Payment $payment): Invoice
     {
         $appointment = $payment->appointment()->with('patient')->firstOrFail();
 
-        // Idempotent: never duplicate for the same payment
         $existing = Invoice::where('payment_id', $payment->id)->first();
         if ($existing) {
             return $existing;
@@ -82,4 +101,3 @@ class InvoiceController extends Controller
         ]);
     }
 }
-

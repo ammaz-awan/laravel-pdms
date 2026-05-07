@@ -26,13 +26,18 @@ class AgoraCallController extends Controller
         if ($user->role !== 'doctor') {
             abort(403, 'Only doctors can start a call.');
         }
+$doctor = $user->doctor; // must exist
+
+if (! $doctor) {
+    abort(403, 'Doctor profile not found.');
+}
 
         $appointment = Appointment::findOrFail($id);
-
         // Ownership check
-        if ($appointment->doctor->user_id !== $user->id) {
-            abort(403, 'This appointment does not belong to you.');
-        }
+       if ((int) $appointment->doctor_id !== (int) $doctor->id) {
+    abort(403, 'This appointment does not belong to you.');
+}
+
 
         // Business-rule guards
         if ($appointment->payment_status !== 'paid') {
@@ -44,12 +49,13 @@ class AgoraCallController extends Controller
         }
 
         // Parse appointment scheduled time
-        $scheduledAt = Carbon::parse(
+  $scheduledAt = Carbon::parse(
             $appointment->appointment_date->format('Y-m-d') . ' ' .
             Carbon::parse($appointment->appointment_time)->format('H:i:s')
         );
 
-        $now = Carbon::now();
+       $now = now(); // uses app timezone        
+
         $earliestStart = $scheduledAt->copy()->subMinutes(5);
         $sessionEndTime = $scheduledAt->copy()->addMinutes(30);
 
@@ -63,6 +69,7 @@ class AgoraCallController extends Controller
             return back()->with('error', 'This appointment session has expired. The 30-minute window ended at ' . $sessionEndTime->format('h:i A'));
         }
 
+     
         // Generate channel name if not already set
         $channel = $appointment->agora_channel ?? ('appt_' . $id);
 
@@ -98,10 +105,13 @@ class AgoraCallController extends Controller
     {
         $user        = Auth::user();
         $appointment = Appointment::with(['doctor.user', 'patient.user', 'prescription'])->findOrFail($id);
-
+    
         // Must be the patient or doctor of this appointment
-        $isDoctor  = ($user->role === 'doctor'  && $appointment->doctor->user_id  === $user->id);
-        $isPatient = ($user->role === 'patient' && $appointment->patient->user_id === $user->id);
+       $isDoctor = $user->role === 'doctor'
+       && optional($user->doctor)->id == $appointment->doctor_id;
+
+       $isPatient = $user->role === 'patient'
+       && optional($user->patient)->id == $appointment->patient_id;
 
         if (! $isDoctor && ! $isPatient) {
             abort(403, 'You are not part of this appointment.');
@@ -157,22 +167,22 @@ class AgoraCallController extends Controller
         $user = Auth::user();
 
         if ($user->role !== 'doctor') {
-            abort(403, 'Only doctors can end a call.');
+            abort(403, 'Only doctors can end a call.'); 
         }
 
         $appointment = Appointment::findOrFail($id);
 
-        if ($appointment->doctor->user_id !== $user->id) {
-            abort(403, 'This appointment does not belong to you.');
-        }
+        if ((int) $appointment->doctor_id !== (int) optional($user->doctor)->id) {
+                abort(403, 'This appointment does not belong to you.');
+            }
 
         $appointment->update([
             'status'       => 'completed',
             'completed_at' => Carbon::now(),
         ]);
 
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Call ended. Appointment marked as completed.']);
+        if ($request->ajax() || $request->expectsJson()) {
+         return response()->json(['message' => 'Call ended. Appointment marked as completed.']);
         }
 
         return redirect()->route('appointments.show', $appointment)
@@ -189,8 +199,12 @@ class AgoraCallController extends Controller
         $user        = Auth::user();
         $appointment = Appointment::findOrFail($id);
 
-        $isDoctor  = ($user->role === 'doctor'  && $appointment->doctor->user_id  === $user->id);
-        $isPatient = ($user->role === 'patient' && $appointment->patient->user_id === $user->id);
+         $isDoctor = $user->role === 'doctor'
+         && (int) optional($user->doctor)->id === (int) $appointment->doctor_id;
+
+         $isPatient = $user->role === 'patient'
+         && (int) optional($user->patient)->id === (int)
+         $appointment->patient_id;
 
         if (! $isDoctor && ! $isPatient) {
             return response()->json(['error' => 'Unauthorized.'], 403);
@@ -220,46 +234,46 @@ class AgoraCallController extends Controller
     // Returns the raw config values and a freshly-minted test token
     // so you can compare the embedded App ID against your console.
     // ---------------------------------------------------------------
-    public function debugToken()
-    {
-        if (app()->isProduction()) {
-            abort(404);
-        }
+    // public function debugToken()
+    // {
+    //     if (app()->isProduction()) {
+    //         abort(404);
+    //     }
 
-        $appId  = config('agora.app_id');
-        $cert   = config('agora.app_certificate');
-        $expiry = time() + 3600;
+    //     $appId  = config('agora.app_id');
+    //     $cert   = config('agora.app_certificate');
+    //     $expiry = time() + 3600;
 
-        $result = [
-            'env_app_id'       => $appId,
-            'env_app_id_len'   => strlen($appId),
-            'env_cert_set'     => !empty($cert),
-            'env_cert_len'     => strlen($cert),
-        ];
+    //     $result = [
+    //         'env_app_id'       => $appId,
+    //         'env_app_id_len'   => strlen($appId),
+    //         'env_cert_set'     => !empty($cert),
+    //         'env_cert_len'     => strlen($cert),
+    //     ];
 
-        try {
-            $token = AgoraTokenBuilder::buildTokenWithUid(
-                $appId, $cert, 'debug_test', 0,
-                AgoraTokenBuilder::ROLE_PUBLISHER, $expiry
-            );
-            $embeddedAppId = substr($token, 3, 32);
-            $b64payload    = substr($token, 35);
-            $decoded       = base64_decode($b64payload, true);
+    //     try {
+    //         $token = AgoraTokenBuilder::buildTokenWithUid(
+    //             $appId, $cert, 'debug_test', 0,
+    //             AgoraTokenBuilder::ROLE_PUBLISHER, $expiry
+    //         );
+    //         $embeddedAppId = substr($token, 3, 32);
+    //         $b64payload    = substr($token, 35);
+    //         $decoded       = base64_decode($b64payload, true);
 
-            $result['token_prefix']        = substr($token, 0, 3);
-            $result['token_embedded_appid']= $embeddedAppId;
-            $result['appid_matches_config']= ($embeddedAppId === $appId);
-            $result['token_length']        = strlen($token);
-            $result['payload_bytes']       = $decoded !== false ? strlen($decoded) : 'INVALID_BASE64';
-            $result['token_expires_at']    = date('Y-m-d H:i:s', $expiry);
-            // First 20 chars of token (safe to show; never shows the cert)
-            $result['token_preview']       = substr($token, 0, 40) . '...';
-        } catch (\Exception $e) {
-            $result['token_error'] = $e->getMessage();
-        }
+    //         $result['token_prefix']        = substr($token, 0, 3);
+    //         $result['token_embedded_appid']= $embeddedAppId;
+    //         $result['appid_matches_config']= ($embeddedAppId === $appId);
+    //         $result['token_length']        = strlen($token);
+    //         $result['payload_bytes']       = $decoded !== false ? strlen($decoded) : 'INVALID_BASE64';
+    //         $result['token_expires_at']    = date('Y-m-d H:i:s', $expiry);
+    //         // First 20 chars of token (safe to show; never shows the cert)
+    //         $result['token_preview']       = substr($token, 0, 40) . '...';
+    //     } catch (\Exception $e) {
+    //         $result['token_error'] = $e->getMessage();
+    //     }
 
-        return response()->json($result, 200, [], JSON_PRETTY_PRINT);
-    }
+    //     return response()->json($result, 200, [], JSON_PRETTY_PRINT);
+    // }
 
     private function generateToken(string $channel, int $uid, int $role, int $expiredTs): string
     {

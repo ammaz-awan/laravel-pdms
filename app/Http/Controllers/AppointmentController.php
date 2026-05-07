@@ -20,18 +20,29 @@ class AppointmentController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+     
         $query = Appointment::with(['patient.user', 'doctor.user'])
             ->latest('appointment_date')
             ->latest('appointment_time');
         $listScope = 'all appointments';
 
-        if ($user->role === 'doctor') {
-            $query->where('doctor_id', $user->doctor?->id);
-            $listScope = 'your appointments';
-        } elseif ($user->role === 'patient') {
-            $query->where('patient_id', $user->patient?->id);
-            $listScope = 'your appointments';
-        }
+              if ($user->role === 'doctor') {
+
+                $doctor = $user->doctor;
+            
+                abort_unless($doctor, 403, 'Doctor profile missing');
+            
+                $query->where('doctor_id', $doctor->id);
+            }
+            
+            if ($user->role === 'patient') {
+            
+                $patient = $user->patient;
+            
+                abort_unless($patient, 403, 'Patient profile missing');
+            
+                $query->where('patient_id', $patient->id);
+            }
 
         if ($request->filled('appointment_date')) {
             $query->whereDate('appointment_date', $request->appointment_date);
@@ -172,6 +183,7 @@ class AppointmentController extends Controller
 
     public function show(Appointment $appointment)
     {
+        
         $this->authorizeAppointmentView($appointment);
 
         $appointment->load(['patient.user', 'doctor.user']);
@@ -312,39 +324,57 @@ class AppointmentController extends Controller
         }
     }
 
-    private function authorizeAppointmentView(Appointment $appointment): void
-    {
-        $user = Auth::user();
+   private function authorizeAppointmentView(Appointment $appointment): void
+{
+    $user = Auth::user();
 
-        if ($user->role === 'admin') {
-            return;
-        }
-
-        if ($user->role === 'doctor' && $appointment->doctor_id === $user->doctor?->id) {
-            return;
-        }
-
-        if ($user->role === 'patient' && $appointment->patient_id === $user->patient?->id) {
-            return;
-        }
-
-        abort(403);
+    if ($user->role === 'admin') {
+        return;
     }
 
-    private function authorizeAppointmentAction(Appointment $appointment): void
-    {
-        $user = Auth::user();
-
-        if ($user->role === 'admin') {
-            return;
-        }
-
-        if ($user->role === 'doctor' && $appointment->doctor_id === $user->doctor?->id) {
-            return;
-        }
-
-        abort(403);
+    if (
+        $user->role === 'doctor' &&
+        $user->doctor &&
+        (int) $appointment->doctor_id === (int) $user->doctor->id
+    ) {
+        return;
     }
+
+    if (
+        $user->role === 'patient' &&
+        $user->patient &&
+        (int) $appointment->patient_id === (int) $user->patient->id
+    ) {
+        return;
+    }
+
+    abort(403);
+}
+
+          private function authorizeAppointmentAction(Appointment $appointment): void
+        {
+            $user = Auth::user();
+
+            // Admin always allowed
+            if ($user->role === 'admin') {
+                return;
+            }
+
+            // ðŸ”¥ FIX: ensure doctor exists before checking
+            if ($user->role === 'doctor') {
+                if (!$user->doctor) {
+                    abort(403); // doctor record missing
+                }
+
+                if ((int) $appointment->doctor_id === (int) $user->doctor->id) {
+                    return;
+                }
+            }
+
+            abort(403);
+         }  
+
+
 
 
 
@@ -441,11 +471,20 @@ private function canJoinCall(Appointment $appointment)
 
 public function refundPayment(Appointment $appointment)
 {
+    // ðŸ”¥ prevent unauthorized refund
+    if (!in_array(Auth::user()->role, ['admin', 'doctor'])) {
+        abort(403);
+    }
+
     if ($appointment->payment_status !== 'paid') {
         return back()->with('error', 'Not paid yet');
     }
 
     $payment = Payment::where('appointment_id', $appointment->id)->first();
+
+    if (!$payment || !$payment->payment_intent_id) {
+        return back()->with('error', 'Payment not found');
+    }
 
     $this->stripe()->refunds->create([
         'payment_intent' => $payment->payment_intent_id

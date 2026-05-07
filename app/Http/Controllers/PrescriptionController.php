@@ -9,41 +9,60 @@ use Illuminate\Support\Facades\Auth;
 
 class PrescriptionController extends Controller
 {
-    // ─── Role-aware index ───────────────────────────────────────────────────
+    // ─── INDEX ───────────────────────────────────────────────
 
     public function index()
     {
         $user = Auth::user();
+
         $this->authorize('viewAny', Prescription::class);
 
         if ($user->role === 'admin') {
+
             $prescriptions = Prescription::with([
                 'appointment.doctor.user',
                 'appointment.patient.user',
                 'doctor.user',
                 'patient.user',
             ])->latest()->paginate(15);
+
         } elseif ($user->role === 'doctor') {
+
+            $doctorId = optional($user->doctor)->id;
+
+            if (!$doctorId) {
+                abort(403, 'Doctor profile missing.');
+            }
+
             $prescriptions = Prescription::with([
                 'appointment',
                 'patient.user',
-            ])->where('doctor_id', $user->doctor->id)
-              ->latest()
-              ->paginate(15);
+            ])
+            ->where('doctor_id', $doctorId)
+            ->latest()
+            ->paginate(15);
+
         } else {
-            // patient
+
+            $patientId = optional($user->patient)->id;
+
+            if (!$patientId) {
+                abort(403, 'Patient profile missing.');
+            }
+
             $prescriptions = Prescription::with([
                 'appointment',
                 'doctor.user',
-            ])->where('patient_id', $user->patient->id)
-              ->latest()
-              ->paginate(15);
+            ])
+            ->where('patient_id', $patientId)
+            ->latest()
+            ->paginate(15);
         }
 
         return view('prescription.index', compact('prescriptions'));
     }
 
-    // ─── Role-aware show ────────────────────────────────────────────────────
+    // ─── SHOW ───────────────────────────────────────────────
 
     public function show(Prescription $prescription)
     {
@@ -59,14 +78,20 @@ class PrescriptionController extends Controller
         return view('prescription.show', compact('prescription'));
     }
 
-    // ─── Live call: doctor writes prescription during session ───────────────
-    // POST /appointments/{id}/prescription
+    // ─── LIVE STORE (DOCTOR ONLY) ───────────────────────────
+
     public function liveStore(Request $request, int $id)
     {
-        $user        = Auth::user();
-        $appointment = Appointment::findOrFail($id);
+        $user = Auth::user();
 
-        if ($user->role !== 'doctor' || $appointment->doctor->user_id !== $user->id) {
+        $appointment = Appointment::with(['doctor', 'patient'])->findOrFail($id);
+
+        $doctorUserId = optional($appointment->doctor)->user_id;
+
+        if (
+            $user->role !== 'doctor' ||
+            (int) optional($appointment->doctor)->user_id !== (int) $user->id
+        ) {
             return response()->json([
                 'error' => 'Unauthorized. Only the appointment doctor can write a prescription.',
             ], 403);
@@ -87,10 +112,12 @@ class PrescriptionController extends Controller
                 'doctor_id'  => $appointment->doctor_id,
                 'patient_id' => $appointment->patient_id,
                 'diagnosis'  => $validated['diagnosis'] ?? null,
-                'medicines'  => array_values(array_filter(
-                    $validated['medicines'] ?? [],
-                    fn ($m) => ! empty(trim($m['name'] ?? ''))
-                )),
+                'medicines' => array_values(array_filter(
+                $validated['medicines'] ?? [],
+                function ($m) {
+                    return !empty(trim($m['name'] ?? ''));
+                }
+            )),
                 'notes'      => $validated['notes'] ?? null,
             ]
         );
@@ -101,17 +128,25 @@ class PrescriptionController extends Controller
         ]);
     }
 
-    // ─── Live call: read current prescription (GET) ─────────────────────────
-    // GET /appointments/{id}/prescription
+    // ─── LIVE SHOW (SAFE ACCESS) ────────────────────────────
+
     public function liveShow(int $id)
     {
-        $user        = Auth::user();
-        $appointment = Appointment::with('prescription')->findOrFail($id);
+        $user = Auth::user();
 
-        // Doctor or patient of this appointment may read
-        $isDoctor  = $user->role === 'doctor'  && $appointment->doctor->user_id  === $user->id;
-        $isPatient = $user->role === 'patient' && $appointment->patient->user_id === $user->id;
-        $isAdmin   = $user->role === 'admin';
+        $appointment = Appointment::with([
+            'doctor',
+            'patient',
+            'prescription'
+        ])->findOrFail($id);
+
+        $isDoctor = $user->role === 'doctor'
+        && (int) optional($appointment->doctor)->user_id === (int) $user->id;
+
+        $isPatient = $user->role === 'patient'
+        && (int) optional($appointment->patient)->user_id === (int) $user->id;
+
+        $isAdmin = $user->role === 'admin';
 
         if (! $isDoctor && ! $isPatient && ! $isAdmin) {
             return response()->json(['error' => 'Unauthorized.'], 403);
@@ -120,4 +155,3 @@ class PrescriptionController extends Controller
         return response()->json($appointment->prescription);
     }
 }
-

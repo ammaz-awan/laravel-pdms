@@ -29,5 +29,8 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(Prescription::class, PrescriptionPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
+        date_default_timezone_set('Asia/Karachi');
+        config(['app.timezone' => 'Asia/Karachi']);
     }
 }
+ 

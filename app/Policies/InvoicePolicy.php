@@ -27,11 +27,11 @@ class InvoicePolicy
         }
 
         if ($user->role === 'patient') {
-            return $invoice->patient_id === optional($user->patient)->id;
+            return $invoice->patient_id == optional($user->patient)->id;
         }
 
         if ($user->role === 'doctor') {
-            return optional($invoice->appointment)->doctor_id === optional($user->doctor)->id;
+            return optional($invoice->appointment)->doctor_id == optional($user->doctor)->id;
         }
 
         return false;

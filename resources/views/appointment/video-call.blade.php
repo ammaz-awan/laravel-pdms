@@ -712,9 +712,11 @@ html, body {
             <button class="control-btn active" id="btnCam" title="Camera On/Off">
                 <i class="ti ti-video" id="camIcon"></i>
             </button>
+            @if($callData['is_doctor'])
             <button class="control-btn end-call" id="btnEnd" title="End Call">
                 <i class="ti ti-phone-off"></i>
             </button>
+            @endif
         </div>
     </div>
 </div>
@@ -1105,9 +1107,14 @@ async function pollCallStatus() {
     if (callEnded) return; // Don't poll if call already ended
     
     try {
-        const res = await fetch(CALL_STATUS_URL, {
-            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
-        });
+       const res = await fetch(CALL_STATUS_URL, {
+    method: 'POST',
+    headers: {
+        'X-CSRF-TOKEN': CSRF_TOKEN,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    }
+});
         if (!res.ok) return;
         const data = await res.json();
 
