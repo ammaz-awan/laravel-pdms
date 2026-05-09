@@ -108,10 +108,10 @@ if (! $doctor) {
     
         // Must be the patient or doctor of this appointment
        $isDoctor = $user->role === 'doctor'
-       && optional($user->doctor)->id == $appointment->doctor_id;
+       && (int) optional($user->doctor)->id === (int) $appointment->doctor_id;
 
        $isPatient = $user->role === 'patient'
-       && optional($user->patient)->id == $appointment->patient_id;
+       && (int) optional($user->patient)->id === (int) $appointment->patient_id;
 
         if (! $isDoctor && ! $isPatient) {
             abort(403, 'You are not part of this appointment.');

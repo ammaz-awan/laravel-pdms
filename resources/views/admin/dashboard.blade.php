@@ -2,6 +2,224 @@
 
 @section('title', 'Admin Dashboard')
 
+@php
+    $appointmentStatusChart = $stats['appointment_status_chart'] ?? [
+        'completedCount' => 0,
+        'pendingCount' => 0,
+        'cancelledCount' => 0,
+        'ongoingCount' => 0,
+        'totalAppointments' => 0,
+    ];
+
+    $appointmentStatusChartJs = [
+        'labels' => ['Completed', 'Pending', 'Cancelled', 'Ongoing'],
+        'values' => [
+            (int) ($appointmentStatusChart['completedCount'] ?? 0),
+            (int) ($appointmentStatusChart['pendingCount'] ?? 0),
+            (int) ($appointmentStatusChart['cancelledCount'] ?? 0),
+            (int) ($appointmentStatusChart['ongoingCount'] ?? 0),
+        ],
+        'totalAppointments' => (int) ($appointmentStatusChart['totalAppointments'] ?? 0),
+    ];
+
+    $appointmentOverviewItems = [
+        [
+            'label' => 'Completed Appointments',
+            'count' => (int) ($stats['completed_appointments'] ?? 0),
+            'total' => (int) ($stats['total_appointments'] ?? 0),
+            'color' => 'success',
+        ],
+        [
+            'label' => 'Pending Appointments',
+            'count' => (int) ($stats['pending_appointments'] ?? 0),
+            'total' => (int) ($stats['total_appointments'] ?? 0),
+            'color' => 'warning',
+        ],
+        [
+            'label' => 'Cancelled Appointments',
+            'count' => (int) ($stats['cancelled_appointments'] ?? 0),
+            'total' => (int) ($stats['total_appointments'] ?? 0),
+            'color' => 'danger',
+        ],
+        [
+            'label' => 'Active Appointments',
+            'count' => (int) ($stats['ongoing_appointments'] ?? 0),
+            'total' => (int) ($stats['total_appointments'] ?? 0),
+            'color' => 'primary',
+        ],
+        [
+            'label' => "Today's Appointments",
+            'count' => (int) ($stats['today_appointments'] ?? 0),
+            'total' => (int) ($stats['total_appointments'] ?? 0),
+            'color' => 'info',
+        ],
+        [
+            'label' => 'Outstanding Invoices',
+            'count' => (int) ($stats['unpaid_invoices_count'] ?? 0),
+            'total' => (int) ($stats['total_invoices'] ?? 0),
+            'color' => 'secondary',
+        ],
+        [
+            'label' => 'Paid Payments',
+            'count' => (int) ($stats['paid_payments_count'] ?? 0),
+            'total' => (int) ($stats['total_payments_count'] ?? 0),
+            'color' => 'success',
+        ],
+        [
+            'label' => 'Prescriptions Issued',
+            'count' => (int) ($stats['total_prescriptions'] ?? 0),
+            'total' => max((int) ($stats['total_appointments'] ?? 0), 1),
+            'color' => 'dark',
+        ],
+    ];
+@endphp
+
+@push('styles')
+<style>
+    .appointment-status-card {
+        border: 1px solid var(--bs-border-color, #e9ecef);
+        background: var(--bs-body-bg, #fff);
+        overflow: hidden;
+    }
+
+    .appointment-status-card .card-header {
+        border-bottom: 0;
+        background: transparent;
+        padding-bottom: 0;
+    }
+
+    .appointment-status-subtitle {
+        color: var(--bs-secondary-color, #6c757d);
+        font-size: 0.875rem;
+    }
+
+    .appointment-status-grid {
+        display: grid;
+        grid-template-columns: minmax(240px, 1.08fr) minmax(220px, 0.92fr);
+        gap: 1.25rem;
+        align-items: center;
+    }
+
+    .appointment-status-chart-shell {
+        position: relative;
+        min-height: 320px;
+        padding: 1rem;
+        border-radius: 1rem;
+        border: 1px solid var(--bs-border-color, #e9ecef);
+        background: linear-gradient(180deg, rgba(13, 110, 253, 0.07), rgba(13, 110, 253, 0.02));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    .appointment-status-chart-canvas {
+        width: 100%;
+        height: 290px !important;
+    }
+
+    .appointment-status-metrics {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .appointment-status-metric {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.95rem 1rem;
+        border-radius: 1rem;
+        border: 1px solid var(--bs-border-color, #e9ecef);
+        background: var(--bs-light, #f8f9fa);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .appointment-status-metric:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.6rem 1rem rgba(15, 23, 42, 0.08);
+    }
+
+    :root[data-bs-theme="dark"] .appointment-status-card {
+        background: transparent;
+    }
+
+    :root[data-bs-theme="dark"] .appointment-status-chart-shell {
+        background: linear-gradient(180deg, rgba(59, 130, 246, 0.16), rgba(10, 14, 35, 0.72));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    :root[data-bs-theme="dark"] .appointment-status-metric {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: rgba(159, 172, 191, 0.18);
+    }
+
+    :root[data-bs-theme="dark"] .appointment-status-metric:hover {
+        box-shadow: 0 0.8rem 1.4rem rgba(0, 0, 0, 0.28);
+    }
+
+    :root[data-bs-theme="dark"] .appointment-status-dot {
+        box-shadow: 0 0 0 0.28rem rgba(255, 255, 255, 0.05);
+    }
+
+    .appointment-status-metric-main {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-width: 0;
+    }
+
+    .appointment-status-dot {
+        width: 0.85rem;
+        height: 0.85rem;
+        border-radius: 50%;
+        flex-shrink: 0;
+        box-shadow: 0 0 0 0.28rem rgba(0, 0, 0, 0.04);
+    }
+
+    .appointment-status-dot.completed { background: #22c55e; }
+    .appointment-status-dot.pending { background: #f59e0b; }
+    .appointment-status-dot.cancelled { background: #ef4444; }
+    .appointment-status-dot.ongoing { background: #3b82f6; }
+
+    .appointment-status-label {
+        display: block;
+        color: var(--bs-body-color, #212529);
+        font-weight: 600;
+    }
+
+    .appointment-status-meta {
+        display: block;
+        color: var(--bs-secondary-color, #6c757d);
+        font-size: 0.8rem;
+    }
+
+    .appointment-status-value {
+        color: var(--bs-body-color, #212529);
+        font-size: 1.1rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .appointment-status-empty-note {
+        margin: 0.15rem 0 0;
+        color: var(--bs-secondary-color, #6c757d);
+        font-size: 0.85rem;
+    }
+
+    @media (max-width: 991.98px) {
+        .appointment-status-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .appointment-status-chart-shell {
+            min-height: 290px;
+        }
+
+        .appointment-status-chart-canvas {
+            height: 260px !important;
+        }
+    }
+</style>
+@endpush
+
 @section('content')
 
 <!-- Page Header -->
@@ -132,108 +350,100 @@
 </div>
 <!-- End Dashboard Statistics -->
 
-<!-- Quick Actions & Recent Activities -->
+<!-- Appointment Status & Recent Activities -->
 <div class="row mb-4">
-     <!-- Quick Actions -->
-    <div class="col-lg-6">
-        <div class="card shadow-sm">
+    <!-- Appointment Status -->
+    <div class="col-lg-6 d-flex">
+        <div class="card shadow-sm appointment-status-card h-100 w-100">
             <div class="card-header">
-                <h5 class="fw-bold mb-0">Quick Actions</h5>
+                <h5 class="fw-bold mb-1">Appointment Status</h5>
+                <p class="appointment-status-subtitle mb-0">Overview of current appointment distribution</p>
             </div>
             <div class="card-body">
-                <div class="row row-cols-1 row-cols-md-2 g-3">
-                    {{-- <div class="col">
-                        <a href="{{ route('doctors.create') }}" class="btn btn-light border d-flex align-items-center justify-content-between p-3 rounded-2">
-                            <div>
-                                <h6 class="fw-semibold mb-0">Add Doctor</h6>
-                                <small class="text-muted">Register new doctor</small>
-                            </div>
-                            <i class="ti ti-arrow-right fs-18"></i>
-                        </a>
+                <div class="appointment-status-grid">
+                    <div class="appointment-status-chart-shell">
+                        <canvas id="appointmentStatusChart" class="appointment-status-chart-canvas" aria-label="Appointment status doughnut chart"></canvas>
                     </div>
-                    <div class="col">
-                        <a href="{{ route('patients.create') }}" class="btn btn-light border d-flex align-items-center justify-content-between p-3 rounded-2">
-                            <div>
-                                <h6 class="fw-semibold mb-0">Add Patient</h6>
-                                <small class="text-muted">Register new patient</small>
+
+                    <div class="appointment-status-metrics">
+                        <div class="appointment-status-metric">
+                            <div class="appointment-status-metric-main">
+                                <span class="appointment-status-dot completed"></span>
+                                <div>
+                                    <span class="appointment-status-label">Completed</span>
+                                    <span class="appointment-status-meta">Consultations finished</span>
+                                </div>
                             </div>
-                            <i class="ti ti-arrow-right fs-18"></i>
-                        </a>
+                            <span class="appointment-status-value">{{ $appointmentStatusChart['completedCount'] }}</span>
+                        </div>
+
+                        <div class="appointment-status-metric">
+                            <div class="appointment-status-metric-main">
+                                <span class="appointment-status-dot pending"></span>
+                                <div>
+                                    <span class="appointment-status-label">Pending</span>
+                                    <span class="appointment-status-meta">Awaiting confirmation</span>
+                                </div>
+                            </div>
+                            <span class="appointment-status-value">{{ $appointmentStatusChart['pendingCount'] }}</span>
+                        </div>
+
+                        <div class="appointment-status-metric">
+                            <div class="appointment-status-metric-main">
+                                <span class="appointment-status-dot cancelled"></span>
+                                <div>
+                                    <span class="appointment-status-label">Cancelled</span>
+                                    <span class="appointment-status-meta">Closed without consultation</span>
+                                </div>
+                            </div>
+                            <span class="appointment-status-value">{{ $appointmentStatusChart['cancelledCount'] }}</span>
+                        </div>
+
+                        <div class="appointment-status-metric">
+                            <div class="appointment-status-metric-main">
+                                <span class="appointment-status-dot ongoing"></span>
+                                <div>
+                                    <span class="appointment-status-label">Ongoing</span>
+                                    <span class="appointment-status-meta">Approved or active sessions</span>
+                                </div>
+                            </div>
+                            <span class="appointment-status-value">{{ $appointmentStatusChart['ongoingCount'] }}</span>
+                        </div>
+
+                        @if ($appointmentStatusChart['totalAppointments'] === 0)
+                            <p class="appointment-status-empty-note">No appointments yet. This chart will update automatically as soon as records are created.</p>
+                        @endif
                     </div>
-                    <div class="col">
-                        <a href="{{ route('appointments.create') }}" class="btn btn-light border d-flex align-items-center justify-content-between p-3 rounded-2">
-                            <div>
-                                <h6 class="fw-semibold mb-0">Schedule Appointment</h6>
-                                <small class="text-muted">Create new appointment</small>
-                            </div>
-                            <i class="ti ti-arrow-right fs-18"></i>
-                        </a>
-                    </div>
-                    <div class="col">
-                        <a href="{{ route('invoices.create') }}" class="btn btn-light border d-flex align-items-center justify-content-between p-3 rounded-2">
-                            <div>
-                                <h6 class="fw-semibold mb-0">Create Invoice</h6>
-                                <small class="text-muted">Generate new invoice</small>
-                            </div>
-                            <i class="ti ti-arrow-right fs-18"></i>
-                        </a>
-                    </div> --}}
-                </div>
-            </div>
-        </div>
-    </div> 
-
-
-
-  
-
-<div class="col-lg-6">
-    <div class="card shadow-sm">
-        <div class="card-header">
-            <h5 class="fw-bold mb-0">System Overview</h5>
-        </div>
-        <div class="card-body">
-            <div class="mb-3">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fw-semibold">Completed Appointments</span>
-                    <span class="badge bg-success">{{ \App\Models\Appointment::where('status', 'completed')->count() }}</span>
-                </div>
-                <div class="progress" style="height: 8px;">
-                    <div class="progress-bar bg-success" style="width: {{ (\App\Models\Appointment::where('status', 'completed')->count() / (\App\Models\Appointment::count() ?: 1)) * 100 }}%"></div>
-                </div>
-            </div>
-            <div class="mb-3">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fw-semibold">Pending Appointments</span>
-                    <span class="badge bg-warning">{{ \App\Models\Appointment::where('status', 'pending')->count() }}</span>
-                </div>
-                <div class="progress" style="height: 8px;">
-                    <div class="progress-bar bg-warning" style="width: {{ (\App\Models\Appointment::where('status', 'pending')->count() / (\App\Models\Appointment::count() ?: 1)) * 100 }}%"></div>
-                </div>
-            </div>
-            <div class="mb-3">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fw-semibold">Cancelled Appointments</span>
-                    <span class="badge bg-danger">{{ \App\Models\Appointment::where('status', 'cancelled')->count() }}</span>
-                </div>
-                <div class="progress" style="height: 8px;">
-                    <div class="progress-bar bg-danger" style="width: {{ (\App\Models\Appointment::where('status', 'cancelled')->count() / (\App\Models\Appointment::count() ?: 1)) * 100 }}%"></div>
-                </div>
-            </div>
-            <div class="mb-3">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fw-semibold">Outstanding Invoices</span>
-                    <span class="badge bg-info">{{ \App\Models\Invoice::where('status', 'unpaid')->count() }}</span>
-                </div>
-                <div class="progress" style="height: 8px;">
-                    <div class="progress-bar bg-info" style="width: {{ (\App\Models\Invoice::where('status', 'unpaid')->count() / (\App\Models\Invoice::count() ?: 1)) * 100 }}%"></div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- End Quick Actions & Recent Activities -->
+<div class="col-lg-6 d-flex">
+    <div class="card shadow-sm h-100 w-100">
+        <div class="card-header">
+            <h5 class="fw-bold mb-0">System Overview</h5>
+        </div>
+        <div class="card-body">
+            @foreach($appointmentOverviewItems as $item)
+                @php
+                    $percentage = $item['total'] > 0 ? min(($item['count'] / $item['total']) * 100, 100) : 0;
+                @endphp
+                <div class="mb-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fw-semibold">{{ $item['label'] }}</span>
+                        <span class="badge bg-{{ $item['color'] }}">{{ $item['count'] }}</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-{{ $item['color'] }}" style="width: {{ $percentage }}%"></div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+</div>
+<!-- End Appointment Status & Recent Activities -->
 
 <!-- Recent Appointments -->
 <div class="row">
@@ -255,20 +465,37 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse(\App\Models\Appointment::latest()->limit(5)->get() as $appointment)
+                        @forelse(($stats['recent_appointments'] ?? collect()) as $appointment)
                             <tr>
                                 <td class="py-3">
+                                    @php
+                                        $patientName = $appointment->patient?->user?->name ?? $appointment->patient?->name ?? 'N/A';
+                                        $doctorName = $appointment->doctor?->user?->name ?? $appointment->doctor?->name ?? 'N/A';
+                                        $appointmentDateTime = null;
+
+                                        if ($appointment->appointment_date) {
+                                            $appointmentDateTime = \Carbon\Carbon::parse($appointment->appointment_date);
+
+                                            if ($appointment->appointment_time) {
+                                                $timeValue = $appointment->appointment_time instanceof \Carbon\CarbonInterface
+                                                    ? $appointment->appointment_time->format('H:i:s')
+                                                    : \Carbon\Carbon::parse($appointment->appointment_time)->format('H:i:s');
+
+                                                $appointmentDateTime->setTimeFromTimeString($timeValue);
+                                            }
+                                        }
+                                    @endphp
                                     <div class="d-flex align-items-center">
                                         <span class="avatar bg-light-primary rounded-circle me-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
-                                            {{ strtoupper(substr($appointment->patient->name ?? 'N/A', 0, 1)) }}
+                                            {{ strtoupper(substr($patientName, 0, 1)) }}
                                         </span>
-                                        <span>{{ $appointment->patient->name ?? 'N/A' }}</span>
+                                        <span>{{ $patientName }}</span>
                                     </div>
                                 </td>
-                                <td class="py-3">{{ $appointment->doctor->name ?? 'N/A' }}</td>
+                                <td class="py-3">{{ $doctorName }}</td>
                                 <td class="py-3">
-                                    @if($appointment->appointment_date)
-                                        {{ \Carbon\Carbon::parse($appointment->appointment_date)->format('M d, Y h:i A') }}
+                                    @if($appointmentDateTime)
+                                        {{ $appointmentDateTime->format('M d, Y h:i A') }}
                                     @else
                                         N/A
                                     @endif
@@ -279,7 +506,9 @@
                                             'pending' => 'warning',
                                             'completed' => 'success',
                                             'cancelled' => 'danger',
-                                            'rescheduled' => 'info'
+                                            'rescheduled' => 'info',
+                                            'approved' => 'primary',
+                                            'ongoing' => 'primary',
                                         ];
                                         $statusColor = $statusColors[$appointment->status] ?? 'secondary';
                                     @endphp
@@ -321,7 +550,7 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-3 col-sm-6 mb-3">
-                        <a href" " class="card text-decoration-none border-0 shadow-sm">
+                        <a href"" class="card text-decoration-none border-0 shadow-sm">
                             <div class="card-body text-center py-4">
                                 <span class="avatar bg-light-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 45px; height: 45px;">
                                     <i class="ti ti-users fs-20 text-primary"></i>
@@ -415,4 +644,151 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const chartCanvas = document.getElementById('appointmentStatusChart');
+        const themeRoot = document.documentElement;
+
+        if (!chartCanvas || typeof Chart === 'undefined') {
+            return;
+        }
+
+        const chartData = @json($appointmentStatusChartJs);
+        let appointmentChart = null;
+
+        function getThemeColors() {
+            const computedStyle = getComputedStyle(themeRoot);
+            const isDark = themeRoot.getAttribute('data-bs-theme') === 'dark';
+
+            return {
+                isDark,
+                textColor: computedStyle.getPropertyValue('--bs-body-color').trim() || '#212529',
+                mutedColor: computedStyle.getPropertyValue('--bs-secondary-color').trim() || '#6c757d',
+                borderColor: computedStyle.getPropertyValue('--bs-body-bg').trim() || '#ffffff',
+                tooltipBackground: isDark ? 'rgba(3, 4, 26, 0.96)' : 'rgba(15, 23, 42, 0.92)',
+                tooltipBody: isDark ? '#d9e2f1' : '#e2e8f0',
+            };
+        }
+
+        function createCenterTextPlugin(colors) {
+            return {
+                id: 'centerTextPlugin',
+                afterDraw(chart) {
+                    const meta = chart.getDatasetMeta(0);
+                    if (!meta || !meta.data || !meta.data.length) {
+                        return;
+                    }
+
+                    const centerPoint = meta.data[0];
+                    const ctx = chart.ctx;
+
+                    ctx.save();
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    ctx.fillStyle = colors.mutedColor;
+                    ctx.font = '600 13px sans-serif';
+                    ctx.fillText('Total', centerPoint.x, centerPoint.y - 16);
+
+                    ctx.fillStyle = colors.textColor;
+                    ctx.font = '700 28px sans-serif';
+                    ctx.fillText(String(chartData.totalAppointments), centerPoint.x, centerPoint.y + 12);
+
+                    ctx.restore();
+                }
+            };
+        }
+
+        function renderAppointmentChart() {
+            const colors = getThemeColors();
+
+            if (appointmentChart) {
+                appointmentChart.destroy();
+            }
+
+            appointmentChart = new Chart(chartCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        data: chartData.values,
+                        backgroundColor: ['#22c55e', '#f59e0b', '#ef4444', '#3b82f6'],
+                        borderColor: colors.borderColor,
+                        borderWidth: 6,
+                        hoverOffset: 10,
+                        spacing: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '72%',
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 1000,
+                        easing: 'easeOutQuart',
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: colors.mutedColor,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                boxWidth: 10,
+                                boxHeight: 10,
+                                padding: 18,
+                                font: {
+                                    size: 12,
+                                    weight: '600',
+                                },
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: colors.tooltipBackground,
+                            titleColor: '#ffffff',
+                            bodyColor: colors.tooltipBody,
+                            padding: 12,
+                            cornerRadius: 12,
+                            displayColors: true,
+                            callbacks: {
+                                label: function (context) {
+                                    const value = context.parsed || 0;
+                                    return ' ' + context.label + ': ' + value + ' appointment' + (value === 1 ? '' : 's');
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [createCenterTextPlugin(colors)]
+            });
+        }
+
+        renderAppointmentChart();
+
+        const themeObserver = new MutationObserver(function (mutations) {
+            const themeChanged = mutations.some(function (mutation) {
+                return mutation.type === 'attributes' && mutation.attributeName === 'data-bs-theme';
+            });
+
+            if (themeChanged) {
+                renderAppointmentChart();
+            }
+        });
+
+        themeObserver.observe(themeRoot, {
+            attributes: true,
+            attributeFilter: ['data-bs-theme']
+        });
+    });
+</script>
+@endpush
 

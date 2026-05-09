@@ -9,6 +9,8 @@ use App\Models\Appointment;
 use App\Models\DoctorSchedule;
 use App\Models\Payment;
 use App\Models\Prescription;
+use App\Models\Invoice;
+use App\Models\Rating;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -21,13 +23,43 @@ class DashboardController extends Controller
         $stats = [];
 
         if ($user->role === 'admin') {
+            $appointmentStatusCounts = Appointment::query()
+                ->selectRaw('status, COUNT(*) as aggregate')
+                ->whereIn('status', ['completed', 'pending', 'cancelled', 'approved', 'ongoing'])
+                ->groupBy('status')
+                ->pluck('aggregate', 'status');
+
+            $completedCount = (int) $appointmentStatusCounts->get('completed', 0);
+            $pendingCount = (int) $appointmentStatusCounts->get('pending', 0);
+            $cancelledCount = (int) $appointmentStatusCounts->get('cancelled', 0);
+            $ongoingCount = (int) $appointmentStatusCounts->get('approved', 0) + (int) $appointmentStatusCounts->get('ongoing', 0);
+            $totalAppointments = $completedCount + $pendingCount + $cancelledCount + $ongoingCount;
+
             $stats = [
                 'total_doctors' => Doctor::count(),
                 'total_patients' => Patient::count(),
                 'total_appointments' => Appointment::count(),
                 'total_payments' => Payment::sum('amount'),
-                'recent_appointments' => Appointment::with(['doctor', 'patient'])->latest()->take(5)->get(),
+                'total_payments_count' => Payment::count(),
+                'recent_appointments' => Appointment::with(['doctor.user', 'patient.user'])->latest()->take(5)->get(),
                 'recent_payments' => Payment::with(['appointment.patient'])->latest()->take(5)->get(),
+                'completed_appointments' => $completedCount,
+                'pending_appointments' => $pendingCount,
+                'cancelled_appointments' => $cancelledCount,
+                'ongoing_appointments' => $ongoingCount,
+                'today_appointments' => Appointment::whereDate('appointment_date', today())->count(),
+                'paid_payments_count' => Payment::where('status', 'paid')->count(),
+                'unpaid_invoices_count' => Invoice::where('status', 'unpaid')->count(),
+                'total_invoices' => Invoice::count(),
+                'total_prescriptions' => Prescription::count(),
+                'total_ratings' => Rating::count(),
+                'appointment_status_chart' => [
+                    'completedCount' => $completedCount,
+                    'pendingCount' => $pendingCount,
+                    'cancelledCount' => $cancelledCount,
+                    'ongoingCount' => $ongoingCount,
+                    'totalAppointments' => $totalAppointments,
+                ],
             ];
             return view('admin.dashboard', compact('stats', 'user'));
         } elseif ($user->role === 'doctor') {

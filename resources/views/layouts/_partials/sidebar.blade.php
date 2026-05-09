@@ -10,6 +10,19 @@
 
             </a>
 
+            <a href="{{ route('dashboard') }}" class="logo-small">
+
+            <img src="{{ asset('assets/img/logo-small.svg') }}" alt="Logo">
+
+            </a>
+            <a href="{{ route('dashboard') }}" class="dark-logo">
+
+            <img src="{{ asset('assets/img/logo-white.svg') }}" alt="Logo">
+
+            </a>
+
+
+
            
         </div>
         <button class="sidenav-toggle-btn btn border-0 p-0 active" id="toggle_btn"> 
@@ -93,6 +106,18 @@
                                         <i class="ti ti-cards"></i><span>Payments</span>
                                     </a>
                                 </li> --}}
+                                <li class="submenu">
+                                    <a href="javascript:void(0);">
+                                        <i class="ti ti-settings"></i><span>Settings</span>
+                                        <span class="menu-arrow"></span>
+                                    </a>
+                                    <ul>
+                                        <li><a href="{{ route('profile.show', auth()->user()->ensureUuid()) }}">Profile Settings</a></li>
+                                        <li><a href="{{ route('password.change.form') }}">Change Password</a></li>
+                                    </ul>
+                                </li>                                      
+
+                                
                             </ul>
                         @endif
 
@@ -134,16 +159,28 @@
                                         <i class="ti ti-file-invoice"></i><span>Invoices</span>
                                     </a>
                                 </li>
-                                <li class="{{ $nav('payments.*') }}">
+                                {{-- <li class="{{ $nav('payments.*') }}">
                                     <a href="{{ route('payments.index') }}">
                                         <i class="ti ti-cards"></i><span>Payments</span>
                                     </a>
-                                </li>
+                                </li> --}}
                                 <li class="{{ $nav('ratings.*') }}">
                                     <a href="{{ route('ratings.index') }}">
                                         <i class="ti ti-star"></i><span>Ratings</span>
                                     </a>
                                 </li>
+                            <li class="submenu">
+                                    <a href="javascript:void(0);">
+                                        <i class="ti ti-settings"></i><span>Settings</span>
+                                        <span class="menu-arrow"></span>
+                                    </a>
+                                    <ul>
+                                        <li><a href="{{ route('profile.show', auth()->user()->ensureUuid()) }}">Profile Settings</a></li>
+                                        <li><a href="{{ route('password.change.form') }}">Change Password</a></li>
+                                    </ul>
+                                </li>
+                                        
+                                    
                             </ul>
                         @endif
 
@@ -175,10 +212,15 @@
                                         <i class="ti ti-file-invoice"></i><span>Invoices</span>
                                     </a>
                                 </li>
-                                <li>
+                             <li class="submenu">
                                     <a href="javascript:void(0);">
                                         <i class="ti ti-settings"></i><span>Settings</span>
+                                        <span class="menu-arrow"></span>
                                     </a>
+                                    <ul>
+                                        <li><a href="{{ route('profile.show', auth()->user()->ensureUuid()) }}">Profile Settings</a></li>
+                                        <li><a href="{{ route('password.change.form') }}">Change Password</a></li>
+                                    </ul>
                                 </li>
                             </ul>
                         @endif

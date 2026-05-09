@@ -262,6 +262,85 @@
         font-size: 1rem;
         margin-top: .1rem;
     }
+    :root[data-bs-theme="dark"] .verification-title {
+        color: #d9dcff;
+    }
+    :root[data-bs-theme="dark"] .verification-subtitle,
+    :root[data-bs-theme="dark"] .doctor-email {
+        color: #9facbf;
+    }
+    :root[data-bs-theme="dark"] .verification-card {
+        background: #03041a;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+    }
+    :root[data-bs-theme="dark"] .doctor-name {
+        color: #e6eefc;
+    }
+    :root[data-bs-theme="dark"] .status-chip {
+        background: rgba(245, 158, 11, 0.18);
+        color: #fbbf24;
+    }
+    :root[data-bs-theme="dark"] .action-state {
+        background: rgba(34, 197, 94, 0.16);
+        color: #86efac;
+        box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.16);
+    }
+    :root[data-bs-theme="dark"] .ai-panel {
+        background:
+            radial-gradient(circle at top right, rgba(59, 130, 246, 0.16), transparent 34%),
+            linear-gradient(180deg, rgba(10, 14, 35, 0.96) 0%, rgba(3, 4, 26, 0.98) 100%);
+        border-color: rgba(159, 172, 191, 0.16);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+    :root[data-bs-theme="dark"] .ai-title,
+    :root[data-bs-theme="dark"] .ai-observations-title,
+    :root[data-bs-theme="dark"] .metric-value {
+        color: #e6eefc;
+    }
+    :root[data-bs-theme="dark"] .ai-title-badge {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(34, 197, 94, 0.16));
+        color: #93c5fd;
+    }
+    :root[data-bs-theme="dark"] .ai-status-pill {
+        background: rgba(148, 163, 184, 0.14);
+        color: #cbd5e1;
+    }
+    :root[data-bs-theme="dark"] .ai-status-pill.status-valid {
+        background: rgba(34, 197, 94, 0.18);
+        color: #86efac;
+    }
+    :root[data-bs-theme="dark"] .ai-status-pill.status-suspicious {
+        background: rgba(245, 158, 11, 0.18);
+        color: #fbbf24;
+    }
+    :root[data-bs-theme="dark"] .ai-status-pill.status-fake {
+        background: rgba(239, 68, 68, 0.18);
+        color: #fca5a5;
+    }
+    :root[data-bs-theme="dark"] .metric-card,
+    :root[data-bs-theme="dark"] .ai-observations {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: rgba(159, 172, 191, 0.14);
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+    }
+    :root[data-bs-theme="dark"] .metric-label,
+    :root[data-bs-theme="dark"] .insight-list li,
+    :root[data-bs-theme="dark"] pre.mb-0 {
+        color: #9facbf;
+    }
+    :root[data-bs-theme="dark"] .metric-progress {
+        background: rgba(148, 163, 184, 0.16);
+    }
+    :root[data-bs-theme="dark"] .insight-list li {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+    }
+    :root[data-bs-theme="dark"] pre.mb-0 {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(159, 172, 191, 0.14);
+        border-radius: 14px;
+        padding: 1rem;
+        white-space: pre-wrap;
+    }
     @media (max-width: 767.98px) {
         .verification-card .card-body {
             padding: 1.1rem;

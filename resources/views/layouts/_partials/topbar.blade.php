@@ -2,20 +2,20 @@
             <div class="page-container topbar-menu">
                 <div class="d-flex align-items-center gap-2">
 
-                    <!-- Logo -->
+                    {{-- <!-- Logo -->
                     <a href="{{ route('dashboard') }}" class="logo">
 
                         <!-- Logo Normal -->
                         <span class="logo-light">
-                            <span class="logo-lg"><img src="assets/img/logo.svg" alt="logo"></span>
-                            <span class="logo-sm"><img src="assets/img/logo-small.svg" alt="small logo"></span>
+                            <span class="logo-lg"><img src="{{ asset('assets/img/logo.svg') }}" alt="logo"></span>
                         </span>
 
                         <!-- Logo Dark -->
-                        <span class="logo-dark">
-                            <span class="logo-lg"><img src="assets/img/logo-white.svg" alt="dark logo"></span>
+                        <span class="dark-logo">
+                            <span class="logo-lg"><img src="{{ asset('assets/img/logo-white.svg') }}" alt="dark logo"></span>
+                            <span class="logo-sm"><img src="{{ asset('assets/img/logo-small.svg') }}" alt="small dark logo"></span>
                         </span>
-                    </a>
+                    </a> --}}
 
                     <!-- Sidebar Mobile Button -->
                     <a id="mobile_btn" class="mobile-btn" href="#sidebar">
@@ -67,7 +67,7 @@
                     <!-- Settings -->
                     <div class="header-item">
                         <div class="dropdown me-2">
-                            <a href="#" class="btn topbar-link"><i class="ti ti-settings-2"></i></a>
+                            <a href="{{ route('profile.show', auth()->user()->ensureUuid()) }}" class="btn topbar-link"><i class="ti ti-settings-2"></i></a>
 						</div>
 					</div>
 						

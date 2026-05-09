@@ -43,11 +43,11 @@
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ route('ratings.show', $rating->id) }}" class="btn btn-info"><i class="ti ti-eye"></i></a>
-                                    <a href="{{ route('ratings.edit', $rating->id) }}" class="btn btn-warning"><i class="ti ti-pencil"></i></a>
+                                    {{-- <a href="{{ route('ratings.edit', $rating->id) }}" class="btn btn-warning"><i class="ti ti-pencil"></i></a>
                                     <form action="{{ route('ratings.destroy', $rating->id) }}" method="POST" style="display:inline;">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')"><i class="ti ti-trash"></i></button>
-                                    </form>
+                                    </form> --}}
                                 </div>
                             </td>
                         </tr>

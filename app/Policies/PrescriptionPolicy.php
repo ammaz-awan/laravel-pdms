@@ -10,7 +10,7 @@ class PrescriptionPolicy
     /**
      * Admins, doctors, and patients may list prescriptions (filtered by role in controller).
      */
-   public function viewAny(User $user): bool
+    public function viewAny(User $user): bool
         {
             return in_array($user->role, ['admin', 'doctor', 'patient']);
         }

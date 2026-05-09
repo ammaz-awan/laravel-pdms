@@ -238,6 +238,89 @@
         background: rgba(59, 130, 246, 0.12);
         color: #1d4ed8;
     }
+    :root[data-bs-theme="dark"] .doctor-profile-card,
+    :root[data-bs-theme="dark"] .calendar-shell,
+    :root[data-bs-theme="dark"] #appointment-booking-card {
+        background: #03041a;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+    :root[data-bs-theme="dark"] .doctor-profile-card .card-header,
+    :root[data-bs-theme="dark"] .calendar-shell .card-header,
+    :root[data-bs-theme="dark"] #appointment-booking-card .card-header {
+        background: linear-gradient(135deg, rgba(10, 14, 35, 0.98), rgba(20, 28, 45, 0.95));
+        border-bottom-color: rgba(159, 172, 191, 0.14);
+        color: #e6eefc;
+    }
+    :root[data-bs-theme="dark"] .meta-item,
+    :root[data-bs-theme="dark"] .availability-chip,
+    :root[data-bs-theme="dark"] .booking-summary {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+        border-color: rgba(159, 172, 191, 0.14);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+    }
+    :root[data-bs-theme="dark"] .meta-label,
+    :root[data-bs-theme="dark"] .booking-summary strong,
+    :root[data-bs-theme="dark"] .availability-chip-time,
+    :root[data-bs-theme="dark"] #slot-help-text {
+        color: #9facbf !important;
+    }
+    :root[data-bs-theme="dark"] .meta-value,
+    :root[data-bs-theme="dark"] .availability-chip-date,
+    :root[data-bs-theme="dark"] .calendar-helper,
+    :root[data-bs-theme="dark"] #doctor-view-calendar .fc .fc-toolbar-title,
+    :root[data-bs-theme="dark"] h6.fw-semibold,
+    :root[data-bs-theme="dark"] .form-label {
+        color: #e6eefc;
+    }
+    :root[data-bs-theme="dark"] .availability-empty {
+        background: rgba(148, 163, 184, 0.12);
+        color: #9facbf;
+    }
+    :root[data-bs-theme="dark"] .booking-summary {
+        border-color: rgba(96, 165, 250, 0.2);
+        color: #e6eefc;
+    }
+    :root[data-bs-theme="dark"] .calendar-shell {
+        background: linear-gradient(180deg, #03041a 0%, #08101f 100%);
+    }
+    :root[data-bs-theme="dark"] .calendar-helper {
+        background: rgba(59, 130, 246, 0.14);
+        color: #93c5fd;
+    }
+    :root[data-bs-theme="dark"] #doctor-view-calendar .fc .fc-button {
+        background: rgba(148, 163, 184, 0.12);
+        color: #cbd5e1;
+    }
+    :root[data-bs-theme="dark"] #doctor-view-calendar .fc .fc-button:hover,
+    :root[data-bs-theme="dark"] #doctor-view-calendar .fc .fc-button:focus {
+        background: rgba(148, 163, 184, 0.2);
+        color: #f8fafc;
+    }
+    :root[data-bs-theme="dark"] #doctor-view-calendar .fc .fc-daygrid-day-number {
+        color: #cbd5e1;
+    }
+    :root[data-bs-theme="dark"] #doctor-view-calendar .fc .fc-daygrid-day-frame {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: rgba(159, 172, 191, 0.14);
+    }
+    :root[data-bs-theme="dark"] #doctor-view-calendar .fc .fc-daygrid-day:not(.fc-day-other):hover .fc-daygrid-day-frame {
+        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
+    }
+    :root[data-bs-theme="dark"] #doctor-view-calendar .fc-day-available .fc-daygrid-day-frame {
+        background: linear-gradient(180deg, rgba(12, 21, 41, 0.96), rgba(10, 33, 59, 0.96));
+        border-color: rgba(96, 165, 250, 0.32);
+    }
+    :root[data-bs-theme="dark"] #doctor-view-calendar .fc-day-unavailable .fc-daygrid-day-frame {
+        background: rgba(255, 255, 255, 0.02);
+        opacity: .52;
+    }
+    :root[data-bs-theme="dark"] #doctor-view-calendar .fc .fc-daygrid-event {
+        background: rgba(59, 130, 246, 0.18);
+        color: #93c5fd;
+    }
+    :root[data-bs-theme="dark"] hr {
+        border-color: rgba(159, 172, 191, 0.14);
+    }
     @media (max-width: 767.98px) {
         .doctor-profile-card .card-body,
         .calendar-shell .card-body,
@@ -464,6 +547,10 @@
         </div>
     </div>
 @endif
+
+{{-- Doctor Reviews Section --}}
+@include('components.doctor-reviews', ['doctorId' => $doctor->id])
+
 @endsection
 
 @section('scripts')

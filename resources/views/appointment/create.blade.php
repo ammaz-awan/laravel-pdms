@@ -178,6 +178,87 @@
         background: rgba(59, 130, 246, 0.12);
         color: #1d4ed8;
     }
+    :root[data-bs-theme="dark"] .booking-card,
+    :root[data-bs-theme="dark"] .booking-calendar-card {
+        background: #03041a;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+    :root[data-bs-theme="dark"] .booking-card .card-header,
+    :root[data-bs-theme="dark"] .booking-calendar-card .card-header {
+        background: linear-gradient(135deg, rgba(10, 14, 35, 0.98), rgba(20, 28, 45, 0.95));
+        border-bottom-color: rgba(159, 172, 191, 0.14);
+        color: #e6eefc;
+    }
+    :root[data-bs-theme="dark"] .booking-form .form-control,
+    :root[data-bs-theme="dark"] .booking-form .form-select {
+        background-color: rgba(255, 255, 255, 0.03);
+        border-color: rgba(159, 172, 191, 0.16);
+        color: #e6eefc;
+    }
+    :root[data-bs-theme="dark"] .booking-form select.form-control,
+    :root[data-bs-theme="dark"] .booking-form select.form-select {
+        background-color: #0f172a !important;
+        color: #e6eefc !important;
+    }
+    :root[data-bs-theme="dark"] .booking-form select.form-control option,
+    :root[data-bs-theme="dark"] .booking-form select.form-select option {
+        background-color: #0f172a;
+        color: #e6eefc;
+    }
+    :root[data-bs-theme="dark"] .booking-form .form-control::placeholder,
+    :root[data-bs-theme="dark"] .booking-form .form-select::placeholder {
+        color: #9facbf;
+    }
+    :root[data-bs-theme="dark"] .field-panel,
+    :root[data-bs-theme="dark"] .fee-display-card {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+        border-color: rgba(159, 172, 191, 0.14);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+        color: #e6eefc;
+    }
+    :root[data-bs-theme="dark"] .calendar-tip,
+    :root[data-bs-theme="dark"] .form-label {
+        color: #e6eefc;
+    }
+    :root[data-bs-theme="dark"] .calendar-tip {
+        background: rgba(59, 130, 246, 0.14);
+    }
+    :root[data-bs-theme="dark"] #date-help-text {
+        color: #9facbf !important;
+    }
+    :root[data-bs-theme="dark"] #doctor-availability-calendar .fc .fc-toolbar-title {
+        color: #e6eefc;
+    }
+    :root[data-bs-theme="dark"] #doctor-availability-calendar .fc .fc-button {
+        background: rgba(148, 163, 184, 0.12);
+        color: #cbd5e1;
+    }
+    :root[data-bs-theme="dark"] #doctor-availability-calendar .fc .fc-button:hover,
+    :root[data-bs-theme="dark"] #doctor-availability-calendar .fc .fc-button:focus {
+        background: rgba(148, 163, 184, 0.2);
+        color: #f8fafc;
+    }
+    :root[data-bs-theme="dark"] #doctor-availability-calendar .fc .fc-daygrid-day-number {
+        color: #cbd5e1;
+    }
+    :root[data-bs-theme="dark"] #doctor-availability-calendar .fc .fc-daygrid-day-frame {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: rgba(159, 172, 191, 0.14);
+    }
+    :root[data-bs-theme="dark"] #doctor-availability-calendar .fc .fc-daygrid-day:not(.fc-day-other):hover .fc-daygrid-day-frame {
+        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
+    }
+    :root[data-bs-theme="dark"] #doctor-availability-calendar .fc-day-available .fc-daygrid-day-frame {
+        background: linear-gradient(180deg, rgba(12, 21, 41, 0.96), rgba(10, 33, 59, 0.96));
+        border-color: rgba(96, 165, 250, 0.32);
+    }
+    :root[data-bs-theme="dark"] #doctor-availability-calendar .fc-day-unavailable .fc-daygrid-day-frame {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    :root[data-bs-theme="dark"] #doctor-availability-calendar .fc .fc-daygrid-event {
+        background: rgba(59, 130, 246, 0.18);
+        color: #93c5fd;
+    }
     @media (max-width: 767.98px) {
         .booking-card .card-body,
         .booking-calendar-card .card-body {

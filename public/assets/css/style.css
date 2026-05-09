@@ -6256,7 +6256,8 @@ Author URL: https://themeforest.net/user/dreamstechnologies
   background: transparent;
 }
 .card .card-body {
-  padding: 20px;
+  /* padding: 20px;
+  height: 100%; */
 }
 .card .card-footer {
   padding: 0.75rem 1.25rem;

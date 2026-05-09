@@ -712,11 +712,9 @@ html, body {
             <button class="control-btn active" id="btnCam" title="Camera On/Off">
                 <i class="ti ti-video" id="camIcon"></i>
             </button>
-            @if($callData['is_doctor'])
             <button class="control-btn end-call" id="btnEnd" title="End Call">
                 <i class="ti ti-phone-off"></i>
             </button>
-            @endif
         </div>
     </div>
 </div>
@@ -781,6 +779,12 @@ html, body {
     <i class="ti ti-prescription"></i>
 </button>
 @endif
+
+@if (auth()->user()->role === 'patient')
+{{-- Rating Modal Component --}}
+@include('components.rating-modal')
+@endif
+
 @endsection
 
 @push('scripts')
@@ -799,6 +803,11 @@ const AGORA_CHANNEL   = @json($callData['channel_name']);
 const AGORA_TOKEN     = @json($callData['token']);
 const AGORA_UID       = @json($callData['uid']);
 const IS_DOCTOR       = @json($callData['is_doctor']);
+const CURRENT_USER_ROLE = @json((string) auth()->user()->role);
+const APPOINTMENT_STATUS = @json((string) $appointment->status);
+const APPOINTMENT_PATIENT_ID = @json((int) $appointment->patient_id);
+const CURRENT_PATIENT_ID = @json((int) optional(auth()->user()->patient)->id);
+const DOCTOR_AVATAR_URL = @json(!empty(optional($appointment->doctor->user)->profile_image) ? optional($appointment->doctor->user)->profile_image_url : null);
 const EXPIRES_AT      = @json($callData['expires_at']);   // unix ts
 const APPT_ID         = @json($appointment->id);
 const CSRF_TOKEN      = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -806,12 +815,14 @@ const END_CALL_URL    = "{{ route('appointments.end-call', ['id' => $appointment
 const RX_STORE_URL    = "{{ route('appointments.prescription.store', ['id' => $appointment->id]) }}";
 const RX_FETCH_URL    = "{{ route('appointments.prescription.show', ['id' => $appointment->id]) }}";
 const APPT_SHOW_URL   = "{{ route('appointments.show', $appointment) }}";
+const APPT_RATING_URL = "{{ route('appointments.rating.show', ['id' => $appointment->id]) }}";
 
 // ========== 30-MINUTE HARD CALL DURATION ==========
 const MAX_CALL_DURATION_MS = 30 * 60 * 1000; // 30 minutes in milliseconds
 let callStartTime = null;
 let callDurationTimer = null;
 let callEnded = false;
+let handlingCallEnd = false;
 
 /* ================================================================
    TOASTR CONFIGURATION
@@ -868,11 +879,16 @@ function handleCallDurationExpired() {
         allowOutsideClick: false,
         allowEscapeKey: false,
         confirmButtonText: 'Return to Appointment',
-    }).then(() => {
-        window.location.href = APPT_SHOW_URL;
+    }).then(async () => {
+        await endCallImmediately();
+        await fetch(CALL_STATUS_URL, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            }
+        }).catch(() => {});
+        await handleCallEnded();
     });
-
-    endCallImmediately();
 }
 
 /* ================================================================
@@ -1056,7 +1072,7 @@ document.getElementById('btnEnd')?.addEventListener('click', async () => {
                     headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' }
                 });
             }
-            handleCallEnded();
+            await handleCallEnded();
         } catch (err) {
             toastr.error('Error ending call: ' + err.message);
         }
@@ -1092,7 +1108,7 @@ function handleCallEnded() {
     // Disable all controls
     document.getElementById('btnMic').disabled = true;
     document.getElementById('btnCam').disabled = true;
-    document.getElementById('btnEnd').disabled = true;
+        document.getElementById('btnEnd').disabled = true;
 }
 
 /* ================================================================
@@ -1108,9 +1124,8 @@ async function pollCallStatus() {
     
     try {
        const res = await fetch(CALL_STATUS_URL, {
-    method: 'POST',
+    method: 'GET',
     headers: {
-        'X-CSRF-TOKEN': CSRF_TOKEN,
         'Accept': 'application/json',
         'Content-Type': 'application/json'
     }
@@ -1122,7 +1137,8 @@ async function pollCallStatus() {
             callEnded = true;
             clearInterval(statusPollInterval);
             toastr.warning('Call ended by the doctor or system');
-            handleCallEnded();
+            await leaveCall().catch(() => {});
+            await handleCallEnded();
         }
     } catch (err) {
         console.warn('Call status poll failed:', err.message);
@@ -1244,7 +1260,18 @@ function esc(str) {
 
 // Override the earlier implementation so call shutdown uses the
 // elements that actually exist in this template.
-function handleCallEnded() {
+async function handleCallEnded() {
+    if (handlingCallEnd) {
+        return;
+    }
+
+    handlingCallEnd = true;
+    stopCallTimer();
+    if (statusPollInterval) {
+        clearInterval(statusPollInterval);
+        statusPollInterval = null;
+    }
+
     const callStatus = document.getElementById('callStatus');
     const statusText = document.getElementById('statusText');
     const statusDot = document.getElementById('statusDot');
@@ -1265,9 +1292,59 @@ function handleCallEnded() {
     document.getElementById('btnCam').disabled = true;
     document.getElementById('btnEnd')?.setAttribute('disabled', 'disabled');
 
+    if (CURRENT_USER_ROLE === 'doctor' || CURRENT_USER_ROLE === 'admin') {
+        setTimeout(() => {
+            window.location.href = APPT_SHOW_URL;
+        }, 1000);
+        return;
+    }
+
+    try {
+        const response = await fetch(APPT_RATING_URL, {
+            headers: {
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Could not verify review status.');
+        }
+
+        const data = await response.json();
+        const appointmentStatus = String(data.appointment_status ?? '');
+        const appointmentPatientId = parseInt(data.appointment_patient_id ?? APPOINTMENT_PATIENT_ID, 10);
+        const currentPatientId = parseInt(data.current_patient_id ?? CURRENT_PATIENT_ID, 10);
+        const currentUserRole = String(data.current_user_role ?? CURRENT_USER_ROLE);
+        const alreadyReviewed = Boolean(data.has_rating);
+
+        if (currentUserRole === 'doctor' || currentUserRole === 'admin') {
+            window.location.href = APPT_SHOW_URL;
+            return;
+        }
+
+        const canReview =
+            currentUserRole === 'patient'
+            && parseInt(appointmentPatientId, 10) === parseInt(currentPatientId, 10)
+            && appointmentStatus === 'completed'
+            && !alreadyReviewed;
+
+        if (canReview && typeof window.openRatingModal === 'function') {
+            const doctorName = document.querySelector('.title-main')?.textContent?.trim() || 'Your Doctor';
+
+            setTimeout(() => {
+                window.openRatingModal(doctorName, DOCTOR_AVATAR_URL);
+            }, 500);
+
+            return;
+        }
+    } catch (error) {
+        console.warn('Could not check for existing rating:', error);
+    }
+
     setTimeout(() => {
         window.location.href = APPT_SHOW_URL;
-    }, 1500);
+    }, 1000);
 }
 </script>
 @endpush

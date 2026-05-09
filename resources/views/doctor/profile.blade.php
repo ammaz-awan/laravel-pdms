@@ -211,6 +211,9 @@
 
 </div>
 
+{{-- Doctor Reviews Section --}}
+@include('components.doctor-reviews', ['doctorId' => $doctor->id])
+
 @endsection
 
 @push('scripts')

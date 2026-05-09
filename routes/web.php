@@ -19,6 +19,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\AI\DoctorVerificationAIController;
+use App\Http\Controllers\ChangePasswordController;
 
 
 // Authentication Routes
@@ -56,8 +57,12 @@ Route::get('/terms', function () {
     return view('terms');
 });
 
+
 // Protected Routes - Require Authentication
 Route::middleware(['auth'])->group(function () {
+        // Change Password
+        Route::get('/password/change', [ChangePasswordController::class, 'showChangeForm'])->name('password.change.form');
+        Route::post('/password/change', [ChangePasswordController::class, 'change'])->name('password.change');
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::redirect('/', '/dashboard');
@@ -208,6 +213,16 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/appointments/{id}/prescription', [PrescriptionController::class, 'liveShow'])
         ->name('appointments.prescription.show');
+
+    // ── Rating Routes ──────────────────────────────────────────────
+    Route::post('/appointments/{id}/rate', [RatingController::class, 'store'])
+        ->name('appointments.rate');
+
+    Route::get('/appointments/{id}/rating', [RatingController::class, 'show'])
+        ->name('appointments.rating.show');
+
+    Route::get('/doctors/{id}/reviews', [RatingController::class, 'doctorReviews'])
+        ->name('doctors.reviews');
 
     // ── Dev-only debug routes (disabled automatically in production) ──
     Route::get('/agora/debug-token', [AgoraCallController::class, 'debugToken'])

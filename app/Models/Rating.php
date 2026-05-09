@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Rating extends Model
 {
-    protected $fillable = ['doctor_id', 'patient_id', 'rating', 'review'];
+    protected $fillable = ['appointment_id', 'doctor_id', 'patient_id', 'rating', 'review'];
 
     protected static function booted()
     {
@@ -17,6 +17,11 @@ class Rating extends Model
         static::deleted(function ($rating) {
             $rating->doctor->update(['rating_avg' => $rating->doctor->ratings()->avg('rating') ?? 0]);
         });
+    }
+
+    public function appointment()
+    {
+        return $this->belongsTo(Appointment::class);
     }
 
     public function doctor()
