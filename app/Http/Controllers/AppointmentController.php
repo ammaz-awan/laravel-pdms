@@ -14,6 +14,7 @@ use Illuminate\Validation\ValidationException;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use App\Models\Payment;
+use App\Services\InvoiceEmailService;
 
 class AppointmentController extends Controller
 {
@@ -386,8 +387,14 @@ class AppointmentController extends Controller
 
 public function createPaymentIntent(Appointment $appointment)
 {
-    if (auth::user()->role !== 'patient') {
-        abort(403);
+    $user = Auth::user();
+
+    if ($user->role !== 'patient') {
+        abort(403, 'Only patients can pay for appointments.');
+    }
+
+    if ((int) optional($user->patient)->id !== (int) $appointment->patient_id) {
+        abort(403, 'You can only pay for your own appointments.');
     }
 
     if ($appointment->status !== 'approved') {
@@ -432,6 +439,12 @@ public function createPaymentIntent(Appointment $appointment)
 
 public function confirmPayment(Request $request)
 {
+    $user = Auth::user();
+
+    if (! $user || $user->role !== 'patient') {
+        abort(403, 'Only patients can confirm appointment payments.');
+    }
+
     \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
 
     $intent = \Stripe\PaymentIntent::retrieve($request->payment_intent_id);
@@ -442,10 +455,14 @@ public function confirmPayment(Request $request)
 
     $appointment = Appointment::findOrFail($intent->metadata->appointment_id);
 
+    if ((int) optional($user->patient)->id !== (int) $appointment->patient_id) {
+        abort(403, 'You can only confirm payment for your own appointments.');
+    }
+
     // IMPORTANT FIX
-        $appointment->payment_status = 'paid';
-        $appointment->paid_at = now();
-        $appointment->save();
+    $appointment->payment_status = 'paid';
+    $appointment->paid_at = now();
+    $appointment->save();
 
     Payment::where('appointment_id', $appointment->id)
     ->update([
@@ -456,7 +473,11 @@ public function confirmPayment(Request $request)
     // Auto-create invoice for this payment (idempotent)
     $payment = Payment::where('appointment_id', $appointment->id)->first();
     if ($payment) {
-        \App\Http\Controllers\InvoiceController::createFromPayment($payment);
+        $invoice = \App\Http\Controllers\InvoiceController::createFromPayment($payment);
+
+        // Send invoice email automatically (if email is verified)
+        // Safe: Won't crash if email fails, just logs the error
+        InvoiceEmailService::sendInvoiceEmail($invoice);
     }
 
     return response()->json(['success' => true]);
@@ -500,5 +521,4 @@ public function refundPayment(Appointment $appointment)
 }
 
     }
-
 

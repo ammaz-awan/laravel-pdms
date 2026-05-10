@@ -14,6 +14,8 @@ class Invoice extends Model
         'total_amount',
         'issued_date',
         'status',
+        'email_sent',
+        'emailed_at',
     ];
 
     protected function casts(): array
@@ -21,6 +23,8 @@ class Invoice extends Model
         return [
             'total_amount' => 'decimal:2',
             'issued_date'  => 'date',
+            'email_sent'   => 'boolean',
+            'emailed_at'   => 'datetime',
         ];
     }
 

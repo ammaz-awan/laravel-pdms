@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Patient;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Stripe\Stripe;
@@ -107,6 +108,8 @@ class PatientController extends Controller
             'is_active' => true,
         ]);
 
+        event(new Registered($user));
+
        $patient = Patient::create([
             'user_id' => $user->id,
             'age' => $validated['age'],
@@ -123,10 +126,16 @@ class PatientController extends Controller
             ]);
 
         if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Registration successful.']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Registration successful. A verification email has been sent.',
+            ]);
         }
 
-        return redirect()->route('login')->with('success', 'Registration successful. Please login.');
+        return redirect()->route('login')->with(
+            'success',
+            'Registration successful. Please check your email for a verification link, then log in.'
+        );
     }
 
     public function show(Patient $patient)

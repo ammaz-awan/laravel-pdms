@@ -22,9 +22,9 @@
                                     <span class="input-group-text bg-white border-0">
                                         <i class="ti ti-lock text-dark fs-14"></i>
                                     </span>
-                                    <input id="current_password" type="password" class="pass-input form-control ps-0 border-0 @error('current_password') is-invalid @enderror" name="current_password" required autocomplete="current-password">
+                                    <input id="current_password" type="password" class="form-control ps-0 border-0 @error('current_password') is-invalid @enderror" name="current_password" required autocomplete="current-password">
                                     <span class="input-group-text bg-white border-0" style="cursor:pointer" onclick="togglePassword('current_password', this)">
-                                        <i class="ti toggle-password ti-eye-off text-dark fs-14"></i>
+                                        <i class="ti ti-eye-off text-dark fs-14"></i>
                                     </span>
                                 </div>
                                 @error('current_password')
@@ -41,9 +41,9 @@
                                     <span class="input-group-text bg-white border-0">
                                         <i class="ti ti-lock text-dark fs-14"></i>
                                     </span>
-                                    <input id="password" type="password" class="pass-input form-control ps-0 border-0 @error('password') is-invalid @enderror" name="password" required autocomplete="new-password">
+                                    <input id="password" type="password" class="form-control ps-0 border-0 @error('password') is-invalid @enderror" name="password" required autocomplete="new-password">
                                     <span class="input-group-text bg-white border-0" style="cursor:pointer" onclick="togglePassword('password', this)">
-                                        <i class="ti toggle-password ti-eye-off text-dark fs-14"></i>
+                                        <i class="ti ti-eye-off text-dark fs-14"></i>
                                     </span>
                                 </div>
                                 @error('password')
@@ -60,9 +60,9 @@
                                     <span class="input-group-text bg-white border-0">
                                         <i class="ti ti-lock text-dark fs-14"></i>
                                     </span>
-                                    <input id="password-confirm" type="password" class="pass-input form-control ps-0 border-0" name="password_confirmation" required autocomplete="new-password">
+                                    <input id="password-confirm" type="password" class="form-control ps-0 border-0" name="password_confirmation" required autocomplete="new-password">
                                     <span class="input-group-text bg-white border-0" style="cursor:pointer" onclick="togglePassword('password-confirm', this)">
-                                        <i class="ti toggle-password ti-eye-off text-dark fs-14"></i>
+                                        <i class="ti ti-eye-off text-dark fs-14"></i>
                                     </span>
                                 </div>
                             </div>
@@ -86,20 +86,24 @@
 
 @push('scripts')
 <script>
-function togglePassword(fieldId, el) {
-    const input = document.getElementById(fieldId);
-    const icon = el.querySelector('i');
+function togglePassword(fieldId, element) {
 
-    if (input.type === 'password') {
-        input.type = 'text';
+    let input = document.getElementById(fieldId);
+    let icon = element.querySelector('i');
 
-        icon.classList.remove('ti-eye-off');
-        icon.classList.add('ti-eye');
+    if (input.type === "password") {
+
+        input.type = "text";
+
+        icon.classList.remove("ti-eye-off");
+        icon.classList.add("ti-eye");
+
     } else {
-        input.type = 'password';
 
-        icon.classList.remove('ti-eye');
-        icon.classList.add('ti-eye-off');
+        input.type = "password";
+
+        icon.classList.remove("ti-eye");
+        icon.classList.add("ti-eye-off");
     }
 }
 </script>

@@ -18,12 +18,20 @@ use App\Http\Controllers\RatingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\AI\DoctorVerificationAIController;
 use App\Http\Controllers\ChangePasswordController;
 
 
 // Authentication Routes
 Auth::routes();
+
+Route::get('/email/verify', [VerificationController::class, 'show'])
+    ->name('verification.notice');
+Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
+    ->name('verification.verify');
+Route::post('/email/resend', [VerificationController::class, 'resend'])
+    ->name('verification.resend');
 
 Route::get('/register/patient', function () {
     return view('auth.patient-register');
@@ -167,11 +175,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/doctor/appointments/{appointment}/reject', [AppointmentController::class, 'reject'])->name('doctor.appointments.reject');
 });
 
-
-
-
+// Payment Routes
 Route::middleware(['auth'])->group(function () {
-
     Route::post('/appointments/{appointment}/payment-intent',
         [AppointmentController::class, 'createPaymentIntent']
     )->name('appointments.payment.intent');
@@ -183,7 +188,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/appointments/{appointment}/refund',
         [AppointmentController::class, 'refundPayment']
     )->name('appointments.payment.refund');
-
 });
 
 // -----------------------------------------------------------------------
