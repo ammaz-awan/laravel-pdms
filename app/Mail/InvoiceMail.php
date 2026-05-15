@@ -3,13 +3,15 @@
 namespace App\Mail;
 
 use App\Models\Invoice;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class InvoiceMail extends Mailable
 {
@@ -40,7 +42,11 @@ class InvoiceMail extends Mailable
      */
     public function envelope(): Envelope
     {
+        $recipientEmail = optional(optional($this->patient)->user)->email;
+        $recipientName = optional(optional($this->patient)->user)->name;
+
         return new Envelope(
+            to: $recipientEmail ? [new Address($recipientEmail, $recipientName)] : [],
             subject: 'Invoice #' . $this->invoice->invoice_number . ' - Healthcare Platform',
         );
     }
@@ -85,7 +91,7 @@ class InvoiceMail extends Mailable
     private function generateInvoicePDF(): string
     {
         try {
-            $pdf = \PDF::loadView('invoices.pdf', [
+            $pdf = Pdf::loadView('invoices.pdf', [
                 'invoice' => $this->invoice,
                 'appointment' => $this->appointment,
                 'patient' => $this->patient,
@@ -104,7 +110,7 @@ class InvoiceMail extends Mailable
 
             return $path;
         } catch (\Exception $e) {
-            \Log::error('PDF generation failed: ' . $e->getMessage());
+            Log::error('PDF generation failed: ' . $e->getMessage());
             return '';
         }
     }
