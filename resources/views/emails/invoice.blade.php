@@ -346,7 +346,7 @@
                             </table>
 
                             <p class="footer-note" style="margin: 0; text-align: center;">
-                                This email uses the same invoice layout as your PDMS invoice details page.
+                                   Please visit again for more details.
                             </p>
                         </td>
                     </tr>

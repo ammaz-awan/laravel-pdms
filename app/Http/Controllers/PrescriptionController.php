@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 
 class PrescriptionController extends Controller
 {
-    // ─── INDEX ───────────────────────────────────────────────
+    // ─── INDEX ─────────────────────────
 
     public function index()
     {

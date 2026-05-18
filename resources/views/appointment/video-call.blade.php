@@ -7,9 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 
 <style>
-/* ================================================================
-   VIDEO CALL PAGE — Google Meet Style UI
-   ================================================================ */
+
 :root {
     --primary: #1a6fc4;
     --primary-dk: #145aa0;
@@ -175,9 +173,22 @@ html, body {
 .video-main div[id] {
     width: 100% !important;
     height: 100% !important;
-    object-fit: contain;
-    max-width: 100%;
-    max-height: 100%;
+    object-fit: fill !important;
+    object-position: center center !important;
+    max-width: none !important;
+    max-height: none !important;
+}
+
+.video-self-container video,
+.video-self-container div[id] {
+    width: 100% !important;
+    height: 100% !important;
+    object-position: center center !important;
+    max-width: none !important;
+    max-height: none !important;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .video-placeholder {
@@ -209,10 +220,10 @@ html, body {
 /* ===== FLOATING SELF VIDEO ===== */
 .video-self-container {
     position: absolute;
-    bottom: 100px;
+    bottom: 30px;
     right: 16px;
-    width: 220px;
-    height: 165px;
+    width: 260px;
+    height: 195px;
     border-radius: 12px;
     overflow: hidden;
     background: #000000;
@@ -225,16 +236,6 @@ html, body {
 .video-self-container:hover {
     transform: scale(1.03);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-}
-
-.video-self-container video,
-.video-self-container div[id] {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover;
-    position: absolute;
-    top: 0;
-    left: 0;
 }
 
 .video-self-label {
@@ -819,6 +820,11 @@ const APPT_RATING_URL = "{{ route('appointments.rating.show', ['id' => $appointm
 
 // ========== 30-MINUTE HARD CALL DURATION ==========
 const MAX_CALL_DURATION_MS = 30 * 60 * 1000; // 30 minutes in milliseconds
+const CALL_END_AT = EXPIRES_AT * 1000;
+function getCallStartTime() {
+    return CALL_END_AT - MAX_CALL_DURATION_MS;
+}
+
 let callStartTime = null;
 let callDurationTimer = null;
 let callEnded = false;
@@ -843,21 +849,28 @@ const timerEl = document.getElementById('callTimer');
 
 function updateTimer() {
     if (!callStartTime) return;
-    
-    const elapsed = Date.now() - callStartTime;
+
+    const now = Date.now();
+    const remaining = CALL_END_AT - now;
+    const elapsed = Math.min(Math.max(now - callStartTime, 0), MAX_CALL_DURATION_MS);
     const m = String(Math.floor(elapsed / 60000)).padStart(2, '0');
     const s = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
     timerEl.textContent = m + ':' + s;
 
-    // Check if 30 minutes have passed
-    if (elapsed >= MAX_CALL_DURATION_MS && !callEnded) {
+    if (remaining <= 0 && !callEnded) {
         callEnded = true;
         handleCallDurationExpired();
     }
 }
 
 function startCallTimer() {
-    callStartTime = Date.now();
+    callStartTime = Math.min(getCallStartTime(), Date.now());
+    if (Date.now() >= CALL_END_AT) {
+        callEnded = true;
+        handleCallDurationExpired();
+        return;
+    }
+
     callDurationTimer = setInterval(updateTimer, 1000);
     updateTimer(); // Update immediately
 }
@@ -1100,20 +1113,9 @@ async function leaveCall() {
     await client.leave();
 }
 
-function handleCallEnded() {
-    document.getElementById('callStatusPill').className = 'status-pill status-ended';
-    document.getElementById('callStatusPill').textContent = '● Ended';
-    document.getElementById('callEndedOverlay').classList.add('show');
-    
-    // Disable all controls
-    document.getElementById('btnMic').disabled = true;
-    document.getElementById('btnCam').disabled = true;
-        document.getElementById('btnEnd').disabled = true;
-}
-
 /* ================================================================
    SERVER-SIDE SESSION POLLING
-   Polls /appointments/{id}/call-status every 20 seconds.
+   Polls /appointments/{id}/call-status every 10 seconds.
    If the server says active=false, auto-ends the call on both sides.
    ================================================================ */
 const CALL_STATUS_URL = "{{ route('appointments.call-status', ['id' => $appointment->id]) }}";
@@ -1136,7 +1138,7 @@ async function pollCallStatus() {
         if (!data.active && !callEnded) {
             callEnded = true;
             clearInterval(statusPollInterval);
-            toastr.warning('Call ended by the doctor or system');
+            toastr.warning('Call session has ended.');
             await leaveCall().catch(() => {});
             await handleCallEnded();
         }
@@ -1146,7 +1148,7 @@ async function pollCallStatus() {
 }
 
 function startStatusPolling() {
-    statusPollInterval = setInterval(pollCallStatus, 20000);
+    statusPollInterval = setInterval(pollCallStatus, 10000);
 }
 
 /* ================================================================

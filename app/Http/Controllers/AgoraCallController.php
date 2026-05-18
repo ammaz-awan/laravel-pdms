@@ -57,7 +57,7 @@ if (! $doctor) {
        $now = now(); // uses app timezone        
 
         $earliestStart = $scheduledAt->copy()->subMinutes(5);
-        $sessionEndTime = $scheduledAt->copy()->addMinutes(30);
+        $sessionEndTime = $this->getScheduledSessionEnd($appointment);
 
         // Check 1: Prevent starting before scheduled time (allow 5-min grace for the appointment start)
         if ($now->lt($earliestStart)) {
@@ -69,11 +69,10 @@ if (! $doctor) {
             return back()->with('error', 'This appointment session has expired. The 30-minute window ended at ' . $sessionEndTime->format('h:i A'));
         }
 
-     
         // Generate channel name if not already set
         $channel = $appointment->agora_channel ?? ('appt_' . $id);
 
-        $expiredTs = time() + self::CALL_DURATION_SECONDS;
+        $expiredTs = $sessionEndTime->timestamp;
 
         $token = $this->generateToken($channel, $user->id, AgoraTokenBuilder::ROLE_PUBLISHER, $expiredTs);
 
@@ -134,7 +133,7 @@ if (! $doctor) {
         }
 
         $channel   = $appointment->agora_channel;
-        $expiredTs = $appointment->call_started_at->timestamp + self::CALL_DURATION_SECONDS;
+        $expiredTs = $this->getScheduledSessionEnd($appointment)->timestamp;
         $token     = $this->generateToken($channel, $user->id, AgoraTokenBuilder::ROLE_PUBLISHER, $expiredTs);
 
         $appId = config('agora.app_id');
@@ -210,16 +209,14 @@ if (! $doctor) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
 
-        $expiresAt = $appointment->call_started_at
-            ? $appointment->call_started_at->timestamp + self::CALL_DURATION_SECONDS
-            : null;
+        $expiresAt = $this->getScheduledSessionEnd($appointment)->timestamp;
 
         $expired = $this->completeExpiredCall($appointment);
 
         $isActive = ! $expired
             && $appointment->status === 'approved'
             && $appointment->call_started_at
-            && Carbon::now()->lte($appointment->call_started_at->copy()->addSeconds(self::CALL_DURATION_SECONDS));
+            && Carbon::now()->lte($this->getScheduledSessionEnd($appointment));
 
         return response()->json([
             'active'     => $isActive,
@@ -229,51 +226,7 @@ if (! $doctor) {
         ]);
     }
 
-    // ---------------------------------------------------------------
-    // GET /agora/debug-token  (dev only — remove before production)
-    // Returns the raw config values and a freshly-minted test token
-    // so you can compare the embedded App ID against your console.
-    // ---------------------------------------------------------------
-    // public function debugToken()
-    // {
-    //     if (app()->isProduction()) {
-    //         abort(404);
-    //     }
-
-    //     $appId  = config('agora.app_id');
-    //     $cert   = config('agora.app_certificate');
-    //     $expiry = time() + 3600;
-
-    //     $result = [
-    //         'env_app_id'       => $appId,
-    //         'env_app_id_len'   => strlen($appId),
-    //         'env_cert_set'     => !empty($cert),
-    //         'env_cert_len'     => strlen($cert),
-    //     ];
-
-    //     try {
-    //         $token = AgoraTokenBuilder::buildTokenWithUid(
-    //             $appId, $cert, 'debug_test', 0,
-    //             AgoraTokenBuilder::ROLE_PUBLISHER, $expiry
-    //         );
-    //         $embeddedAppId = substr($token, 3, 32);
-    //         $b64payload    = substr($token, 35);
-    //         $decoded       = base64_decode($b64payload, true);
-
-    //         $result['token_prefix']        = substr($token, 0, 3);
-    //         $result['token_embedded_appid']= $embeddedAppId;
-    //         $result['appid_matches_config']= ($embeddedAppId === $appId);
-    //         $result['token_length']        = strlen($token);
-    //         $result['payload_bytes']       = $decoded !== false ? strlen($decoded) : 'INVALID_BASE64';
-    //         $result['token_expires_at']    = date('Y-m-d H:i:s', $expiry);
-    //         // First 20 chars of token (safe to show; never shows the cert)
-    //         $result['token_preview']       = substr($token, 0, 40) . '...';
-    //     } catch (\Exception $e) {
-    //         $result['token_error'] = $e->getMessage();
-    //     }
-
-    //     return response()->json($result, 200, [], JSON_PRETTY_PRINT);
-    // }
+    
 
     private function generateToken(string $channel, int $uid, int $role, int $expiredTs): string
     {
@@ -315,7 +268,7 @@ if (! $doctor) {
         }
 
         $expired = Carbon::now()->gt(
-            $appointment->call_started_at->copy()->addSeconds(self::CALL_DURATION_SECONDS)
+            $this->getScheduledSessionEnd($appointment)
         );
 
         if ($expired && $appointment->status === 'approved') {
@@ -326,5 +279,13 @@ if (! $doctor) {
         }
 
         return $expired;
+    }
+
+    private function getScheduledSessionEnd(Appointment $appointment)
+    {
+        return Carbon::parse(
+            $appointment->appointment_date->format('Y-m-d') . ' ' .
+            Carbon::parse($appointment->appointment_time)->format('H:i:s')
+        )->addMinutes(30);
     }
 }
