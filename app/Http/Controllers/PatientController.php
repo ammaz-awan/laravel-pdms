@@ -28,7 +28,10 @@ class PatientController extends Controller
                 ->where('appointments.doctor_id', $doctorId)
                 ->when($search !== '', function ($query) use ($search) {
                     $query->join('users', 'users.id', '=', 'patients.user_id')
-                        ->where('users.name', 'like', '%' . $search . '%');
+                        ->where(function ($userQuery) use ($search) {
+                            $userQuery->where('users.name', 'like', '%' . $search . '%')
+                                ->orWhere('users.email', 'like', '%' . $search . '%');
+                        });
                 })
                 ->with([
                     'user',
@@ -53,7 +56,8 @@ class PatientController extends Controller
                 ->whereKey($user->patient?->id)
                 ->when($search !== '', function ($query) use ($search) {
                     $query->whereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('name', 'like', '%' . $search . '%');
+                        $userQuery->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('email', 'like', '%' . $search . '%');
                     });
                 })
                 ->paginate(10)
@@ -64,11 +68,36 @@ class PatientController extends Controller
             $patients = Patient::with('user')
                 ->when($search !== '', function ($query) use ($search) {
                     $query->whereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('name', 'like', '%' . $search . '%');
+                        $userQuery->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('email', 'like', '%' . $search . '%');
                     });
                 })
                 ->paginate(10)
                 ->withQueryString();
+        }
+
+        if ($request->expectsJson()) {
+            $userRole = $user?->role;
+
+            return response()->json([
+                'rows' => $patients->map(function ($patient) use ($userRole) {
+                    return [
+                        'id' => $patient->id,
+                        'name' => $patient->user->name,
+                        'email' => $patient->user->email,
+                        'age' => $patient->age,
+                        'gender' => ucfirst($patient->gender),
+                        'blood_group' => $patient->blood_group,
+                        'is_payment_method_verified' => (bool) $patient->is_payment_method_verified,
+                        'appointment_history_count' => $patient->appointment_history_count ?? 0,
+                        'show_url' => route('patients.show', $patient->id),
+                        'delete_url' => $userRole === 'admin'
+                            ? route('patients.destroy', $patient->id)
+                            : null,
+                    ];
+                }),
+                'links' => (string) $patients->links(),
+            ]);
         }
 
         return view('patient.index', compact('patients', 'listScope'));

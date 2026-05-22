@@ -16,11 +16,45 @@ class DoctorController extends Controller
     {
         $query = Doctor::with('user');
 
-        if ($request->has('search') && $request->search) {
-            $query->where('specialization', 'like', '%' . $request->search . '%');
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($doctorQuery) use ($search) {
+                $doctorQuery->where('specialization', 'like', '%' . $search . '%')
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('email', 'like', '%' . $search . '%');
+                    });
+            });
         }
 
-        $doctors = $query->orderByDesc('is_verified')->paginate(10);
+        $doctors = $query->orderByDesc('is_verified')->paginate(10)->withQueryString();
+
+        if ($request->expectsJson()) {
+            $userRole = Auth::user()?->role;
+
+            return response()->json([
+                'rows' => $doctors->map(function ($doctor) use ($userRole) {
+                    return [
+                        'id' => $doctor->id,
+                        'name' => $doctor->user->name,
+                        'specialization' => $doctor->specialization,
+                        'experience' => $doctor->experience . ' yrs',
+                        'fees' => '$' . number_format($doctor->fees, 2),
+                        'rating' => number_format($doctor->rating_avg, 1) . ' / 5',
+                        'is_verified' => (bool) $doctor->is_verified,
+                        'show_url' => route('doctors.show', $doctor->id),
+                        'booking_url' => $userRole === 'patient'
+                            ? route('doctors.show', $doctor->id) . '#appointment-booking-card'
+                            : null,
+                        'delete_url' => $userRole === 'admin'
+                            ? route('doctors.destroy', $doctor->id)
+                            : null,
+                    ];
+                }),
+                'links' => (string) $doctors->links(),
+            ]);
+        }
+
         return view('doctor.index', compact('doctors'));
     }
 
