@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Doctor extends Model
 {
+    use HasFactory;
     protected $fillable = ['user_id', 'phone', 'specialization', 'experience', 'fees', 'clinic_name', 'address', 'is_verified', 'rating_avg' , 'certificate_path','verification_status','ai_result','license_number',];
 
     protected function casts(): array

@@ -2,24 +2,41 @@
 
 namespace Database\Seeders;
 
-use App\Models\Patient;
 use App\Models\Invoice;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Payment;
 use Illuminate\Database\Seeder;
 
 class InvoiceSeeder extends Seeder
 {
     public function run(): void
     {
-        $patients = Patient::all();
-        $statuses = ['paid', 'pending'];
+        $payments = Payment::with('appointment')->get();
+        $counter = 1;
+        $monthPrefix = now()->format('Ym');
 
-        for ($i = 0; $i < 10; $i++) {
+        foreach ($payments as $payment) {
+            if (Invoice::where('payment_id', $payment->id)->exists()) {
+                continue;
+            }
+
+            $appointment = $payment->appointment;
+            if (! $appointment) {
+                continue;
+            }
+
+            $invoiceNumber = "INV-{$monthPrefix}-" . str_pad((string) $counter++, 5, '0', STR_PAD_LEFT);
+            $isPaid = ($payment->status === 'paid');
+
             Invoice::create([
-                'patient_id' => $patients->random()->id,
-                'total_amount' => fake()->randomFloat(2, 1000, 10000),
-                'issued_date' => fake()->dateTimeBetween('-30 days', 'now')->format('Y-m-d'),
-                'status' => fake()->randomElement($statuses),
+                'payment_id' => $payment->id,
+                'appointment_id' => $appointment->id,
+                'patient_id' => $appointment->patient_id,
+                'invoice_number' => $invoiceNumber,
+                'total_amount' => $payment->amount,
+                'issued_date' => $appointment->appointment_date ? $appointment->appointment_date->format('Y-m-d') : now()->format('Y-m-d'),
+                'status' => $isPaid ? 'paid' : 'pending',
+                'email_sent' => $isPaid,
+                'emailed_at' => $isPaid ? now()->subDays(rand(1, 15)) : null,
             ]);
         }
     }
