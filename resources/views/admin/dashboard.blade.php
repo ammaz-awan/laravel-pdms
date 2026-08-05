@@ -79,7 +79,6 @@
     .appointment-status-card {
         border: 1px solid var(--bs-border-color, #e9ecef);
         background: var(--bs-body-bg, #fff);
-        overflow: hidden;
     }
 
     .appointment-status-card .card-header {
@@ -93,16 +92,15 @@
         font-size: 0.875rem;
     }
 
+    /* Stacked layout: chart on top, metrics grid below */
     .appointment-status-grid {
-        display: grid;
-        grid-template-columns: minmax(240px, 1.08fr) minmax(220px, 0.92fr);
+        display: flex;
+        flex-direction: column;
         gap: 1.25rem;
-        align-items: center;
     }
 
     .appointment-status-chart-shell {
         position: relative;
-        min-height: 320px;
         padding: 1rem;
         border-radius: 1rem;
         border: 1px solid var(--bs-border-color, #e9ecef);
@@ -112,24 +110,27 @@
 
     .appointment-status-chart-canvas {
         width: 100%;
-        height: 290px !important;
+        height: 220px !important;
     }
 
+    /* 2x2 grid of metric cards */
     .appointment-status-metrics {
         display: grid;
-        gap: 0.85rem;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
     }
 
     .appointment-status-metric {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 1rem;
-        padding: 0.95rem 1rem;
-        border-radius: 1rem;
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+        border-radius: 0.875rem;
         border: 1px solid var(--bs-border-color, #e9ecef);
         background: var(--bs-light, #f8f9fa);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
+        min-width: 0;
     }
 
     .appointment-status-metric:hover {
@@ -162,59 +163,61 @@
     .appointment-status-metric-main {
         display: flex;
         align-items: center;
-        gap: 0.85rem;
+        gap: 0.6rem;
         min-width: 0;
+        overflow: hidden;
     }
 
     .appointment-status-dot {
-        width: 0.85rem;
-        height: 0.85rem;
+        width: 0.75rem;
+        height: 0.75rem;
         border-radius: 50%;
         flex-shrink: 0;
-        box-shadow: 0 0 0 0.28rem rgba(0, 0, 0, 0.04);
+        box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.04);
     }
 
     .appointment-status-dot.completed { background: #22c55e; }
-    .appointment-status-dot.pending { background: #f59e0b; }
+    .appointment-status-dot.pending   { background: #f59e0b; }
     .appointment-status-dot.cancelled { background: #ef4444; }
-    .appointment-status-dot.ongoing { background: #3b82f6; }
+    .appointment-status-dot.ongoing   { background: #3b82f6; }
 
     .appointment-status-label {
         display: block;
         color: var(--bs-body-color, #212529);
         font-weight: 600;
+        font-size: 0.875rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .appointment-status-meta {
         display: block;
         color: var(--bs-secondary-color, #6c757d);
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .appointment-status-value {
         color: var(--bs-body-color, #212529);
-        font-size: 1.1rem;
+        font-size: 1.15rem;
         font-weight: 700;
         white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .appointment-status-empty-note {
         margin: 0.15rem 0 0;
         color: var(--bs-secondary-color, #6c757d);
         font-size: 0.85rem;
+        grid-column: 1 / -1;
     }
 
-    @media (max-width: 991.98px) {
-        .appointment-status-grid {
+    @media (max-width: 575.98px) {
+        .appointment-status-metrics {
             grid-template-columns: 1fr;
-        }
-
-        .appointment-status-chart-shell {
-            min-height: 290px;
-        }
-
-        .appointment-status-chart-canvas {
-            height: 260px !important;
         }
     }
 </style>
