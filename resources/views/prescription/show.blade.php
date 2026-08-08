@@ -36,8 +36,8 @@
                 {{-- ── Header: Logo + Prescription ID ──────────────────────── --}}
                 <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
                     <div class="invoice-logo">
-                        <img src="{{ asset('assets/img/logo.svg') }}" class="logo-white" alt="logo" style="height:40px;">
-                        <img src="{{ asset('assets/img/logo-white.svg') }}" class="logo-dark" alt="logo" style="height:40px;">
+                        <img src="{{ \App\Models\Setting::getLogo('normal') }}" class="logo-white" alt="{{ \App\Models\Setting::getSiteName() }}" style="height:40px;">
+                        <img src="{{ \App\Models\Setting::getLogo('dark') }}" class="logo-dark" alt="{{ \App\Models\Setting::getSiteName() }}" style="height:40px;">
                     </div>
                     <span class="badge bg-info-subtle text-info-emphasis fs-13 fw-medium border border-primary py-1 px-2">
                         #PRE{{ str_pad($prescription->id, 4, '0', STR_PAD_LEFT) }}

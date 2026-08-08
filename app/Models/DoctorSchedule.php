@@ -24,6 +24,21 @@ class DoctorSchedule extends Model
         ];
     }
 
+    public function getFormattedStartTimeAttribute(): string
+    {
+        return $this->start_time ? \Carbon\Carbon::parse($this->start_time)->format('g:i A') : '';
+    }
+
+    public function getFormattedEndTimeAttribute(): string
+    {
+        return $this->end_time ? \Carbon\Carbon::parse($this->end_time)->format('g:i A') : '';
+    }
+
+    public function getFormattedTimeSlotAttribute(): string
+    {
+        return $this->formatted_start_time . ' – ' . $this->formatted_end_time;
+    }
+
     public function doctor()
     {
         return $this->belongsTo(Doctor::class);

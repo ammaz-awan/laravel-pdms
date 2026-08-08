@@ -77,106 +77,101 @@
         padding: .72rem 1rem;
     }
     #doctor-availability-calendar .fc {
-        --fc-border-color: transparent;
+        --fc-border-color: #e2e8f0;
         --fc-page-bg-color: transparent;
         --fc-neutral-bg-color: transparent;
-        --fc-today-bg-color: rgba(59, 130, 246, 0.08);
+        --fc-today-bg-color: rgba(59, 130, 246, 0.06);
     }
     #doctor-availability-calendar .fc-toolbar.fc-header-toolbar {
-        margin-bottom: 1rem;
-        gap: .75rem;
+        margin-bottom: 0.75rem;
+        gap: .5rem;
         flex-wrap: wrap;
     }
     #doctor-availability-calendar .fc .fc-toolbar-title {
-        font-size: 1.15rem;
+        font-size: 1.05rem;
         font-weight: 700;
         color: #0f172a;
     }
     #doctor-availability-calendar .fc .fc-button {
-        border-radius: 12px;
-        border: 0;
-        background: #e2e8f0;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #fff;
         color: #334155;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.78rem;
+        font-weight: 600;
         box-shadow: none;
         transition: all .2s ease;
     }
-    #doctor-availability-calendar .fc .fc-button:hover,
-    #doctor-availability-calendar .fc .fc-button:focus {
-        background: #cbd5e1;
+    #doctor-availability-calendar .fc .fc-button:hover {
+        background: #f1f5f9;
         color: #0f172a;
-        box-shadow: none;
+    }
+    #doctor-availability-calendar .fc .fc-button-primary:not(:disabled).fc-button-active,
+    #doctor-availability-calendar .fc .fc-button-primary:not(:disabled):active {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: #fff;
     }
     #doctor-availability-calendar .fc .fc-daygrid-day {
-        padding: .25rem;
-        transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease;
-    }
-    #doctor-availability-calendar .fc .fc-daygrid-day-frame {
-        min-height: 110px;
-        padding: .45rem;
-        border-radius: 18px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        transition: inherit;
+        padding: 2px;
     }
     #doctor-availability-calendar .fc .fc-daygrid-day-top {
         justify-content: flex-end;
     }
     #doctor-availability-calendar .fc .fc-daygrid-day-number {
-        width: 34px;
-        height: 34px;
-        border-radius: 12px;
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         color: #334155;
         font-weight: 700;
-        transition: all .2s ease;
+        font-size: 0.8rem;
+        text-decoration: none !important;
+    }
+    #doctor-availability-calendar .fc .fc-daygrid-day-frame {
+        min-height: 65px;
+        padding: 4px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        position: relative;
     }
     #doctor-availability-calendar .fc .fc-day-other .fc-daygrid-day-frame {
         opacity: .45;
     }
-    #doctor-availability-calendar .fc .fc-daygrid-day:not(.fc-day-other):hover .fc-daygrid-day-frame {
-        transform: scale(1.02);
-        box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
-    }
     #doctor-availability-calendar .fc-day-available .fc-daygrid-day-frame {
-        background: linear-gradient(180deg, #ffffff, #f0f9ff);
-        border-color: rgba(96, 165, 250, 0.35);
+        background: #f0f9ff;
+        border-color: #7dd3fc;
         cursor: pointer;
+    }
+    #doctor-availability-calendar .fc-day-available .fc-daygrid-day-number {
+        color: #0284c7;
+        background: #e0f2fe;
     }
     #doctor-availability-calendar .fc-day-unavailable .fc-daygrid-day-frame {
         opacity: .55;
     }
     #doctor-availability-calendar .fc-day-selected .fc-daygrid-day-frame {
-        background: linear-gradient(135deg, #2563eb, #10b981);
-        border-color: transparent;
-        box-shadow: 0 20px 35px rgba(37, 99, 235, 0.28), 0 0 0 2px rgba(191, 219, 254, 0.55);
-        transform: scale(1.03);
+        background: #0284c7 !important;
+        border-color: #0284c7 !important;
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
     }
-    #doctor-availability-calendar .fc-day-selected .fc-daygrid-day-number,
+    #doctor-availability-calendar .fc-day-selected .fc-daygrid-day-number {
+        color: #fff !important;
+        background: rgba(255, 255, 255, 0.25) !important;
+    }
     #doctor-availability-calendar .fc-day-selected .fc-daygrid-event,
     #doctor-availability-calendar .fc-day-selected .fc-event-title,
     #doctor-availability-calendar .fc-day-selected .fc-event-time {
         color: #fff !important;
     }
-    #doctor-availability-calendar .fc-day-selected .fc-daygrid-day-number {
-        background: rgba(255, 255, 255, 0.18);
-    }
-    #doctor-availability-calendar .fc-day-selected .fc-daygrid-day-frame::after {
-        content: "\ea5e";
-        font-family: tabler-icons;
-        position: absolute;
-        right: .7rem;
-        bottom: .6rem;
-        color: #fff;
-        font-size: 1rem;
-    }
-    #doctor-availability-calendar .fc .fc-daygrid-event {
-        border: 0;
-        border-radius: 12px;
-        padding: .2rem .45rem;
-        background: rgba(59, 130, 246, 0.12);
-        color: #1d4ed8;
+    #doctor-availability-calendar .fc .fc-daygrid-event,
+    #doctor-availability-calendar .fc .fc-daygrid-event-harness {
+        display: none !important;
     }
     :root[data-bs-theme="dark"] .booking-card,
     :root[data-bs-theme="dark"] .booking-calendar-card {
@@ -397,10 +392,13 @@
         }
 
         function formatTimeLabel(slot) {
-            return new Date('1970-01-01T' + slot + ':00').toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            if (!slot) return '';
+            const parts = slot.split(':');
+            const h = parseInt(parts[0], 10);
+            const m = parts[1] || '00';
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const h12 = h % 12 === 0 ? 12 : h % 12;
+            return `${h12}:${m} ${ampm}`;
         }
 
         function updateFeeDisplay() {
@@ -486,10 +484,12 @@
                 currentCalendar = new FullCalendar.Calendar(document.getElementById('doctor-availability-calendar'), {
                     initialView: 'dayGridMonth',
                     headerToolbar: {
-                        left: 'prev,next today',
+                        left: 'prev,next',
                         center: 'title',
-                        right: 'dayGridMonth,timeGridWeek'
+                        right: 'today'
                     },
+                    height: 'auto',
+                    dayMaxEvents: true,
                     dayCellDidMount: function(info) {
                         info.el.classList.add(allowedDates.includes(info.dateStr) ? 'fc-day-available' : 'fc-day-unavailable');
                     },
@@ -574,10 +574,12 @@
             currentCalendar = new FullCalendar.Calendar(document.getElementById('doctor-availability-calendar'), {
                 initialView: 'dayGridMonth',
                 headerToolbar: {
-                    left: 'prev,next today',
+                    left: 'prev,next',
                     center: 'title',
-                    right: 'dayGridMonth,timeGridWeek'
+                    right: 'today'
                 },
+                height: 'auto',
+                dayMaxEvents: true,
                 events: []
             });
 

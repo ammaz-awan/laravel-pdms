@@ -7,15 +7,15 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Patient Registration | PDMS</title>
+    <title>Patient Registration | {{ \App\Models\Setting::getSiteName() }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Dreams Technologies">
 
     <!-- Favicon -->
-    <link rel="shortcut icon" href="{{ asset('assets/img/favicon.png') }}">
+    <link rel="shortcut icon" href="{{ \App\Models\Setting::getFavicon() }}">
 
     <!-- Apple Icon -->
-    <link rel="apple-touch-icon" href="{{ asset('assets/img/apple-icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ \App\Models\Setting::getFavicon() }}">
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
@@ -82,6 +82,7 @@
                             </div>
                         </div>
 
+                        {{-- 
                              <div class="mb-3">
                                     <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
 
@@ -110,6 +111,7 @@
                                     <hr class="flex-grow-1">
                                 </div>
                             </div>
+                        --}}
 
                         <div class="card border-1 p-lg-4 shadow-md rounded-3 position-relative mb-4">
                             <div id="patient-loader" class="loader-overlay d-none">

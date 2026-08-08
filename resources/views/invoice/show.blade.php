@@ -36,8 +36,8 @@
                 {{-- ── Header: Logo + Invoice Number ───────────────────────── --}}
                 <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
                     <div class="invoice-logo">
-                        <img src="{{ asset('assets/img/logo.svg') }}" class="logo-white" alt="logo" style="height:40px;">
-                        <img src="{{ asset('assets/img/logo-white.svg') }}" class="logo-dark" alt="logo" style="height:40px;">
+                        <img src="{{ \App\Models\Setting::getLogo('normal') }}" class="logo-white" alt="{{ \App\Models\Setting::getSiteName() }}" style="height:40px;">
+                        <img src="{{ \App\Models\Setting::getLogo('dark') }}" class="logo-dark" alt="{{ \App\Models\Setting::getSiteName() }}" style="height:40px;">
                     </div>
                     <div class="text-end">
                         <span class="badge badge-soft-{{ $invoice->status === 'paid' ? 'success' : 'warning' }} fs-12 d-inline-flex align-items-center border border-{{ $invoice->status === 'paid' ? 'success' : 'warning' }}">
@@ -73,7 +73,7 @@
 
                     <div class="col-lg-4">
                         <h5 class="mb-2 fs-16 fw-bold">Invoice From</h5>
-                        <p class="text-dark fw-medium mb-1">PDMS – Medical Platform</p>
+                        <p class="text-dark fw-medium mb-1">{{ \App\Models\Setting::getSiteName() }} – Medical Platform</p>
                         <p class="text-body mb-1">
                             Dr. {{ optional(optional(optional($invoice->appointment)->doctor)->user)->name ?? '—' }}
                         </p>

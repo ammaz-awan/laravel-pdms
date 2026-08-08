@@ -14,6 +14,23 @@ class DoctorScheduleController extends Controller
 {
     private const SLOT_INTERVAL_MINUTES = 30;
 
+    public function index(Request $request)
+    {
+        $user = Auth::user();
+        abort_unless($user?->role === 'doctor' && $user->doctor, 403, 'Doctor profile not found.');
+
+        $doctor = $user->doctor;
+
+        $schedules = DoctorSchedule::where('doctor_id', $doctor->id)
+            ->orderBy('available_date', 'asc')
+            ->orderBy('start_time', 'asc')
+            ->paginate(15);
+
+        $allSchedules = DoctorSchedule::where('doctor_id', $doctor->id)->get();
+
+        return view('doctor.schedules.index', compact('doctor', 'schedules', 'allSchedules'));
+    }
+
     public function store(Request $request)
     {
         abort_unless(Auth::user()?->role === 'doctor', 403);
@@ -46,6 +63,68 @@ class DoctorScheduleController extends Controller
         ]);
 
         return back()->with('success', 'Availability added successfully.');
+    }
+
+    public function update(Request $request, DoctorSchedule $schedule)
+    {
+        $user = Auth::user();
+        abort_unless($user?->role === 'doctor' && $user->doctor, 403);
+        $doctor = $user->doctor;
+
+        if ((int) $schedule->doctor_id !== (int) $doctor->id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'available_date' => ['required', 'date', 'after_or_equal:today'],
+            'start_time'     => ['required', 'date_format:H:i'],
+            'end_time'       => ['required', 'date_format:H:i', 'after:start_time'],
+        ]);
+
+        $overlapExists = DoctorSchedule::where('doctor_id', $doctor->id)
+            ->where('id', '!=', $schedule->id)
+            ->whereDate('available_date', $validated['available_date'])
+            ->where('start_time', '<', $validated['end_time'])
+            ->where('end_time', '>', $validated['start_time'])
+            ->exists();
+
+        if ($overlapExists) {
+            throw ValidationException::withMessages([
+                'available_date' => 'This schedule overlaps with an existing availability window.',
+            ]);
+        }
+
+        $schedule->update([
+            'available_date' => $validated['available_date'],
+            'start_time'     => $validated['start_time'],
+            'end_time'       => $validated['end_time'],
+        ]);
+
+        return back()->with('success', 'Schedule updated successfully.');
+    }
+
+    public function destroy(DoctorSchedule $schedule)
+    {
+        $user = Auth::user();
+        abort_unless($user?->role === 'doctor' && $user->doctor, 403);
+        $doctor = $user->doctor;
+
+        if ((int) $schedule->doctor_id !== (int) $doctor->id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $hasAppointments = Appointment::where('doctor_id', $doctor->id)
+            ->whereDate('appointment_date', $schedule->available_date)
+            ->whereIn('status', ['pending', 'approved'])
+            ->exists();
+
+        if ($hasAppointments) {
+            return back()->with('error', 'Cannot delete schedule: There are active or pending appointments booked for this date.');
+        }
+
+        $schedule->delete();
+
+        return back()->with('success', 'Schedule deleted successfully.');
     }
 
     public function getScheduleByDoctor(Request $request, Doctor $doctor)
@@ -91,11 +170,18 @@ class DoctorScheduleController extends Controller
             return [];
         }
 
+        $now = Carbon::now();
+        $isToday = ($date === Carbon::today()->toDateString());
+
         $bookedTimes = Appointment::where('doctor_id', $doctor->id)
             ->whereDate('appointment_date', $date)
-            ->whereIn('status', ['pending', 'approved'])
+            ->whereNotIn('status', ['cancelled', 'rejected'])
             ->pluck('appointment_time')
-            ->map(fn ($time) => Carbon::parse($time)->format('H:i'))
+            ->map(function ($time) {
+                if (!$time) return null;
+                return Carbon::parse($time)->format('H:i');
+            })
+            ->filter()
             ->all();
 
         $slots = [];
@@ -108,7 +194,9 @@ class DoctorScheduleController extends Controller
                 $slot = $start->format('H:i');
 
                 if (! in_array($slot, $bookedTimes, true)) {
-                    $slots[] = $slot;
+                    if (! ($isToday && $start->lte($now))) {
+                        $slots[] = $slot;
+                    }
                 }
 
                 $start->addMinutes(self::SLOT_INTERVAL_MINUTES);
@@ -125,10 +213,10 @@ class DoctorScheduleController extends Controller
                 $date = Carbon::parse($schedule->available_date)->toDateString();
 
                 return [
-                    'title' => Carbon::parse($schedule->start_time)->format('g:i A') . ' - ' . Carbon::parse($schedule->end_time)->format('g:i A'),
-                    'start' => $date . 'T' . Carbon::parse($schedule->start_time)->format('H:i:s'),
-                    'end' => $date . 'T' . Carbon::parse($schedule->end_time)->format('H:i:s'),
-                    'allDay' => false,
+                    'title' => 'Available',
+                    'start' => $date,
+                    'allDay' => true,
+                    'display' => 'background',
                 ];
             })
             ->values()

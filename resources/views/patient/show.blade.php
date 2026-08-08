@@ -51,7 +51,7 @@
                         @forelse($patient->appointments ?? collect() as $appointment)
                             <tr>
                                 <td>{{ $appointment->appointment_date->format('M d, Y') }}</td>
-                                <td>{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') }}</td>
+                                <td>{{ $appointment->formatted_time }}</td>
                                 <td>{{ ucfirst($appointment->status) }}</td>
                                 <td>${{ number_format($appointment->fee_snapshot ?? $appointment->doctor->fees ?? 0, 2) }}</td>
                             </tr>

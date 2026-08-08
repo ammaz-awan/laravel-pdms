@@ -179,64 +179,102 @@
         font-weight: 700;
         transition: all .2s ease;
     }
-    #doctor-view-calendar .fc .fc-daygrid-day {
-        padding: .25rem;
+    #doctor-view-calendar .fc {
+        --fc-border-color: #e2e8f0;
+        --fc-page-bg-color: transparent;
+        --fc-neutral-bg-color: transparent;
+        --fc-today-bg-color: rgba(59, 130, 246, 0.06);
     }
-    #doctor-view-calendar .fc .fc-daygrid-day.fc-day {
-        transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+    #doctor-view-calendar .fc-toolbar.fc-header-toolbar {
+        margin-bottom: 0.75rem;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+    #doctor-view-calendar .fc .fc-toolbar-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+    #doctor-view-calendar .fc .fc-button {
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: #334155;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        box-shadow: none;
+        transition: all .2s ease;
+    }
+    #doctor-view-calendar .fc .fc-button:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+    }
+    #doctor-view-calendar .fc .fc-button-primary:not(:disabled).fc-button-active,
+    #doctor-view-calendar .fc .fc-button-primary:not(:disabled):active {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: #fff;
+    }
+    #doctor-view-calendar .fc .fc-daygrid-day {
+        padding: 2px;
+    }
+    #doctor-view-calendar .fc .fc-daygrid-day-top {
+        justify-content: flex-end;
+    }
+    #doctor-view-calendar .fc .fc-daygrid-day-number {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #334155;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-decoration: none !important;
     }
     #doctor-view-calendar .fc .fc-daygrid-day-frame {
-        border-radius: 18px;
+        min-height: 65px;
+        padding: 4px;
+        border-radius: 10px;
         background: #f8fafc;
         border: 1px solid #e2e8f0;
-        transition: inherit;
+        overflow: hidden;
+        position: relative;
     }
     #doctor-view-calendar .fc .fc-day-other .fc-daygrid-day-frame {
         opacity: .45;
     }
-    #doctor-view-calendar .fc .fc-daygrid-day:not(.fc-day-other):hover .fc-daygrid-day-frame {
-        transform: scale(1.02);
-        box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
-    }
     #doctor-view-calendar .fc-day-available .fc-daygrid-day-frame {
-        background: linear-gradient(180deg, #ffffff, #f0f9ff);
-        border-color: rgba(96, 165, 250, 0.35);
+        background: #f0f9ff;
+        border-color: #7dd3fc;
         cursor: pointer;
     }
+    #doctor-view-calendar .fc-day-available .fc-daygrid-day-number {
+        color: #0284c7;
+        background: #e0f2fe;
+    }
     #doctor-view-calendar .fc-day-unavailable .fc-daygrid-day-frame {
-        background: #f8fafc;
         opacity: .55;
     }
     #doctor-view-calendar .fc-day-selected .fc-daygrid-day-frame {
-        background: linear-gradient(135deg, #2563eb, #10b981);
-        border-color: transparent;
-        box-shadow: 0 20px 35px rgba(37, 99, 235, 0.28), 0 0 0 2px rgba(191, 219, 254, 0.55);
-        transform: scale(1.03);
+        background: #0284c7 !important;
+        border-color: #0284c7 !important;
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
     }
-    #doctor-view-calendar .fc-day-selected .fc-daygrid-day-number,
+    #doctor-view-calendar .fc-day-selected .fc-daygrid-day-number {
+        color: #fff !important;
+        background: rgba(255, 255, 255, 0.25) !important;
+    }
     #doctor-view-calendar .fc-day-selected .fc-daygrid-event,
     #doctor-view-calendar .fc-day-selected .fc-event-title,
     #doctor-view-calendar .fc-day-selected .fc-event-time {
         color: #fff !important;
     }
-    #doctor-view-calendar .fc-day-selected .fc-daygrid-day-number {
-        background: rgba(255, 255, 255, 0.18);
-    }
-    #doctor-view-calendar .fc-day-selected .fc-daygrid-day-frame::after {
-        content: "\ea5e";
-        font-family: tabler-icons;
-        position: absolute;
-        right: .7rem;
-        bottom: .6rem;
-        color: #fff;
-        font-size: 1rem;
-    }
-    #doctor-view-calendar .fc .fc-daygrid-event {
-        border: 0;
-        border-radius: 12px;
-        padding: .2rem .45rem;
-        background: rgba(59, 130, 246, 0.12);
-        color: #1d4ed8;
+    #doctor-view-calendar .fc .fc-daygrid-event,
+    #doctor-view-calendar .fc .fc-daygrid-event-harness {
+        display: none !important;
     }
     :root[data-bs-theme="dark"] .doctor-profile-card,
     :root[data-bs-theme="dark"] .calendar-shell,
@@ -438,7 +476,7 @@
                             <div class="availability-chip-date">{{ $schedule->available_date->format('M d, Y') }}</div>
                             <div class="availability-chip-time">
                                 <i class="ti ti-clock-hour-4 me-1"></i>
-                                {{ \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }}
+                                {{ $schedule->formatted_time_slot }}
                             </div>
                         </div>
                     @empty
@@ -587,10 +625,13 @@
         }
 
         function formatTimeLabel(slot) {
-            return new Date('1970-01-01T' + slot + ':00').toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            if (!slot) return '';
+            const parts = slot.split(':');
+            const h = parseInt(parts[0], 10);
+            const m = parts[1] || '00';
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const h12 = h % 12 === 0 ? 12 : h % 12;
+            return `${h12}:${m} ${ampm}`;
         }
 
         function renderSlotButtons(slots) {
@@ -647,13 +688,15 @@
 
             allowedDates = data.dates || [];
 
-        const calendar = new FullCalendar.Calendar(document.getElementById('doctor-view-calendar'), {
-                    initialView: 'dayGridMonth',
-                    headerToolbar: {
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,timeGridWeek'
-                    },
+            const calendar = new FullCalendar.Calendar(document.getElementById('doctor-view-calendar'), {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next',
+                    center: 'title',
+                    right: 'today'
+                },
+                height: 'auto',
+                dayMaxEvents: true,
 
                     events: data.events || [],
 

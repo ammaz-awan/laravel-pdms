@@ -18,11 +18,15 @@
             <div class="col-md-6">
                 <p>
                     <strong>Rating:</strong>
-                    <span class="badge bg-info" style="font-size: 1.1rem;">
-                        @for($i = 0; $i < $rating->rating; $i++)
-                            <i class="ti ti-star"></i>
+                    <span class="badge bg-soft-warning border border-warning text-dark fw-bold px-3 py-2 fs-14">
+                        @for($i = 1; $i <= 5; $i++)
+                            @if($i <= $rating->rating)
+                                <i class="ti ti-star-filled text-warning me-1"></i>
+                            @else
+                                <i class="ti ti-star text-muted me-1"></i>
+                            @endif
                         @endfor
-                        {{ $rating->rating }}/5
+                        <span>{{ number_format($rating->rating, 1) }} / 5.0</span>
                     </span>
                 </p>
                 <p><strong>Date:</strong> {{ $rating->created_at->format('M d, Y H:i') }}</p>
@@ -31,8 +35,10 @@
 
         @if($rating->review)
             <hr>
-            <h5>Review</h5>
-            <p>{{ $rating->review }}</p>
+            <h6 class="fw-bold text-dark"><i class="ti ti-message-2 text-primary me-1"></i>Patient Review</h6>
+            <div class="p-3 bg-light rounded-3 border-start border-primary border-4 text-dark fs-14">
+                "{{ $rating->review }}"
+            </div>
         @endif
 
         <hr>

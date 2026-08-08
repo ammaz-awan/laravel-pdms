@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -6,15 +6,15 @@
     <!-- Meta Tags -->
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Register | PDMS</title>
+    <title>Register | {{ \App\Models\Setting::getSiteName() }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Dreams Technologies">
     
     <!-- Favicon -->
-    <link rel="shortcut icon" href="{{ asset('assets/img/favicon.png') }}">
+    <link rel="shortcut icon" href="{{ \App\Models\Setting::getFavicon() }}">
 
     <!-- Apple Icon -->
-    <link rel="apple-touch-icon" href="{{ asset('assets/img/apple-icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ \App\Models\Setting::getFavicon() }}">
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
@@ -66,7 +66,7 @@
                 <div class="row justify-content-center align-items-center vh-100 overflow-auto flex-wrap py-3">
                     <div class="col-xl-6 col-lg-7 col-md-9 mx-auto">
                         <div class="text-center mb-4">
-                            <img src="{{ asset('assets/img/logo.svg') }}" class="img-fluid mb-3" alt="Logo">
+                            <img src="{{ \App\Models\Setting::getLogo('normal') }}" class="img-fluid mb-3" alt="Logo" style="max-height: 60px;">
                             <h5 class="mb-2 fs-20 fw-bold">Create your account</h5>
                             <p class="text-muted mb-0">Choose the registration flow that fits your role and continue with a guided setup.</p>
                         </div>
@@ -107,7 +107,7 @@
                                 <a href="{{ route('login') }}" class="hover-a">Login</a>
                             </h6>
                         </div> --}}
-                        <p class="text-dark text-center mt-4">Copyright &copy; 2025 - Hospital Management System.</p>
+                        <p class="text-dark text-center mt-4">Copyright &copy; {{ date('Y') }} - {{ \App\Models\Setting::getSiteName() }}.</p>
                     </div><!-- end col -->
                 </div>
                 <!-- end row -->

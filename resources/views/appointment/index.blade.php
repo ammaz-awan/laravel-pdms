@@ -78,7 +78,7 @@
                             <td>{{ $appointment->doctor->user->name }}</td>
                             <td>{{ $appointment->patient->user->name }}</td>
                             <td>{{ $appointment->appointment_date->format('M d, Y') }}</td>
-                            <td>{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') }}</td>
+                            <td>{{ $appointment->formatted_time }}</td>
                             <td>${{ number_format($appointment->fee_snapshot ?? $appointment->doctor->fees, 2) }}</td>
                             <td>
                                 <span class="badge bg-{{ $appointment->status === 'approved' ? 'success' : ($appointment->status === 'cancelled' ? 'danger' : ($appointment->status === 'completed' ? 'secondary' : 'warning')) }}">

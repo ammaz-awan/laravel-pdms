@@ -668,7 +668,7 @@ html, body {
                 
                 <div class="title-meta">
                     {{ $appointment->appointment_date->format('M d') }} · 
-                    {{ \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') }}
+                    {{ $appointment->formatted_time }}
                 </div>
             </div>
         </div>
@@ -818,15 +818,15 @@ const RX_FETCH_URL    = "{{ route('appointments.prescription.show', ['id' => $ap
 const APPT_SHOW_URL   = "{{ route('appointments.show', $appointment) }}";
 const APPT_RATING_URL = "{{ route('appointments.rating.show', ['id' => $appointment->id]) }}";
 
-// ========== 30-MINUTE HARD CALL DURATION ==========
-const MAX_CALL_DURATION_MS = 30 * 60 * 1000; // 30 minutes in milliseconds
-const CALL_END_AT = EXPIRES_AT * 1000;
-function getCallStartTime() {
-    return CALL_END_AT - MAX_CALL_DURATION_MS;
-}
+// ========== FIXED START TIMESTAMP TIMER ==========
+const CALL_STARTED_AT_TS   = @json($callData['call_started_at_ts']);
+const SESSION_DURATION_MS  = 30 * 60 * 1000; // 30 minutes
+const CALL_START_MS        = CALL_STARTED_AT_TS * 1000;
+const CALL_END_MS          = CALL_START_MS + SESSION_DURATION_MS;
 
-let callStartTime = null;
 let callDurationTimer = null;
+let disconnectTimer = null;
+let disconnectStartTime = null;
 let callEnded = false;
 let handlingCallEnd = false;
 
@@ -842,30 +842,25 @@ toastr.options = {
 };
 
 /* ================================================================
-   TIMER (displays elapsed time & manages 30-min auto-end)
+   TIMER (displays synchronized elapsed time & manages 30-min auto-end)
    ================================================================ */
-let startTime = Date.now();
 const timerEl = document.getElementById('callTimer');
 
 function updateTimer() {
-    if (!callStartTime) return;
-
     const now = Date.now();
-    const remaining = CALL_END_AT - now;
-    const elapsed = Math.min(Math.max(now - callStartTime, 0), MAX_CALL_DURATION_MS);
-    const m = String(Math.floor(elapsed / 60000)).padStart(2, '0');
-    const s = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
+    const elapsedMs = Math.max(0, now - CALL_START_MS);
+    const m = String(Math.floor(elapsedMs / 60000)).padStart(2, '0');
+    const s = String(Math.floor((elapsedMs % 60000) / 1000)).padStart(2, '0');
     timerEl.textContent = m + ':' + s;
 
-    if (remaining <= 0 && !callEnded) {
+    if (now >= CALL_END_MS && !callEnded) {
         callEnded = true;
         handleCallDurationExpired();
     }
 }
 
 function startCallTimer() {
-    callStartTime = Math.min(getCallStartTime(), Date.now());
-    if (Date.now() >= CALL_END_AT) {
+    if (Date.now() >= CALL_END_MS) {
         callEnded = true;
         handleCallDurationExpired();
         return;
@@ -880,43 +875,93 @@ function stopCallTimer() {
         clearInterval(callDurationTimer);
         callDurationTimer = null;
     }
+    if (disconnectTimer) {
+        clearInterval(disconnectTimer);
+        disconnectTimer = null;
+    }
 }
 
 function handleCallDurationExpired() {
     stopCallTimer();
     
     Swal.fire({
-        title: 'Call Ended',
-        text: 'Your 30-minute session has ended.',
+        title: 'Consultation Completed',
+        text: 'The maximum 30-minute session duration has been reached.',
         icon: 'info',
         allowOutsideClick: false,
         allowEscapeKey: false,
-        confirmButtonText: 'Return to Appointment',
+        confirmButtonText: 'View Summary',
     }).then(async () => {
-        await endCallImmediately();
-        await fetch(CALL_STATUS_URL, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
+        let fmtDuration = '';
+        if (IS_DOCTOR) {
+            const endRes = await fetch(END_CALL_URL, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' }
+            }).catch(() => {});
+            if (endRes && endRes.ok) {
+                const endData = await endRes.json();
+                fmtDuration = endData.formatted_duration || '';
             }
-        }).catch(() => {});
-        await handleCallEnded();
+        }
+        await leaveCall();
+        await handleCallEnded(fmtDuration);
     });
 }
 
 /* ================================================================
-   AGORA RTC
+   AGORA RTC & DISCONNECT TRACKING
    ================================================================ */
 const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
 let localTracks = { audio: null, video: null };
 let micMuted = false;
 let camOff   = false;
 
+function updateDisconnectStatus(isDisconnected) {
+    const remoteBox = document.getElementById('remote-video');
+    if (!remoteBox) return;
+
+    if (isDisconnected) {
+        if (!disconnectStartTime) {
+            disconnectStartTime = Date.now();
+        }
+
+        const messageText = IS_DOCTOR 
+            ? 'Patient disconnected. Waiting for patient to rejoin…' 
+            : 'Doctor disconnected. Waiting for doctor to reconnect…';
+
+        remoteBox.innerHTML = `
+            <div class="video-placeholder">
+                <i class="ti ti-plug-off text-warning mb-2" style="font-size: 3.5rem;"></i>
+                <span class="fw-bold text-white fs-5 mb-1">${messageText}</span>
+                <small class="text-warning font-monospace" id="disconnectTimerText">(Disconnected 00:00)</small>
+            </div>`;
+
+        if (!disconnectTimer) {
+            disconnectTimer = setInterval(() => {
+                const discEl = document.getElementById('disconnectTimerText');
+                if (discEl && disconnectStartTime) {
+                    const discSecs = Math.floor((Date.now() - disconnectStartTime) / 1000);
+                    const dm = String(Math.floor(discSecs / 60)).padStart(2, '0');
+                    const ds = String(discSecs % 60).padStart(2, '0');
+                    discEl.textContent = `(Disconnected ${dm}:${ds})`;
+                }
+            }, 1000);
+        }
+    } else {
+        if (disconnectTimer) {
+            clearInterval(disconnectTimer);
+            disconnectTimer = null;
+        }
+        disconnectStartTime = null;
+    }
+}
+
 async function subscribeToRemoteUser(user, mediaType) {
     try {
         await client.subscribe(user, mediaType);
 
         if (mediaType === 'video' && user.videoTrack) {
+            updateDisconnectStatus(false);
             const remoteBox = document.getElementById('remote-video');
             remoteBox.querySelector('.video-placeholder')?.remove();
             user.videoTrack.play('remote-video');
@@ -935,33 +980,23 @@ async function subscribeToRemoteUser(user, mediaType) {
 }
 
 function registerAgoraEvents() {
-    client.on('user-published', subscribeToRemoteUser);
+    client.on('user-published', async (user, mediaType) => {
+        updateDisconnectStatus(false);
+        await subscribeToRemoteUser(user, mediaType);
+    });
 
     client.on('user-unpublished', (user, mediaType) => {
         if (mediaType === 'video') {
-            const remoteBox = document.getElementById('remote-video');
-            if (!remoteBox.querySelector('.video-placeholder')) {
-                remoteBox.innerHTML = `
-                    <div class="video-placeholder">
-                        <i class="ti ti-user-circle"></i>
-                        <span>Camera paused</span>
-                    </div>`;
-            }
+            updateDisconnectStatus(true);
         }
     });
 
     client.on('user-left', () => {
-        const remoteBox = document.getElementById('remote-video');
-        remoteBox.innerHTML = `
-            <div class="video-placeholder">
-                <i class="ti ti-user-circle"></i>
-                <span>Participant left</span>
-            </div>`;
+        updateDisconnectStatus(true);
     });
 }
 
 async function initAgora() {
-    // Validate required config before joining
     if (!AGORA_APP_ID) {
         console.error('❌ FATAL: Agora App ID is missing or empty!');
         toastr.error('Agora App ID is not configured. Please check your .env file.');
@@ -976,14 +1011,11 @@ async function initAgora() {
 
     try {
         registerAgoraEvents();
-
         await client.join(AGORA_APP_ID, AGORA_CHANNEL, AGORA_TOKEN, AGORA_UID);
         
-        // Start the 30-minute call timer immediately after joining
         startCallTimer();
-        toastr.success('Connected to video call');
+        toastr.success('Connected to video consultation');
 
-        // Subscribe to remote users already in the channel before local device setup.
         for (const user of client.remoteUsers) {
             if (user.hasVideo) {
                 await subscribeToRemoteUser(user, 'video');
@@ -1007,7 +1039,6 @@ async function initAgora() {
             toastr.warning('Camera or microphone could not start, but you can still watch the call.');
         }
 
-        // Start server-side session polling
         startStatusPolling();
         
     } catch (error) {
@@ -1015,15 +1046,6 @@ async function initAgora() {
         const errorMsg = error?.message || String(error);
         toastr.error('Video call connection failed: ' + errorMsg);
         throw error;
-    }
-}
-
-async function handleRemoteUser(user) {
-    if (user.hasVideo) {
-        await subscribeToRemoteUser(user, 'video');
-    }
-    if (user.hasAudio) {
-        await subscribeToRemoteUser(user, 'audio');
     }
 }
 
@@ -1064,47 +1086,43 @@ document.getElementById('btnCam').addEventListener('click', async () => {
     }
 });
 
-// End call (doctor only or patients can leave)
+// End call button
 document.getElementById('btnEnd')?.addEventListener('click', async () => {
+    const confirmTitle = IS_DOCTOR ? 'End Consultation?' : 'Leave Call?';
+    const confirmText  = IS_DOCTOR 
+        ? 'Are you sure you want to end this consultation? This action will mark the appointment as completed.' 
+        : 'Are you sure you want to leave this call?';
+
     Swal.fire({
-        title: 'Leave Call?',
-        text: IS_DOCTOR ? 'End this consultation for both participants?' : 'Leave this call?',
+        title: confirmTitle,
+        text: confirmText,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Yes, Leave',
+        confirmButtonText: IS_DOCTOR ? 'Yes, End Consultation' : 'Yes, Leave',
         cancelButtonText: 'Cancel',
         confirmButtonColor: '#d33',
     }).then(async (result) => {
         if (!result.isConfirmed) return;
         
         try {
-            await leaveCall();
+            let durationFmt = '';
             if (IS_DOCTOR) {
-                await fetch(END_CALL_URL, {
+                const res = await fetch(END_CALL_URL, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' }
                 });
+                if (res.ok) {
+                    const data = await res.json();
+                    durationFmt = data.formatted_duration || '';
+                }
             }
-            await handleCallEnded();
+            await leaveCall();
+            await handleCallEnded(durationFmt);
         } catch (err) {
             toastr.error('Error ending call: ' + err.message);
         }
     });
 });
-
-async function endCallImmediately() {
-    try {
-        await leaveCall();
-        if (IS_DOCTOR) {
-            await fetch(END_CALL_URL, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' }
-            }).catch(() => {}); // Ignore errors on auto-end
-        }
-    } catch (err) {
-        console.error('Error in endCallImmediately:', err);
-    }
-}
 
 async function leaveCall() {
     stopCallTimer();
@@ -1115,23 +1133,21 @@ async function leaveCall() {
 
 /* ================================================================
    SERVER-SIDE SESSION POLLING
-   Polls /appointments/{id}/call-status every 10 seconds.
-   If the server says active=false, auto-ends the call on both sides.
    ================================================================ */
 const CALL_STATUS_URL = "{{ route('appointments.call-status', ['id' => $appointment->id]) }}";
 let statusPollInterval = null;
 
 async function pollCallStatus() {
-    if (callEnded) return; // Don't poll if call already ended
+    if (callEnded) return;
     
     try {
-       const res = await fetch(CALL_STATUS_URL, {
-    method: 'GET',
-    headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-    }
-});
+        const res = await fetch(CALL_STATUS_URL, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
         if (!res.ok) return;
         const data = await res.json();
 
@@ -1140,7 +1156,7 @@ async function pollCallStatus() {
             clearInterval(statusPollInterval);
             toastr.warning('Call session has ended.');
             await leaveCall().catch(() => {});
-            await handleCallEnded();
+            await handleCallEnded(data.formatted_duration || '');
         }
     } catch (err) {
         console.warn('Call status poll failed:', err.message);
@@ -1155,7 +1171,6 @@ function startStatusPolling() {
    PRESCRIPTION — DOCTOR SIDE
    ================================================================ */
 if (IS_DOCTOR) {
-
     const rxSidebar = document.getElementById('rxSidebar');
     const rxToggleBtn = document.getElementById('rxToggleBtn');
 
@@ -1247,48 +1262,27 @@ if (IS_DOCTOR) {
 }
 
 /* ================================================================
-   PRESCRIPTION — PATIENT SIDE (polling) — DISABLED DURING CALL
-   Patient sees prescriptions only after call ends on appointment page
-   ================================================================ */
-// Patient prescription fetching during call is intentionally disabled
-// Patients will view prescriptions on the appointment details page after the call ends
-
-/* ================================================================
-   UTILITIES
+   UTILITIES & CALL END HANDLING
    ================================================================ */
 function esc(str) {
     return (str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// Override the earlier implementation so call shutdown uses the
-// elements that actually exist in this template.
-async function handleCallEnded() {
+async function handleCallEnded(durationFmt = '') {
     if (handlingCallEnd) {
         return;
     }
 
     handlingCallEnd = true;
     stopCallTimer();
-    if (statusPollInterval) {
-        clearInterval(statusPollInterval);
-        statusPollInterval = null;
-    }
 
     const callStatus = document.getElementById('callStatus');
     const statusText = document.getElementById('statusText');
-    const statusDot = document.getElementById('statusDot');
+    const statusDot  = document.getElementById('statusDot');
 
-    if (callStatus) {
-        callStatus.classList.add('ended');
-    }
-
-    if (statusText) {
-        statusText.textContent = 'Ended';
-    }
-
-    if (statusDot) {
-        statusDot.textContent = '●';
-    }
+    if (callStatus) callStatus.classList.add('ended');
+    if (statusText) statusText.textContent = 'Ended';
+    if (statusDot)  statusDot.textContent = '●';
 
     document.getElementById('btnMic').disabled = true;
     document.getElementById('btnCam').disabled = true;
@@ -1301,6 +1295,7 @@ async function handleCallEnded() {
         return;
     }
 
+    // Patient side: Check for review and show summary + rating modal
     try {
         const response = await fetch(APPT_RATING_URL, {
             headers: {
@@ -1309,36 +1304,33 @@ async function handleCallEnded() {
             }
         });
 
-        if (!response.ok) {
-            throw new Error('Could not verify review status.');
-        }
-
-        const data = await response.json();
+        const data = response.ok ? await response.json() : {};
         const appointmentStatus = String(data.appointment_status ?? '');
         const appointmentPatientId = parseInt(data.appointment_patient_id ?? APPOINTMENT_PATIENT_ID, 10);
         const currentPatientId = parseInt(data.current_patient_id ?? CURRENT_PATIENT_ID, 10);
         const currentUserRole = String(data.current_user_role ?? CURRENT_USER_ROLE);
         const alreadyReviewed = Boolean(data.has_rating);
 
-        if (currentUserRole === 'doctor' || currentUserRole === 'admin') {
-            window.location.href = APPT_SHOW_URL;
-            return;
-        }
-
         const canReview =
             currentUserRole === 'patient'
             && parseInt(appointmentPatientId, 10) === parseInt(currentPatientId, 10)
-            && appointmentStatus === 'completed'
+            && (appointmentStatus === 'completed' || callEnded)
             && !alreadyReviewed;
 
-        if (canReview && typeof window.openRatingModal === 'function') {
-            const doctorName = document.querySelector('.title-main')?.textContent?.trim() || 'Your Doctor';
+        if (canReview) {
+            const summaryText = durationFmt ? `Total Consultation Duration: ${durationFmt}` : 'Your consultation has ended.';
+            await Swal.fire({
+                title: 'Consultation Completed',
+                text: summaryText,
+                icon: 'success',
+                confirmButtonText: 'Rate Doctor',
+            });
 
-            setTimeout(() => {
+            if (typeof window.openRatingModal === 'function') {
+                const doctorName = document.querySelector('.title-main')?.textContent?.trim() || 'Your Doctor';
                 window.openRatingModal(doctorName, DOCTOR_AVATAR_URL);
-            }, 500);
-
-            return;
+                return;
+            }
         }
     } catch (error) {
         console.warn('Could not check for existing rating:', error);

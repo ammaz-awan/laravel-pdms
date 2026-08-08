@@ -34,8 +34,34 @@ class VerificationController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware('auth')->except('verify');
         $this->middleware('signed')->only('verify');
         $this->middleware('throttle:6,1')->only('verify', 'resend');
+    }
+
+    public function verify(\Illuminate\Http\Request $request)
+    {
+        $user = \App\Models\User::find($request->route('id'));
+
+        if (! $user) {
+            abort(404, 'User not found.');
+        }
+
+        if (! hash_equals((string) $request->route('hash'), sha1($user->getEmailForVerification()))) {
+            abort(403, 'Invalid verification link.');
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            \Illuminate\Support\Facades\Auth::login($user);
+            return redirect($this->redirectPath())->with('verified', true)->with('success', 'Email already verified.');
+        }
+
+        if ($user->markEmailAsVerified()) {
+            event(new \Illuminate\Auth\Events\Verified($user));
+        }
+
+        \Illuminate\Support\Facades\Auth::login($user);
+
+        return redirect($this->redirectPath())->with('verified', true)->with('success', 'Email verified successfully!');
     }
 }

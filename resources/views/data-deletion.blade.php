@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Data Deletion - PDMS</title>
+    <title>Data Deletion - {{ \App\Models\Setting::getSiteName() }}</title>
+    <link rel="shortcut icon" href="{{ \App\Models\Setting::getFavicon() }}">
 </head>
 <body style="font-family: Arial; line-height: 1.6; padding: 20px;">
 
@@ -11,7 +12,7 @@
 
 <h2>How to Delete Your Data</h2>
 
-<p>If you want to delete your account and personal data from PDMS, follow one of the methods below:</p>
+<p>If you want to delete your account and personal data from {{ \App\Models\Setting::getSiteName() }}, follow one of the methods below:</p>
 
 <h3>Method 1: Email Request</h3>
 <p>Send a request to:</p>

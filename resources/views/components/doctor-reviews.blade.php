@@ -71,7 +71,7 @@
     }
 
     .review-item {
-        padding: 1.5rem;
+        padding: 1.25rem 1.5rem;
         background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 12px;
@@ -87,7 +87,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.5rem;
     }
 
     .review-author {
@@ -97,18 +97,19 @@
     }
 
     .review-avatar {
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-weight: 600;
+        background: linear-gradient(135deg, #2563eb, #0d9488);
+        color: #ffffff !important;
+        font-weight: 700;
         font-size: 0.85rem;
         overflow: hidden;
-        box-shadow: 0 8px 18px rgba(59, 130, 246, 0.18);
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
     }
 
     .review-avatar img {
@@ -121,18 +122,18 @@
     .review-author-info {
         display: flex;
         flex-direction: column;
-        gap: 0.2rem;
+        gap: 0.1rem;
     }
 
     .review-author-name {
-        font-weight: 600;
-        color: #1e293b;
+        font-weight: 700;
+        color: #0f172a;
         font-size: 0.95rem;
     }
 
     .review-author-date {
         font-size: 0.8rem;
-        color: #94a3b8;
+        color: #64748b;
     }
 
     .review-rating {
@@ -143,25 +144,30 @@
 
     .review-stars {
         display: flex;
+        align-items: center;
         gap: 2px;
     }
 
     .review-star {
-        font-size: 0.9rem;
-        color: #fbbf24;
+        font-size: 1rem;
+        color: #eab308;
     }
 
     .review-rating-value {
-        font-weight: 600;
-        color: #1e293b;
+        font-weight: 700;
+        color: #0f172a;
         font-size: 0.9rem;
     }
 
     .review-text {
-        color: #475569;
+        color: #334155;
         line-height: 1.6;
         font-size: 0.95rem;
         margin: 0.75rem 0 0;
+        background: #f8fafc;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        border-left: 3px solid #2563eb;
     }
 
     .reviews-empty {
@@ -317,12 +323,12 @@
         }
 
         .review-header {
-            flex-direction: column;
-            align-items: flex-start;
+            flex-direction: flex-row;
+            align-items: center;
         }
 
         .review-rating {
-            margin-top: 0.5rem;
+            margin-top: 0;
         }
     }
 </style>
@@ -423,20 +429,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        const formattedAvg = average_rating !== null && average_rating !== undefined ? Number(average_rating).toFixed(1) : '—';
+
         // Render header
         reviewsSection.innerHTML = `
             <div class="reviews-header">
                 <h5><i class="ti ti-message-circle-2"></i> Patient Reviews</h5>
                 <div class="rating-badge">
                     <i class="ti ti-star-filled"></i>
-                    <span>${average_rating !== null && average_rating !== undefined ? average_rating : '—'}</span>
+                    <span>${formattedAvg}</span>
                     <span>(${total_reviews} review${total_reviews !== 1 ? 's' : ''})</span>
                 </div>
             </div>
 
             <div class="reviews-stats">
                 <div class="stat-item">
-                    <span class="stat-value">${average_rating !== null && average_rating !== undefined ? average_rating : '—'}</span>
+                    <span class="stat-value">${formattedAvg}</span>
                     <span class="stat-label">Average Rating</span>
                 </div>
                 <div class="stat-item">
@@ -456,7 +464,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ${pagination.total_pages > 1 ? renderPagination(pagination) : ''}
         `;
 
-        // Add pagination event listeners if needed
         if (pagination.total_pages > 1) {
             document.querySelectorAll('.page-link').forEach(link => {
                 link.addEventListener('click', function() {
@@ -469,26 +476,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderReviewItems(reviews) {
-        return reviews.map(review => `
-            <div class="review-item">
-                <div class="review-header">
-                    <div class="review-author">
-                        <div class="review-avatar">${renderPatientAvatar(review.patient?.user)}</div>
-                        <div class="review-author-info">
-                            <div class="review-author-name">${escapeHtml(review.patient?.user?.name || 'Anonymous')}</div>
-                            <div class="review-author-date">${formatDate(review.created_at)}</div>
+        return reviews.map(review => {
+            const ratingVal = review.rating ? Number(review.rating).toFixed(1) : '5.0';
+            return `
+                <div class="review-item">
+                    <div class="review-header">
+                        <div class="review-author">
+                            <div class="review-avatar">${renderPatientAvatar(review.patient?.user)}</div>
+                            <div class="review-author-info">
+                                <div class="review-author-name">${escapeHtml(review.patient?.user?.name || 'Anonymous')}</div>
+                                <div class="review-author-date">${formatDate(review.created_at)}</div>
+                            </div>
+                        </div>
+                        <div class="review-rating">
+                            <div class="review-stars">
+                                ${renderStars(review.rating)}
+                            </div>
+                            <div class="review-rating-value">${ratingVal}</div>
                         </div>
                     </div>
-                    <div class="review-rating">
-                        <div class="review-stars">
-                            ${renderStars(review.rating)}
-                        </div>
-                        <div class="review-rating-value">${review.rating}.0</div>
-                    </div>
+                    ${review.review ? `<div class="review-text">${escapeHtml(review.review)}</div>` : ''}
                 </div>
-                ${review.review ? `<div class="review-text">${escapeHtml(review.review)}</div>` : ''}
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     function renderPatientAvatar(user) {
@@ -503,9 +513,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderStars(rating) {
+        const num = parseInt(rating, 10) || 5;
         let stars = '';
         for (let i = 1; i <= 5; i++) {
-            stars += `<i class="ti ti-star-filled review-star" style="opacity: ${i <= rating ? '1' : '0.3'}"></i>`;
+            if (i <= num) {
+                stars += `<i class="ti ti-star-filled review-star"></i>`;
+            } else {
+                stars += `<i class="ti ti-star review-star" style="opacity: 0.3;"></i>`;
+            }
         }
         return stars;
     }

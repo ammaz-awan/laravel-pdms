@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Privacy Policy - PDMS</title>
+    <title>Privacy Policy - {{ \App\Models\Setting::getSiteName() }}</title>
+    <link rel="shortcut icon" href="{{ \App\Models\Setting::getFavicon() }}">
 </head>
 <body style="font-family: Arial; line-height: 1.6; padding: 20px;">
 
@@ -9,7 +10,7 @@
 
 <p><strong>Effective Date:</strong> April 2026</p>
 
-<p>This Privacy Policy applies to the PDMS (Patient Doctor Management System) application.</p>
+<p>This Privacy Policy applies to the {{ \App\Models\Setting::getSiteName() }} application.</p>
 
 <h2>1. Information We Collect</h2>
 <p>We collect the following user information when you use our system:</p>

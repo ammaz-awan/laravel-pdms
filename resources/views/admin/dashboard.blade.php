@@ -498,7 +498,7 @@
                                 <td class="py-3">{{ $doctorName }}</td>
                                 <td class="py-3">
                                     @if($appointmentDateTime)
-                                        {{ $appointmentDateTime->format('M d, Y h:i A') }}
+                                        {{ $appointmentDateTime->format('M d, Y g:i A') }}
                                     @else
                                         N/A
                                     @endif

@@ -195,11 +195,21 @@
     </style>
 </head>
 <body>
-    <div class="card">
+        @php
+            $siteName = \App\Models\Setting::getSiteName();
+            $logoPath = \App\Models\Setting::get('site_logo');
+            $fullLogoPath = (!empty($logoPath) && file_exists(storage_path('app/public/' . $logoPath)))
+                ? storage_path('app/public/' . $logoPath)
+                : public_path('assets/img/logo.svg');
+        @endphp
         <table class="header-table">
             <tr>
                 <td>
-                    <div class="brand">PDMS</div>
+                    @if(file_exists($fullLogoPath))
+                        <img src="{{ $fullLogoPath }}" alt="{{ $siteName }}" style="height: 35px; max-width: 180px;">
+                    @else
+                        <div class="brand">{{ $siteName }}</div>
+                    @endif
                     <div class="brand-subtitle">Medical Platform Invoice</div>
                 </td>
                 <td class="text-right">
@@ -218,7 +228,7 @@
                 </td>
                 <td>
                     <div class="section-title">Invoice From</div>
-                    <p class="line strong">PDMS - Medical Platform</p>
+                    <p class="line strong">{{ $siteName }} - Medical Platform</p>
                     <p class="line">Dr. {{ optional(optional($doctor)->user)->name ?? optional(optional(optional($invoice->appointment)->doctor)->user)->name ?? '—' }}</p>
                     <p class="line muted">{{ optional($doctor)->specialization ?? optional(optional($invoice->appointment)->doctor)->specialization ?? '' }}</p>
                 </td>
@@ -300,7 +310,7 @@
             </tr>
         </table>
 
-        <p class="note">This PDF copy matches the invoice details layout shown inside PDMS.</p>
+        <p class="note">This PDF copy matches the invoice details layout shown inside {{ $siteName }}.</p>
     </div>
 </body>
 </html>

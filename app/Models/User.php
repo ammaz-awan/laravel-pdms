@@ -97,6 +97,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return asset('assets/img/users/user-08.jpg');
     }
 
+    /**
+     * Send the email verification notification with custom branding.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\CustomVerifyEmail());
+    }
+
 
 //     public function isProfileComplete(): bool
 // {

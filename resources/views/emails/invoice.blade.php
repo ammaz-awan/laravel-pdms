@@ -214,10 +214,10 @@
 </head>
 <body>
     @php
-        $embeddedLogoPath = public_path('assets/img/apple-icon.png');
-        $logoSource = isset($message) && file_exists($embeddedLogoPath)
-            ? $message->embed($embeddedLogoPath)
-            : asset('assets/img/apple-icon.png');
+        $settingLogo = \App\Models\Setting::getLogo('normal');
+        $settingFavicon = \App\Models\Setting::getFavicon();
+        $logoSource = $settingLogo ?: $settingFavicon;
+        $siteName = \App\Models\Setting::getSiteName();
     @endphp
 
     <table class="wrapper" role="presentation" width="100%" style="width: 100%; background-color: #f4f6f9;">
@@ -229,7 +229,7 @@
                             <table role="presentation" width="100%" class="border-bottom pb-3 mb-3" style="width: 100%; border-bottom: 1px solid #e5e7eb; padding-bottom: 18px; margin-bottom: 18px;">
                                 <tr>
                                     <td valign="middle">
-                                        <img src="{{ $logoSource }}" alt="PDMS logo" class="logo" style="height: 40px; display: block;">
+                                        <img src="{{ $logoSource }}" alt="{{ $siteName }} logo" class="logo" style="height: 40px; display: block;">
                                     </td>
                                     <td valign="middle" class="text-end" style="text-align: right;">
                                         <span class="badge" style="display: inline-block; padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; line-height: 1; border: 1px solid {{ $invoice->status === 'paid' ? '#22c55e' : '#f59e0b' }}; color: {{ $invoice->status === 'paid' ? '#15803d' : '#b45309' }}; background-color: {{ $invoice->status === 'paid' ? '#f0fdf4' : '#fffbeb' }};">{{ ucfirst($invoice->status) }}</span>
@@ -256,7 +256,7 @@
                                     </td>
                                     <td class="meta-col mobile-gap" style="width: 33.33%; vertical-align: top; padding-right: 18px;">
                                         <h5 class="heading" style="margin: 0 0 10px; font-size: 16px; font-weight: 700; color: #111827;">Invoice From</h5>
-                                        <p class="text-body text-dark" style="margin: 0 0 8px; font-size: 14px; line-height: 1.6; color: #111827; font-weight: 600;">PDMS - Medical Platform</p>
+                                        <p class="text-body text-dark" style="margin: 0 0 8px; font-size: 14px; line-height: 1.6; color: #111827; font-weight: 600;">{{ $siteName }} - Medical Platform</p>
                                         <p class="text-body" style="margin: 0 0 8px; font-size: 14px; line-height: 1.6; color: #4b5563;">Dr. {{ optional(optional(optional($invoice->appointment)->doctor)->user)->name ?? '—' }}</p>
                                         <p class="text-body text-muted" style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280;">{{ optional(optional($invoice->appointment)->doctor)->specialization ?? '' }}</p>
                                     </td>

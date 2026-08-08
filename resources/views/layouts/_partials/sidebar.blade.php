@@ -5,20 +5,15 @@
         <div>
             <!-- Logo Normal -->
             <a href="{{ route('dashboard') }}" class="logo logo-normal">
-
-            <img src="{{ asset('assets/img/logo.svg') }}" alt="Logo">
-
+                <img src="{{ \App\Models\Setting::getLogo('normal') }}" alt="Logo">
             </a>
 
             <a href="{{ route('dashboard') }}" class="logo-small">
-
-            <img src="{{ asset('assets/img/logo-small.svg') }}" alt="Logo">
-
+                <img src="{{ \App\Models\Setting::getLogo('small') }}" alt="Logo">
             </a>
+
             <a href="{{ route('dashboard') }}" class="dark-logo">
-
-            <img src="{{ asset('assets/img/logo-white.svg') }}" alt="Logo">
-
+                <img src="{{ \App\Models\Setting::getLogo('dark') }}" alt="Logo">
             </a>
 
 
@@ -79,6 +74,11 @@
                                 <li class="{{ $nav('dashboard') }}">
                                     <a href="{{ route('dashboard') }}">
                                         <i class="ti ti-layout-dashboard"></i><span>Dashboard</span>
+                                    </a>
+                                </li>
+                                <li class="{{ $nav('doctor.schedules.*') }}">
+                                    <a href="{{ route('doctor.schedules.index') }}">
+                                        <i class="ti ti-calendar-time"></i><span>Doctor Schedule</span>
                                     </a>
                                 </li>
                                 <li class="{{ $nav('appointments.*') }}">
@@ -170,11 +170,12 @@
                                     </a>
                                 </li>
                             <li class="submenu">
-                                    <a href="javascript:void(0);">
+                                    <a href="javascript:void(0);" class="{{ $nav('admin.settings.*') }}">
                                         <i class="ti ti-settings"></i><span>Settings</span>
                                         <span class="menu-arrow"></span>
                                     </a>
                                     <ul>
+                                        <li><a href="{{ route('admin.settings.site') }}">Site & Logo Settings</a></li>
                                         <li><a href="{{ route('profile.show', auth()->user()->ensureUuid()) }}">Profile Settings</a></li>
                                         <li><a href="{{ route('password.change.form') }}">Change Password</a></li>
                                     </ul>

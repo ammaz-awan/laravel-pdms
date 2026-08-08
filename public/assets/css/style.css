@@ -15610,4 +15610,14 @@ patient registration form css
         .input-group.is-invalid-group > .password-toggle {
             border-color: var(--bs-form-invalid-border-color);
         }
+
+/* Disable browser native password reveal icon (Microsoft Edge, IE, Chrome) */
+input::-ms-reveal,
+input::-ms-clear,
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
     

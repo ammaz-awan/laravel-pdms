@@ -7,13 +7,13 @@
 
                         <!-- Logo Normal -->
                         <span class="logo-light">
-                            <span class="logo-lg"><img src="{{ asset('assets/img/logo.svg') }}" alt="logo"></span>
+                            <span class="logo-lg"><img src="{{ \App\Models\Setting::getLogo('normal') }}" alt="logo"></span>
                         </span>
 
                         <!-- Logo Dark -->
                         <span class="dark-logo">
-                            <span class="logo-lg"><img src="{{ asset('assets/img/logo-white.svg') }}" alt="dark logo"></span>
-                            <span class="logo-sm"><img src="{{ asset('assets/img/logo-small.svg') }}" alt="small dark logo"></span>
+                            <span class="logo-lg"><img src="{{ \App\Models\Setting::getLogo('dark') }}" alt="dark logo"></span>
+                            <span class="logo-sm"><img src="{{ \App\Models\Setting::getLogo('small') }}" alt="small dark logo"></span>
                         </span>
                     </a> --}}
 
@@ -303,3 +303,52 @@
                 </div>
             </div>
 </header>
+
+@if(auth()->check() && auth()->user()->role === 'patient')
+<div id="patientActiveCallBanner" class="position-fixed top-0 end-0 p-3" style="z-index: 9999; display: none;">
+    <div class="toast show align-items-center text-white bg-primary border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body p-3">
+                <i class="ti ti-video me-2 fs-18 align-middle"></i>
+                <span id="patientActiveCallMsg">Dr. Doctor has started your appointment.</span>
+                <div class="mt-2 pt-2 border-top border-white-50">
+                    <a href="#" id="patientActiveCallLink" class="btn btn-light btn-sm fw-bold">Click Here to Join</a>
+                </div>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="document.getElementById('patientActiveCallBanner').style.display='none'"></button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (window.location.pathname.includes('/join-call')) {
+        return; // already on call page
+    }
+
+    function checkActiveCall() {
+        fetch("{{ route('patient.active-call-check') }}", {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            const banner = document.getElementById('patientActiveCallBanner');
+            const msgEl = document.getElementById('patientActiveCallMsg');
+            const linkEl = document.getElementById('patientActiveCallLink');
+
+            if (data && data.active_call) {
+                msgEl.textContent = `Dr. ${data.active_call.doctor_name} has started your appointment.`;
+                linkEl.href = data.active_call.join_url;
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        })
+        .catch(err => console.warn('Active call check error:', err));
+    }
+
+    checkActiveCall();
+    setInterval(checkActiveCall, 10000);
+});
+</script>
+@endif

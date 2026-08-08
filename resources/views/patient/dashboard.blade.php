@@ -98,7 +98,7 @@
                 <strong>Active Call!</strong>
                 Dr. {{ $activeAppt->doctor->user->name }} is waiting —
                 {{ $activeAppt->appointment_date->format('d M') }}
-                {{ \Carbon\Carbon::parse($activeAppt->appointment_time)->format('h:i A') }}
+                {{ $activeAppt->formatted_time }}
             </div>
         </div>
         <a href="{{ route('appointments.call', $activeAppt->id) }}" class="btn btn-success btn-sm">
@@ -193,10 +193,10 @@
                         </div>
                         <p class="fs-12 text-muted mb-2">
                             <i class="ti ti-calendar me-1"></i>{{ $appt->appointment_date->format('d M Y') }}
-                            <i class="ti ti-clock ms-2 me-1"></i>{{ \Carbon\Carbon::parse($appt->appointment_time)->format('h:i A') }}
+                            <i class="ti ti-clock ms-2 me-1"></i>{{ $appt->formatted_time }}
                         </p>
                         @php
-                            $patLive = $appt->call_started_at && \Carbon\Carbon::now()->lt($appt->call_started_at->addSeconds(1800));
+                            $patLive = $appt->status === 'approved' && $appt->call_started_at && \Carbon\Carbon::now()->lt($appt->call_started_at->addSeconds(1800));
                         @endphp
                         @if($patLive)
                             <a href="{{ route('appointments.call', $appt->id) }}" class="btn btn-success btn-sm w-100">
@@ -349,7 +349,7 @@
                                     </td>
                                     <td class="fs-13">
                                         {{ $appt->appointment_date?->format('d M Y') }}<br>
-                                        <span class="text-muted">{{ \Carbon\Carbon::parse($appt->appointment_time)->format('h:i A') }}</span>
+                                        <span class="text-muted">{{ $appt->formatted_time }}</span>
                                     </td>
                                     <td class="fw-semibold text-dark">${{ number_format($appt->fee_snapshot ?? 0, 2) }}</td>
                                     <td>

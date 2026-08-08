@@ -26,62 +26,65 @@ class AgoraCallController extends Controller
         if ($user->role !== 'doctor') {
             abort(403, 'Only doctors can start a call.');
         }
-$doctor = $user->doctor; // must exist
 
-if (! $doctor) {
-    abort(403, 'Doctor profile not found.');
-}
+        $doctor = $user->doctor;
+        if (! $doctor) {
+            abort(403, 'Doctor profile not found.');
+        }
 
         $appointment = Appointment::findOrFail($id);
-        // Ownership check
-       if ((int) $appointment->doctor_id !== (int) $doctor->id) {
-    abort(403, 'This appointment does not belong to you.');
-}
 
+        if ((int) $appointment->doctor_id !== (int) $doctor->id) {
+            abort(403, 'This appointment does not belong to you.');
+        }
 
-        // Business-rule guards
         if ($appointment->payment_status !== 'paid') {
             return back()->with('error', 'Call cannot be started: appointment fee is unpaid.');
         }
 
-        if ($appointment->status !== 'approved') {
+        if ($appointment->status !== 'approved' && $appointment->status !== 'completed') {
             return back()->with('error', 'Call cannot be started: appointment is not approved.');
         }
 
-        // Parse appointment scheduled time
-  $scheduledAt = Carbon::parse(
+        $scheduledAt = Carbon::parse(
             $appointment->appointment_date->format('Y-m-d') . ' ' .
             Carbon::parse($appointment->appointment_time)->format('H:i:s')
         );
 
-       $now = now(); // uses app timezone        
-
+        $now = now();
         $earliestStart = $scheduledAt->copy()->subMinutes(5);
         $sessionEndTime = $this->getScheduledSessionEnd($appointment);
 
-        // Check 1: Prevent starting before scheduled time (allow 5-min grace for the appointment start)
         if ($now->lt($earliestStart)) {
-            return back()->with('error', 'Call cannot be started before the scheduled appointment time. Please wait until ' . $earliestStart->format('h:i A'));
+            return back()->with('error', 'Call cannot be started before the scheduled appointment time. Please wait until ' . $earliestStart->format('g:i A'));
         }
 
-        // Check 2: Prevent starting after the 30-minute session window has closed
         if ($now->gt($sessionEndTime)) {
-            return back()->with('error', 'This appointment session has expired. The 30-minute window ended at ' . $sessionEndTime->format('h:i A'));
+            return back()->with('error', 'This appointment session has expired. The 30-minute window ended at ' . $sessionEndTime->format('g:i A'));
         }
 
-        // Generate channel name if not already set
         $channel = $appointment->agora_channel ?? ('appt_' . $id);
-
         $expiredTs = $sessionEndTime->timestamp;
 
         $token = $this->generateToken($channel, $user->id, AgoraTokenBuilder::ROLE_PUBLISHER, $expiredTs);
 
+        $isFirstStart = ! $appointment->call_started_at;
+        $callStartedAt = $appointment->call_started_at ?? Carbon::now();
+
         $appointment->update([
             'agora_channel'   => $channel,
             'agora_uid'       => (string) $user->id,
-            'call_started_at' => Carbon::now(),
-            'status'          => 'approved', // keep as approved while active
+            'call_started_at' => $callStartedAt,
+            'status'          => 'approved',
         ]);
+
+        if ($isFirstStart && optional(optional($appointment->patient)->user)) {
+            try {
+                $appointment->patient->user->notify(new \App\Notifications\DoctorStartedCallNotification($appointment));
+            } catch (\Throwable $e) {
+                Log::warning('DoctorStartedCallNotification failed: ' . $e->getMessage());
+            }
+        }
 
         if ($request->expectsJson()) {
             $appId = config('agora.app_id');
@@ -104,13 +107,12 @@ if (! $doctor) {
     {
         $user        = Auth::user();
         $appointment = Appointment::with(['doctor.user', 'patient.user', 'prescription'])->findOrFail($id);
-    
-        // Must be the patient or doctor of this appointment
-       $isDoctor = $user->role === 'doctor'
-       && (int) optional($user->doctor)->id === (int) $appointment->doctor_id;
 
-       $isPatient = $user->role === 'patient'
-       && (int) optional($user->patient)->id === (int) $appointment->patient_id;
+        $isDoctor = $user->role === 'doctor'
+            && (int) optional($user->doctor)->id === (int) $appointment->doctor_id;
+
+        $isPatient = $user->role === 'patient'
+            && (int) optional($user->patient)->id === (int) $appointment->patient_id;
 
         if (! $isDoctor && ! $isPatient) {
             abort(403, 'You are not part of this appointment.');
@@ -120,39 +122,41 @@ if (! $doctor) {
             return back()->with('error', 'This appointment has not been paid.');
         }
 
-        if ($appointment->status !== 'approved') {
-            return back()->with('error', 'This appointment is not active.');
-        }
-
         if (! $appointment->call_started_at) {
             return back()->with('error', 'The call has not been started by the doctor yet.');
         }
 
-        if ($this->completeExpiredCall($appointment)) {
+        if ($appointment->status === 'completed') {
+            return back()->with('error', 'This video consultation has already been completed.');
+        }
+
+        if (in_array($appointment->status, ['cancelled', 'rejected'], true)) {
+            return back()->with('error', 'This appointment has been cancelled.');
+        }
+
+        if ($appointment->status !== 'approved') {
+            return back()->with('error', 'The call cannot be joined as the appointment is not approved.');
+        }
+
+        if ($this->completeExpiredCall($appointment) && $appointment->status === 'completed') {
             return back()->with('error', 'This call session has expired.');
         }
 
         $channel   = $appointment->agora_channel;
-        $expiredTs = $this->getScheduledSessionEnd($appointment)->timestamp;
+        $sessionEnd = $this->getScheduledSessionEnd($appointment);
+        $expiredTs = $sessionEnd->timestamp;
         $token     = $this->generateToken($channel, $user->id, AgoraTokenBuilder::ROLE_PUBLISHER, $expiredTs);
 
         $appId = config('agora.app_id');
-        
-        // Debug logging
-        Log::info('Join call data:', [
-            'app_id' => $appId,
-            'channel' => $channel,
-            'uid' => $user->id,
-            'is_doctor' => $isDoctor,
-        ]);
 
         $callData = [
-            'channel_name' => $channel,
-            'token'        => $token,
-            'app_id'       => $appId,
-            'uid'          => $user->id,
-            'expires_at'   => $expiredTs,
-            'is_doctor'    => $isDoctor,
+            'channel_name'       => $channel,
+            'token'              => $token,
+            'app_id'             => $appId,
+            'uid'                => $user->id,
+            'expires_at'         => $expiredTs,
+            'call_started_at_ts' => $appointment->call_started_at->timestamp,
+            'is_doctor'          => $isDoctor,
         ];
 
         return view('appointment.video-call', compact('appointment', 'callData'));
@@ -172,16 +176,36 @@ if (! $doctor) {
         $appointment = Appointment::findOrFail($id);
 
         if ((int) $appointment->doctor_id !== (int) optional($user->doctor)->id) {
-                abort(403, 'This appointment does not belong to you.');
+            abort(403, 'This appointment does not belong to you.');
+        }
+
+        if ($appointment->status === 'completed') {
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'message'            => 'Call already ended.',
+                    'duration_seconds'   => $appointment->duration_seconds,
+                    'formatted_duration' => $appointment->formatted_duration,
+                ]);
             }
+            return redirect()->route('appointments.show', $appointment);
+        }
+
+        $completedAt = Carbon::now();
+        $startedAt = $appointment->call_started_at ?? $completedAt;
+        $seconds = min(1800, max(0, $completedAt->timestamp - $startedAt->timestamp));
 
         $appointment->update([
-            'status'       => 'completed',
-            'completed_at' => Carbon::now(),
+            'status'           => 'completed',
+            'completed_at'     => $completedAt,
+            'duration_seconds' => $seconds,
         ]);
 
         if ($request->ajax() || $request->expectsJson()) {
-         return response()->json(['message' => 'Call ended. Appointment marked as completed.']);
+            return response()->json([
+                'message'            => 'Call ended. Appointment marked as completed.',
+                'duration_seconds'   => $seconds,
+                'formatted_duration' => $appointment->formatted_duration,
+            ]);
         }
 
         return redirect()->route('appointments.show', $appointment)
@@ -189,28 +213,24 @@ if (! $doctor) {
     }
 
     // ---------------------------------------------------------------
-    // GET /appointments/{id}/call-status   (JSON, polling endpoint)
-    // Returns whether the call is still active so the frontend can
-    // auto-end when the session window closes.
+    // GET /appointments/{id}/call-status (JSON, polling endpoint)
     // ---------------------------------------------------------------
     public function callStatus(int $id)
     {
         $user        = Auth::user();
         $appointment = Appointment::findOrFail($id);
 
-         $isDoctor = $user->role === 'doctor'
-         && (int) optional($user->doctor)->id === (int) $appointment->doctor_id;
+        $isDoctor = $user->role === 'doctor'
+            && (int) optional($user->doctor)->id === (int) $appointment->doctor_id;
 
-         $isPatient = $user->role === 'patient'
-         && (int) optional($user->patient)->id === (int)
-         $appointment->patient_id;
+        $isPatient = $user->role === 'patient'
+            && (int) optional($user->patient)->id === (int) $appointment->patient_id;
 
         if (! $isDoctor && ! $isPatient) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
 
         $expiresAt = $this->getScheduledSessionEnd($appointment)->timestamp;
-
         $expired = $this->completeExpiredCall($appointment);
 
         $isActive = ! $expired
@@ -219,14 +239,46 @@ if (! $doctor) {
             && Carbon::now()->lte($this->getScheduledSessionEnd($appointment));
 
         return response()->json([
-            'active'     => $isActive,
-            'status'     => $appointment->status,
-            'expires_at' => $expiresAt,
-            'server_time'=> time(),
+            'active'             => $isActive,
+            'status'             => $appointment->status,
+            'expires_at'         => $expiresAt,
+            'call_started_at_ts' => $appointment->call_started_at ? $appointment->call_started_at->timestamp : null,
+            'duration_seconds'   => $appointment->duration_seconds,
+            'formatted_duration' => $appointment->formatted_duration,
+            'server_time'        => time(),
         ]);
     }
 
-    
+    // ---------------------------------------------------------------
+    // GET /patient/active-call-check (JSON, header notification poll)
+    // ---------------------------------------------------------------
+    public function activeCallCheck()
+    {
+        $user = Auth::user();
+        if (! $user || $user->role !== 'patient' || ! $user->patient) {
+            return response()->json(['active_call' => null]);
+        }
+
+        $activeAppointment = Appointment::with('doctor.user')
+            ->where('patient_id', $user->patient->id)
+            ->where('status', 'approved')
+            ->where('payment_status', 'paid')
+            ->whereNotNull('call_started_at')
+            ->where('call_started_at', '>=', Carbon::now()->subMinutes(30))
+            ->first();
+
+        if (! $activeAppointment) {
+            return response()->json(['active_call' => null]);
+        }
+
+        return response()->json([
+            'active_call' => [
+                'id'          => $activeAppointment->id,
+                'doctor_name' => optional(optional($activeAppointment->doctor)->user)->name ?? 'Doctor',
+                'join_url'    => route('appointments.call', $activeAppointment->id),
+            ],
+        ]);
+    }
 
     private function generateToken(string $channel, int $uid, int $role, int $expiredTs): string
     {
@@ -241,7 +293,7 @@ if (! $doctor) {
             throw new \RuntimeException('Agora credentials are not configured in .env file. Please set AGORA_APP_ID and AGORA_APP_CERTIFICATE.');
         }
 
-        $token = AgoraTokenBuilder::buildTokenWithUid(
+        return AgoraTokenBuilder::buildTokenWithUid(
             $appId,
             $appCertificate,
             $channel,
@@ -249,16 +301,6 @@ if (! $doctor) {
             $role,
             $expiredTs
         );
-
-        Log::debug('Agora token generated', [
-            'channel'       => $channel,
-            'uid'           => $uid,
-            'expires_at'    => date('Y-m-d H:i:s', $expiredTs),
-            'token_prefix'  => substr($token, 0, 3),
-            'appid_in_token'=> substr($token, 3, 32),
-        ]);
-
-        return $token;
     }
 
     private function completeExpiredCall(Appointment $appointment): bool
@@ -267,14 +309,15 @@ if (! $doctor) {
             return false;
         }
 
-        $expired = Carbon::now()->gt(
-            $this->getScheduledSessionEnd($appointment)
-        );
+        $sessionEnd = $this->getScheduledSessionEnd($appointment);
+        $expired = Carbon::now()->gt($sessionEnd);
 
         if ($expired && $appointment->status === 'approved') {
+            $seconds = min(1800, max(0, $sessionEnd->timestamp - $appointment->call_started_at->timestamp));
             $appointment->update([
-                'status'       => 'completed',
-                'completed_at' => Carbon::now(),
+                'status'           => 'completed',
+                'completed_at'     => $sessionEnd,
+                'duration_seconds' => $seconds,
             ]);
         }
 

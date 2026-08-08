@@ -31,6 +31,15 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Invoice::class, InvoicePolicy::class);
         date_default_timezone_set('Asia/Karachi');
         config(['app.timezone' => 'Asia/Karachi']);
+
+        try {
+            $siteName = \App\Models\Setting::getSiteName();
+            if (! empty($siteName)) {
+                config(['app.name' => $siteName]);
+            }
+        } catch (\Throwable $e) {
+            // Fallback gracefully if database or table is not initialized
+        }
     }
 }
  

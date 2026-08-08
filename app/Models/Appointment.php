@@ -22,6 +22,7 @@ class Appointment extends Model
         'refunded_at',
         'call_started_at',
         'completed_at',
+        'duration_seconds',
         'agora_channel',
         'agora_uid',
     ];
@@ -36,6 +37,7 @@ class Appointment extends Model
             'completed_at' => 'datetime',
             'paid_at' => 'datetime',
             'refunded_at' => 'datetime',
+            'duration_seconds' => 'integer',
         ];
     }
 
@@ -47,6 +49,37 @@ class Appointment extends Model
     public function getTimeAttribute()
     {
         return $this->appointment_time;
+    }
+
+    public function getFormattedTimeAttribute(): string
+    {
+        if (! $this->appointment_time) {
+            return '';
+        }
+
+        return \Carbon\Carbon::parse($this->appointment_time)->format('g:i A');
+    }
+
+    public function getFormattedDurationAttribute(): string
+    {
+        if ($this->duration_seconds === null) {
+            if ($this->call_started_at && $this->completed_at) {
+                $seconds = min(1800, max(0, $this->completed_at->timestamp - $this->call_started_at->timestamp));
+            } else {
+                return 'N/A';
+            }
+        } else {
+            $seconds = $this->duration_seconds;
+        }
+
+        $mins = floor($seconds / 60);
+        $secs = $seconds % 60;
+
+        if ($mins > 0) {
+            return sprintf('%d min%s %02d sec%s', $mins, $mins === 1 ? '' : 's', $secs, $secs === 1 ? '' : 's');
+        }
+
+        return sprintf('%d sec%s', $secs, $secs === 1 ? '' : 's');
     }
 
     public function patient()

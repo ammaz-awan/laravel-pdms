@@ -6,15 +6,15 @@
 	<!-- Meta Tags -->
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>@yield('title', 'PDMS')</title>
+    <title>@hasSection('title')@yield('title') - {{ \App\Models\Setting::getSiteName() }}@else{{ \App\Models\Setting::getSiteName() }}@endif</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="author" content="Dreams Technologies">
 	<meta name="csrf-token" content="{{ csrf_token() }}">
     <!-- Favicon -->
-    <link rel="shortcut icon" href="{{ asset('assets/img/favicon.png') }}">
+    <link rel="shortcut icon" href="{{ \App\Models\Setting::getFavicon() }}">
 
     <!-- Apple Icon -->
-    <link rel="apple-touch-icon" href="{{ asset('assets/img/apple-icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ \App\Models\Setting::getFavicon() }}">
 
     <!-- Theme Config Js -->
     <script src="{{ asset('assets/js/theme-script.js') }}" type="text/javascript"></script>
@@ -153,11 +153,17 @@
 
 @endif
                 @if(session('success'))
-                    <div class="alert alert-success rounded-3 mb-4">{{ session('success') }}</div>
+                    <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4" role="alert">
+                        <i class="ti ti-check me-1"></i>{{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 @endif
 
                 @if(session('error'))
-                    <div class="alert alert-danger rounded-3 mb-4">{{ session('error') }}</div>
+                    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
+                        <i class="ti ti-alert-triangle me-1"></i>{{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 @endif
 
                 @if($errors->any())

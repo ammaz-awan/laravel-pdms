@@ -409,13 +409,13 @@
                        data-bs-placement="top">
                         <i class="ti ti-eye"></i>
                     </a>
-                   <form method="POST" action="{{ route('doctor.approve', $doctor->id) }}" class="d-inline">
+                   <form method="POST" action="{{ route('doctor.approve', ['doctor' => $doctor->id]) }}" class="d-inline">
                         @csrf
                         <button class="btn btn-success action-btn" title="Approve" data-bs-toggle="tooltip" data-bs-placement="top">
                             <i class="ti ti-check"></i>
                         </button>
                     </form>
-                    <form method="POST" action="{{ route('doctor.reject', $doctor->id) }}" class="d-inline">
+                    <form method="POST" action="{{ route('doctor.reject', ['doctor' => $doctor->id]) }}" class="d-inline">
                         @csrf
                         <button class="btn btn-danger action-btn" title="Reject" data-bs-toggle="tooltip" data-bs-placement="top">
                             <i class="ti ti-x"></i>

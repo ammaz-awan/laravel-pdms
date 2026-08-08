@@ -7,6 +7,7 @@ use App\Models\Doctor;
 use App\Models\Patient;
 use App\Http\Controllers\AgoraCallController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\AppointmentController;
@@ -160,6 +161,12 @@ Route::post('/admin/doctor-verifications/{doctor}/approve', [AdminController::cl
 Route::post('/admin/doctor-verifications/{doctor}/reject', [AdminController::class, 'rejectDoctor'])
     ->name('doctor.reject');
 
+// Admin Site Settings (Logo & Favicon)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/settings/site', [SettingController::class, 'index'])->name('admin.settings.site');
+    Route::post('/admin/settings/site', [SettingController::class, 'update'])->name('admin.settings.site.update');
+});
+
 Route::post('/doctor/update-verification', [DoctorController::class, 'updateVerification'])
     ->middleware('auth')
     ->name('doctor.updateVerification');
@@ -167,7 +174,10 @@ Route::post('/doctor/update-verification', [DoctorController::class, 'updateVeri
 Route::middleware(['auth'])->group(function () {
     Route::get('/doctor/appointments', [AppointmentController::class, 'doctorAppointments'])->name('doctor.appointments');
     Route::get('/doctor/my-patients', [DoctorController::class, 'myPatients'])->name('doctor.my-patients');
+    Route::get('/doctor/schedules', [DoctorScheduleController::class, 'index'])->name('doctor.schedules.index');
     Route::post('/doctor/schedule', [DoctorScheduleController::class, 'store'])->name('doctor.schedule.store');
+    Route::put('/doctor/schedules/{schedule}', [DoctorScheduleController::class, 'update'])->name('doctor.schedules.update');
+    Route::delete('/doctor/schedules/{schedule}', [DoctorScheduleController::class, 'destroy'])->name('doctor.schedules.destroy');
     Route::get('/doctor/{doctor}/schedule', [DoctorScheduleController::class, 'getScheduleByDoctor'])->name('doctor.schedule.show');
     Route::get('/admin/appointments', [AppointmentController::class, 'adminAppointments'])->name('admin.appointments');
     Route::post('/appointments/book', [AppointmentController::class, 'store'])->name('appointments.book');
@@ -210,6 +220,10 @@ Route::middleware(['auth'])->group(function () {
     // Call status polling (JSON) — used by the video call page to detect auto-end
     Route::get('/appointments/{id}/call-status', [AgoraCallController::class, 'callStatus'])
         ->name('appointments.call-status');
+
+    // Patient active call check for header banner notification
+    Route::get('/patient/active-call-check', [AgoraCallController::class, 'activeCallCheck'])
+        ->name('patient.active-call-check');
 
     // Live prescription – doctor writes (POST), both read (GET)
     Route::post('/appointments/{id}/prescription', [PrescriptionController::class, 'liveStore'])

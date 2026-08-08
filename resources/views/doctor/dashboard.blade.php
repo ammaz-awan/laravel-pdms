@@ -164,10 +164,10 @@
                         </div>
                         <div class="d-flex align-items-center gap-2 mb-2 fs-12 text-muted flex-wrap">
                             <span><i class="ti ti-calendar me-1"></i>{{ $appt->appointment_date->format('D, d M Y') }}</span>
-                            <span><i class="ti ti-clock me-1"></i>{{ \Carbon\Carbon::parse($appt->appointment_time)->format('h:i A') }}</span>
+                            <span><i class="ti ti-clock me-1"></i>{{ $appt->formatted_time }}</span>
                         </div>
                         @php
-                            $apptLive = $appt->call_started_at && \Carbon\Carbon::now()->lt($appt->call_started_at->addSeconds(1800));
+                            $apptLive = $appt->status === 'approved' && $appt->call_started_at && \Carbon\Carbon::now()->lt($appt->call_started_at->addSeconds(1800));
                         @endphp
                         <div class="d-flex gap-2">
                             @if($appt->status === 'approved' && $appt->payment_status === 'paid' && !$appt->call_started_at)
@@ -233,7 +233,7 @@
                                     </td>
                                     <td class="fs-13">
                                         {{ $appointment->appointment_date?->format('d M Y') }}<br>
-                                        <span class="text-muted">{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') }}</span>
+                                        <span class="text-muted">{{ $appointment->formatted_time }}</span>
                                     </td>
                                     <td class="fw-semibold text-dark">${{ number_format($appointment->fee_snapshot ?? 0, 2) }}</td>
                                     <td>
@@ -260,7 +260,7 @@
                                                 </form>
                                             </div>
                                         @elseif($appointment->status === 'approved' && $appointment->payment_status === 'paid')
-                                            @php $live2 = $appointment->call_started_at && \Carbon\Carbon::now()->lt($appointment->call_started_at->addSeconds(1800)); @endphp
+                                            @php $live2 = $appointment->status === 'approved' && $appointment->call_started_at && \Carbon\Carbon::now()->lt($appointment->call_started_at->addSeconds(1800)); @endphp
                                             @if(!$appointment->call_started_at)
                                                 <form action="{{ route('doctor.appointments.start-call', $appointment->id) }}" method="POST">
                                                     @csrf
@@ -349,8 +349,9 @@
 
     <div class="col-xl-5 d-flex" id="availability-card">
         <div class="card shadow-sm flex-fill w-100">
-            <div class="card-header">
+            <div class="card-header d-flex align-items-center justify-content-between">
                 <h5 class="fw-bold mb-0">Schedule Availability</h5>
+                <a href="{{ route('doctor.schedules.index') }}" class="btn btn-sm btn-light">Manage All</a>
             </div>
             <div class="card-body">
                 <form action="{{ route('doctor.schedule.store') }}" method="POST" class="mb-4">
@@ -359,7 +360,7 @@
                         <label class="form-label">Available Date</label>
                         <input type="date" name="available_date"
                             class="form-control @error('available_date') is-invalid @enderror"
-                            value="{{ old('available_date') }}" required>
+                            value="{{ old('available_date') }}" min="{{ date('Y-m-d') }}" required>
                         @error('available_date') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="row g-2">
@@ -388,11 +389,20 @@
                 <div class="mt-3">
                     @forelse(($doctorSchedules ?? collect())->take(5) as $schedule)
                         <div class="d-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
-                            <p class="text-dark fw-semibold mb-0 fs-13">{{ $schedule->available_date->format('D, d M') }}</p>
-                            <p class="mb-0 fs-12 text-muted d-inline-flex align-items-center">
-                                <i class="ti ti-clock me-1"></i>
-                                {{ \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') }} – {{ \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }}
-                            </p>
+                            <div>
+                                <p class="text-dark fw-semibold mb-0 fs-13">{{ $schedule->available_date->format('D, d M') }}</p>
+                                <p class="mb-0 fs-12 text-muted d-inline-flex align-items-center">
+                                    <i class="ti ti-clock me-1"></i>
+                                    {{ $schedule->formatted_time_slot }}
+                                </p>
+                            </div>
+                            <form action="{{ route('doctor.schedules.destroy', $schedule) }}" method="POST" onsubmit="return confirm('Delete this schedule slot?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-link text-danger p-0 border-0" title="Delete Slot">
+                                    <i class="ti ti-trash fs-16"></i>
+                                </button>
+                            </form>
                         </div>
                     @empty
                         <p class="text-muted fs-13 mb-0">No availability added yet.</p>
@@ -422,7 +432,9 @@
     const scheduleCalendar = new FullCalendar.Calendar(
         document.getElementById('doctor-dashboard-calendar'), {
             initialView: 'dayGridMonth',
-            headerToolbar: { left: 'prev,next', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+            headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
+            height: 'auto',
+            dayMaxEvents: true,
             events: @json($doctorScheduleEvents),
         }
     );

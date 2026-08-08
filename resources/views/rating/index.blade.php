@@ -31,11 +31,15 @@
                             <td>{{ $rating->doctor->user->name }}</td>
                             <td>{{ $rating->patient->user->name }}</td>
                             <td>
-                                <span class="badge bg-info">
-                                    @for($i = 0; $i < $rating->rating; $i++)
-                                        <i class="ti ti-star"></i>
+                                <span class="badge bg-soft-warning border border-warning text-dark fw-bold px-2 py-1">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        @if($i <= $rating->rating)
+                                            <i class="ti ti-star-filled text-warning me-1"></i>
+                                        @else
+                                            <i class="ti ti-star text-muted me-1"></i>
+                                        @endif
                                     @endfor
-                                    {{ $rating->rating }}/5
+                                    <span>{{ $rating->rating }}.0/5</span>
                                 </span>
                             </td>
                             <td><small>{{ Str::limit($rating->review, 50) }}</small></td>

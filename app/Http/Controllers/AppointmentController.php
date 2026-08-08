@@ -77,7 +77,7 @@ class AppointmentController extends Controller
                     'doctor'       => $a->doctor->user->name,
                     'patient'      => $a->patient->user->name,
                     'date'         => $a->appointment_date->format('M d, Y'),
-                    'time'         => \Carbon\Carbon::parse($a->appointment_time)->format('h:i A'),
+                    'time'         => $a->formatted_time,
                     'fee'          => '$' . number_format($a->fee_snapshot ?? $a->doctor->fees, 2),
                     'status'       => $a->status,
                     'status_color' => $statusColor,
@@ -187,7 +187,7 @@ class AppointmentController extends Controller
         
         $this->authorizeAppointmentView($appointment);
 
-        $appointment->load(['patient.user', 'doctor.user']);
+        $appointment->load(['patient.user', 'doctor.user', 'prescription', 'rating', 'payment']);
 
         return view('appointment.show', compact('appointment'));
     }
