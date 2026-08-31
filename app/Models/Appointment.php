@@ -16,6 +16,7 @@ class Appointment extends Model
         'status',
         'fee_snapshot',
         'notes',
+        'subtitle_language',
         'payment_status',
         'paid_at',
         'payout_status',

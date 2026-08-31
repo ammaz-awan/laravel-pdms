@@ -172,6 +172,7 @@ class AppointmentController extends Controller
                 'status' => 'pending',
                 'fee_snapshot' => $doctor->fees,
                 'notes' => $request->notes,
+                'subtitle_language' => $request->input('subtitle_language') ?? config('subtitles.default'),
             ]);
         } catch (QueryException $exception) {
             throw ValidationException::withMessages([

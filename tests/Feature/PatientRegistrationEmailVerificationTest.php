@@ -4,13 +4,13 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class PatientRegistrationEmailVerificationTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     public function test_patient_registration_sends_email_verification_notification(): void
     {

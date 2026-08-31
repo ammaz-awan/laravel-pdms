@@ -321,6 +321,19 @@
                     </div>
 
                     <div class="mb-3 field-panel">
+                        <label for="subtitle_language" class="form-label">Preferred Subtitle Language</label>
+                        <select class="form-control @error('subtitle_language') is-invalid @enderror" id="subtitle_language" name="subtitle_language" {{ $patientVerified ? '' : 'disabled' }}>
+                            @foreach(config('subtitles.languages', []) as $code => $lang)
+                                <option value="{{ $code }}" {{ old('subtitle_language', config('subtitles.default')) === $code ? 'selected' : '' }}>
+                                    {{ $lang['name'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted">Live subtitles will translate spoken speech into your selected language during the call.</small>
+                        @error('subtitle_language') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+
+                    <div class="mb-3 field-panel">
                         <label for="notes" class="form-label">Notes</label>
                         <textarea class="form-control @error('notes') is-invalid @enderror" id="notes" name="notes" rows="3">{{ old('notes') }}</textarea>
                         @error('notes') <div class="invalid-feedback">{{ $message }}</div> @enderror

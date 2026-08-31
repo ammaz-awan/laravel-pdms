@@ -7,12 +7,13 @@ use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use App\Services\AgoraTranscriptionService;
 use Carbon\Carbon;
 
 
 class AgoraCallController extends Controller
 {
-    // Token validity: 30 minutes
     private const CALL_DURATION_SECONDS = 1800;
 
     // ---------------------------------------------------------------
@@ -149,6 +150,19 @@ class AgoraCallController extends Controller
 
         $appId = config('agora.app_id');
 
+        $supportedLanguages = config('subtitles.languages', []);
+        $defaultLanguage    = config('subtitles.default', 'ur-PK');
+
+        $subtitleLang = $appointment->subtitle_language;
+        if (!$subtitleLang || !array_key_exists($subtitleLang, $supportedLanguages)) {
+            $subtitleLang = $defaultLanguage;
+        }
+
+        $langConfig = $supportedLanguages[$subtitleLang] ?? [
+            'name'      => 'Urdu',
+            'direction' => 'rtl',
+        ];
+
         $callData = [
             'channel_name'       => $channel,
             'token'              => $token,
@@ -157,6 +171,9 @@ class AgoraCallController extends Controller
             'expires_at'         => $expiredTs,
             'call_started_at_ts' => $appointment->call_started_at->timestamp,
             'is_doctor'          => $isDoctor,
+            'subtitle_language'  => $subtitleLang,
+            'subtitle_direction' => $langConfig['direction'] ?? 'ltr',
+            'subtitle_lang_name' => $langConfig['name'] ?? 'Language',
         ];
 
         return view('appointment.video-call', compact('appointment', 'callData'));
@@ -199,6 +216,8 @@ class AgoraCallController extends Controller
             'completed_at'     => $completedAt,
             'duration_seconds' => $seconds,
         ]);
+
+        $this->cleanupActiveTranslation($appointment->id);
 
         if ($request->ajax() || $request->expectsJson()) {
             return response()->json([
@@ -319,6 +338,7 @@ class AgoraCallController extends Controller
                 'completed_at'     => $sessionEnd,
                 'duration_seconds' => $seconds,
             ]);
+            $this->cleanupActiveTranslation($appointment->id);
         }
 
         return $expired;
@@ -330,5 +350,19 @@ class AgoraCallController extends Controller
             $appointment->appointment_date->format('Y-m-d') . ' ' .
             Carbon::parse($appointment->appointment_time)->format('H:i:s')
         )->addMinutes(30);
+    }
+
+    private function cleanupActiveTranslation(int $appointmentId): void
+    {
+        try {
+            $cacheKey = "agora_transcription_{$appointmentId}";
+            $taskData = Cache::get($cacheKey);
+            if ($taskData && !empty($taskData['task_id'])) {
+                app(AgoraTranscriptionService::class)->stopTranslation($taskData['task_id']);
+            }
+            Cache::forget($cacheKey);
+        } catch (\Throwable $e) {
+            Log::warning('cleanupActiveTranslation error: ' . $e->getMessage());
+        }
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Admin;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Http\Controllers\AgoraCallController;
+use App\Http\Controllers\AgoraTranslationController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\DoctorController;
@@ -224,6 +225,19 @@ Route::middleware(['auth'])->group(function () {
     // Patient active call check for header banner notification
     Route::get('/patient/active-call-check', [AgoraCallController::class, 'activeCallCheck'])
         ->name('patient.active-call-check');
+
+    // ── Live Subtitles / Real-Time Translation Routes ─────────────
+    Route::post('/appointments/{id}/translation/start', [AgoraTranslationController::class, 'start'])
+        ->name('appointments.translation.start');
+
+    Route::post('/appointments/{id}/translation/stop', [AgoraTranslationController::class, 'stop'])
+        ->name('appointments.translation.stop');
+
+    Route::post('/appointments/{id}/translation/language', [AgoraTranslationController::class, 'updateLanguage'])
+        ->name('appointments.translation.language');
+
+    Route::get('/appointments/{id}/translation/status', [AgoraTranslationController::class, 'status'])
+        ->name('appointments.translation.status');
 
     // Live prescription – doctor writes (POST), both read (GET)
     Route::post('/appointments/{id}/prescription', [PrescriptionController::class, 'liveStore'])

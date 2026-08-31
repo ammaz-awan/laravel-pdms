@@ -23,6 +23,7 @@ class StoreAppointmentRequest extends FormRequest
             'appointment_date' => 'required|date|after_or_equal:today',
             'appointment_time' => ['required', 'date_format:H:i', $this->validateFutureDateTime()],
             'notes' => 'nullable|string|max:1000',
+            'subtitle_language' => ['nullable', 'string', Rule::in(array_keys(config('subtitles.languages', [])))],
         ];
     }
 

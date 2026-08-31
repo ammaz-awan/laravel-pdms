@@ -350,6 +350,90 @@ html, body {
     opacity: 1;
 }
 
+/* ===== LIVE SUBTITLES & FLOATING OVERLAY ===== */
+.subtitle-overlay-box {
+    position: absolute;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 82%;
+    min-width: 260px;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    padding: 10px 18px;
+    color: #ffffff;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    text-align: center;
+    z-index: 1050;
+    pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+.subtitle-overlay-box[dir="rtl"] {
+    text-align: right;
+    font-family: "Noto Naskh Arabic", "Jameel Noori Nastaleeq", "Segoe UI", Tahoma, sans-serif;
+    font-size: 1.15rem;
+}
+
+.subtitle-speaker-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--primary);
+    color: white;
+    margin-bottom: 4px;
+    margin-right: 6px;
+}
+
+.subtitle-overlay-box[dir="rtl"] .subtitle-speaker-badge {
+    margin-right: 0;
+    margin-left: 6px;
+}
+
+.subtitle-lang-wrapper {
+    display: inline-flex;
+    align-items: center;
+}
+
+.subtitle-lang-dropdown {
+    background: #3d3d3d;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.subtitle-lang-dropdown:hover {
+    background: #4d4d4d;
+}
+
+.subtitle-lang-dropdown option {
+    background: #1a1a1a;
+    color: white;
+}
+
+.control-btn.cc-active {
+    background: #1a6fc4;
+}
+
+.control-btn.cc-starting {
+    background: #ffc107;
+    color: #000;
+}
+
 /* ===== PRESCRIPTION PANEL (Doctor Only - Sidebar) ===== */
 .rx-sidebar {
     position: fixed;
@@ -705,15 +789,27 @@ html, body {
             </div>
         </div>
 
+        <!-- Floating Subtitle Overlay -->
+        <div class="subtitle-overlay-box" id="subtitleOverlay" style="display: none;" dir="ltr">
+            <span class="subtitle-speaker-badge" id="subtitleSpeaker">Speaker</span>
+            <span class="subtitle-text" id="subtitleText"></span>
+        </div>
+
         <!-- Control Bar (Bottom Center) -->
         <div class="call-controls">
-            <button class="control-btn active" id="btnMic" title="Mute/Unmute">
+            <button type="button" class="control-btn active" id="btnMic" title="Mute/Unmute">
                 <i class="ti ti-microphone" id="micIcon"></i>
             </button>
-            <button class="control-btn active" id="btnCam" title="Camera On/Off">
+            <button type="button" class="control-btn active" id="btnCam" title="Camera On/Off">
                 <i class="ti ti-video" id="camIcon"></i>
             </button>
-            <button class="control-btn end-call" id="btnEnd" title="End Call">
+            
+            <!-- Live Subtitles (CC) Button -->
+            <button type="button" class="control-btn off" id="btnCC" title="Live Subtitles (CC)">
+                <span id="ccIcon" style="font-weight: 800; font-size: 0.88rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.5px;">CC</span>
+            </button>
+
+            <button type="button" class="control-btn end-call" id="btnEnd" title="End Call">
                 <i class="ti ti-phone-off"></i>
             </button>
         </div>
@@ -818,6 +914,22 @@ const RX_FETCH_URL    = "{{ route('appointments.prescription.show', ['id' => $ap
 const APPT_SHOW_URL   = "{{ route('appointments.show', $appointment) }}";
 const APPT_RATING_URL = "{{ route('appointments.rating.show', ['id' => $appointment->id]) }}";
 
+// Translation Endpoints
+const TRANSLATION_START_URL = "{{ route('appointments.translation.start', ['id' => $appointment->id]) }}";
+const TRANSLATION_STOP_URL  = "{{ route('appointments.translation.stop', ['id' => $appointment->id]) }}";
+const TRANSLATION_LANG_URL  = "{{ route('appointments.translation.language', ['id' => $appointment->id]) }}";
+const TRANSLATION_STATUS_URL= "{{ route('appointments.translation.status', ['id' => $appointment->id]) }}";
+
+const APPOINTMENT_SUBTITLE_LANGUAGE  = @json($callData['subtitle_language'] ?? config('subtitles.default', 'ur-PK'));
+const APPOINTMENT_SUBTITLE_DIRECTION = @json($callData['subtitle_direction'] ?? 'ltr');
+const APPOINTMENT_SUBTITLE_LANG_NAME = @json($callData['subtitle_lang_name'] ?? 'Subtitles');
+const CC_STORAGE_KEY = `agora_cc_enabled_${APPT_ID}`;
+
+let ccActive = false;
+let ccStarting = false;
+let currentSubtitleLang = IS_DOCTOR ? 'en-US' : APPOINTMENT_SUBTITLE_LANGUAGE;
+let subtitleClearTimer = null;
+
 // ========== FIXED START TIMESTAMP TIMER ==========
 const CALL_STARTED_AT_TS   = @json($callData['call_started_at_ts']);
 const SESSION_DURATION_MS  = 30 * 60 * 1000; // 30 minutes
@@ -916,38 +1028,49 @@ let localTracks = { audio: null, video: null };
 let micMuted = false;
 let camOff   = false;
 
+const DISCONNECT_STORAGE_KEY = `agora_disc_ts_${APPT_ID}`;
+const JOINED_STORAGE_KEY     = `agora_joined_${APPT_ID}`;
+
 function updateDisconnectStatus(isDisconnected) {
     const remoteBox = document.getElementById('remote-video');
     if (!remoteBox) return;
 
     if (isDisconnected) {
-        if (!disconnectStartTime) {
-            disconnectStartTime = Date.now();
+        let storedTs = sessionStorage.getItem(DISCONNECT_STORAGE_KEY);
+        if (!storedTs) {
+            storedTs = String(Date.now());
+            sessionStorage.setItem(DISCONNECT_STORAGE_KEY, storedTs);
         }
+        disconnectStartTime = parseInt(storedTs, 10) || Date.now();
 
         const messageText = IS_DOCTOR 
             ? 'Patient disconnected. Waiting for patient to rejoin…' 
             : 'Doctor disconnected. Waiting for doctor to reconnect…';
 
+        const discSecs = Math.max(0, Math.floor((Date.now() - disconnectStartTime) / 1000));
+        const dm = String(Math.floor(discSecs / 60)).padStart(2, '0');
+        const ds = String(discSecs % 60).padStart(2, '0');
+
         remoteBox.innerHTML = `
             <div class="video-placeholder">
                 <i class="ti ti-plug-off text-warning mb-2" style="font-size: 3.5rem;"></i>
                 <span class="fw-bold text-white fs-5 mb-1">${messageText}</span>
-                <small class="text-warning font-monospace" id="disconnectTimerText">(Disconnected 00:00)</small>
+                <small class="text-warning font-monospace" id="disconnectTimerText">(Disconnected ${dm}:${ds})</small>
             </div>`;
 
         if (!disconnectTimer) {
             disconnectTimer = setInterval(() => {
                 const discEl = document.getElementById('disconnectTimerText');
                 if (discEl && disconnectStartTime) {
-                    const discSecs = Math.floor((Date.now() - disconnectStartTime) / 1000);
-                    const dm = String(Math.floor(discSecs / 60)).padStart(2, '0');
-                    const ds = String(discSecs % 60).padStart(2, '0');
-                    discEl.textContent = `(Disconnected ${dm}:${ds})`;
+                    const secs = Math.max(0, Math.floor((Date.now() - disconnectStartTime) / 1000));
+                    const m = String(Math.floor(secs / 60)).padStart(2, '0');
+                    const s = String(secs % 60).padStart(2, '0');
+                    discEl.textContent = `(Disconnected ${m}:${s})`;
                 }
             }, 1000);
         }
     } else {
+        sessionStorage.removeItem(DISCONNECT_STORAGE_KEY);
         if (disconnectTimer) {
             clearInterval(disconnectTimer);
             disconnectTimer = null;
@@ -956,44 +1079,250 @@ function updateDisconnectStatus(isDisconnected) {
     }
 }
 
+const TRANSCRIBER_UID     = 999999;
+const TRANSCRIBER_PUB_UID = 999998;
+const DOCTOR_UID          = @json((int) optional(optional($appointment->doctor)->user)->id);
+const EXPECTED_REMOTE_UID = IS_DOCTOR 
+    ? @json((int) optional(optional($appointment->patient)->user)->id)
+    : DOCTOR_UID;
+
+console.log('=== RTC AUDIO DEBUG ===');
+console.log('AGORA SDK VERSION:', typeof AgoraRTC !== 'undefined' ? AgoraRTC.VERSION : 'Unknown');
+console.log('LOCAL_UID:', AGORA_UID, 'typeof:', typeof AGORA_UID);
+console.log('EXPECTED_REMOTE_UID:', EXPECTED_REMOTE_UID, 'typeof:', typeof EXPECTED_REMOTE_UID);
+console.log('ROLE:', IS_DOCTOR ? 'Doctor' : 'Patient');
+console.log('CHANNEL:', AGORA_CHANNEL);
+console.log('SECURE_CONTEXT:', window.isSecureContext);
+
+function isHumanRemoteParticipant(uid) {
+    const numUid = Number(uid);
+    if (numUid === TRANSCRIBER_UID || numUid === TRANSCRIBER_PUB_UID || numUid === Number(AGORA_UID)) {
+        return false;
+    }
+    if (EXPECTED_REMOTE_UID > 0) {
+        return numUid === Number(EXPECTED_REMOTE_UID);
+    }
+    return true; // Safe fallback: treat any non-bot, non-self participant as the remote human
+}
+
+if (typeof AgoraRTC.onAutoplayFailed === 'function') {
+    AgoraRTC.onAutoplayFailed(() => {
+        console.error('[AGORA AUTOPLAY FAILED]');
+        toastr.info('Click anywhere on the screen to enable remote audio playback.', 'Audio Policy Alert', { timeOut: 8000 });
+    });
+}
+
+// Global click fallback to play audio if browser restricted initial autoplay
+document.addEventListener('click', () => {
+    for (const user of client.remoteUsers) {
+        if (user.audioTrack && isHumanRemoteParticipant(user.uid)) {
+            if (!user.audioTrack.isPlaying) {
+                user.audioTrack.play().catch(e => console.warn('Audio play retry failed:', e));
+            }
+        }
+    }
+}, { once: false });
+
+function updateCameraOffStatus(isCamOff) {
+    const remoteBox = document.getElementById('remote-video');
+    if (!remoteBox) return;
+
+    if (isCamOff) {
+        const messageText = IS_DOCTOR 
+            ? 'Patient turned camera off' 
+            : 'Doctor turned camera off';
+
+        remoteBox.innerHTML = `
+            <div class="video-placeholder">
+                <i class="ti ti-video-off text-secondary mb-2" style="font-size: 3.5rem;"></i>
+                <span class="fw-bold text-white fs-5 mb-1">${messageText}</span>
+            </div>`;
+    }
+}
+
 async function subscribeToRemoteUser(user, mediaType) {
+    if (!isHumanRemoteParticipant(user.uid)) {
+        return;
+    }
+
+    const typeTag = mediaType ? mediaType.toUpperCase() : 'MEDIA';
+    console.log(`[ATTEMPTING ${typeTag} SUBSCRIBE] ${user.uid}`);
     try {
         await client.subscribe(user, mediaType);
+        console.log(`[${typeTag} SUBSCRIBE SUCCESS] ${user.uid}`);
 
         if (mediaType === 'video' && user.videoTrack) {
             updateDisconnectStatus(false);
             const remoteBox = document.getElementById('remote-video');
-            remoteBox.querySelector('.video-placeholder')?.remove();
+            remoteBox?.querySelector('.video-placeholder')?.remove();
             user.videoTrack.play('remote-video');
         }
 
-        if (mediaType === 'audio' && user.audioTrack) {
-            user.audioTrack.play();
+        if (mediaType === 'audio') {
+            const trackExists = !!user.audioTrack;
+            console.log(`[REMOTE AUDIO TRACK EXISTS] ${trackExists ? 'YES' : 'NO'}`);
+            if (user.audioTrack) {
+                if (typeof user.audioTrack.setVolume === 'function') {
+                    try {
+                        user.audioTrack.setVolume(100);
+                        console.log(`[REMOTE AUDIO VOLUME SET] 100 for UID: ${user.uid}`);
+                    } catch (volErr) {
+                        console.warn('Set volume error:', volErr);
+                    }
+                }
+                console.log(`[CALLING REMOTE AUDIO PLAY] UID: ${user.uid}`);
+                try {
+                    await user.audioTrack.play();
+                    console.log(`[REMOTE AUDIO PLAY CALLED] UID: ${user.uid}`);
+                    
+                    let remoteSampleCount = 0;
+                    const remoteInterval = setInterval(() => {
+                        if (user.audioTrack && remoteSampleCount < 15) {
+                            const level = typeof user.audioTrack.getVolumeLevel === 'function' ? user.audioTrack.getVolumeLevel() : 0;
+                            console.log(`[REMOTE AUDIO LEVEL] UID ${user.uid}: ${level.toFixed(4)}`);
+                            remoteSampleCount++;
+                        } else {
+                            clearInterval(remoteInterval);
+                        }
+                    }, 1000);
+                } catch (playErr) {
+                    console.error(`[REMOTE AUDIO PLAY FAILED] UID: ${user.uid}`, playErr);
+                }
+            }
         }
     } catch (error) {
-        console.error('Could not subscribe to remote user:', {
-            uid: user.uid,
+        console.error(`[${typeTag} SUBSCRIBE FAILED]`, {
+            UID: user.uid,
             mediaType,
-            error,
+            errorCode: error?.code,
+            errorMessage: error?.message || String(error)
         });
     }
 }
 
 function registerAgoraEvents() {
+    client.on('connection-state-change', (curState, prevState, reason) => {
+        console.log(`[RTC CONNECTION] previous: ${prevState}, current: ${curState}, reason: ${reason}`);
+    });
+
     client.on('user-published', async (user, mediaType) => {
+        const isHuman = isHumanRemoteParticipant(user.uid);
+        console.log('[USER PUBLISHED]', {
+            UID: user.uid,
+            typeof_UID: typeof user.uid,
+            mediaType: mediaType,
+            EXPECTED_REMOTE: EXPECTED_REMOTE_UID,
+            typeof_EXPECTED: typeof EXPECTED_REMOTE_UID,
+            IS_HUMAN_REMOTE: isHuman
+        });
+
+        if (!isHuman) {
+            return;
+        }
+
+        sessionStorage.setItem(JOINED_STORAGE_KEY, 'true');
         updateDisconnectStatus(false);
         await subscribeToRemoteUser(user, mediaType);
     });
 
-    client.on('user-unpublished', (user, mediaType) => {
-        if (mediaType === 'video') {
-            updateDisconnectStatus(true);
+    client.on('user-joined', (user) => {
+        console.log(`[Agora User Joined] UID: ${user.uid}`);
+        if (Number(user.uid) === TRANSCRIBER_UID || Number(user.uid) === TRANSCRIBER_PUB_UID) {
+            console.log('[AGORA STT BOT ONLINE] Bot joined channel — listening for microphone audio!');
+            toastr.info('STT Transcriber connected. Speak into mic now!');
         }
     });
 
-    client.on('user-left', () => {
+    client.on('user-unpublished', (user, mediaType) => {
+        console.log(`[Agora User Unpublished] UID: ${user.uid}, mediaType: ${mediaType}`);
+        if (!isHumanRemoteParticipant(user.uid)) {
+            return;
+        }
+
+        if (mediaType === 'video') {
+            updateCameraOffStatus(true);
+        }
+    });
+
+    client.on('user-left', (user) => {
+        console.log(`[Agora User Left] UID: ${user?.uid}`);
+        if (user && !isHumanRemoteParticipant(user.uid)) {
+            return;
+        }
+
+        sessionStorage.setItem(JOINED_STORAGE_KEY, 'true');
         updateDisconnectStatus(true);
     });
+
+    console.log('[STT STREAM LISTENER REGISTERED]', {
+        timestamp: new Date().toISOString(),
+        channel: AGORA_CHANNEL,
+        localUid: AGORA_UID
+    });
+
+    client.on('stream-message', (uid, stream) => {
+        console.log('[RAW AGORA STREAM MESSAGE]', {
+            senderUid: String(uid),
+            senderType: typeof uid,
+            payloadType: stream?.constructor?.name || typeof stream,
+            byteLength: stream?.byteLength ?? stream?.length ?? null,
+            receivedAt: new Date().toISOString()
+        });
+        handleTranscriptionStreamMessage(uid, stream);
+    });
+}
+
+async function syncRemoteParticipantState() {
+    let humanUser = null;
+    for (const user of client.remoteUsers) {
+        if (isHumanRemoteParticipant(user.uid)) {
+            humanUser = user;
+            break;
+        }
+    }
+
+    const remoteBox = document.getElementById('remote-video');
+    if (!remoteBox) return;
+
+    if (!humanUser) {
+        const hadJoined = sessionStorage.getItem(JOINED_STORAGE_KEY) === 'true';
+        const hasDisconnectTs = !!sessionStorage.getItem(DISCONNECT_STORAGE_KEY);
+
+        if (hadJoined || hasDisconnectTs) {
+            updateDisconnectStatus(true);
+        } else {
+            const waitingText = IS_DOCTOR 
+                ? 'Waiting for patient to join…' 
+                : 'Waiting for doctor to join…';
+
+            remoteBox.innerHTML = `
+                <div class="video-placeholder" id="remotePlaceholder">
+                    <i class="ti ti-user-circle"></i>
+                    <span>${waitingText}</span>
+                </div>`;
+        }
+        return;
+    }
+
+    sessionStorage.setItem(JOINED_STORAGE_KEY, 'true');
+    sessionStorage.removeItem(DISCONNECT_STORAGE_KEY);
+
+    console.log('[SYNC REMOTE PARTICIPANT]', {
+        uid: humanUser.uid,
+        hasVideo: humanUser.hasVideo,
+        hasAudio: humanUser.hasAudio
+    });
+
+    if (humanUser.hasVideo) {
+        updateDisconnectStatus(false);
+        await subscribeToRemoteUser(humanUser, 'video');
+    } else {
+        updateCameraOffStatus(true);
+    }
+
+    if (humanUser.hasAudio) {
+        await subscribeToRemoteUser(humanUser, 'audio');
+    }
 }
 
 async function initAgora() {
@@ -1016,36 +1345,124 @@ async function initAgora() {
         startCallTimer();
         toastr.success('Connected to video consultation');
 
-        for (const user of client.remoteUsers) {
-            if (user.hasVideo) {
-                await subscribeToRemoteUser(user, 'video');
-            }
-            if (user.hasAudio) {
-                await subscribeToRemoteUser(user, 'audio');
-            }
+        await syncRemoteParticipantState();
+
+        if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            toastr.warning('Microphone and camera access requires a secure HTTPS connection.', 'Security Warning', { timeOut: 8000 });
         }
 
+        // Initialize audio track independently
         try {
-            [localTracks.audio, localTracks.video] =
-                await AgoraRTC.createMicrophoneAndCameraTracks();
+            localTracks.audio = await AgoraRTC.createMicrophoneAudioTrack();
+            console.log('[MIC TRACK CREATED] YES');
+            console.log('[MIC MUTED]', localTracks.audio.muted);
+            console.log('[MIC ENABLED]', localTracks.audio.enabled);
 
+            let micSampleCount = 0;
+            const micInterval = setInterval(() => {
+                if (localTracks.audio && micSampleCount < 15) {
+                    const level = typeof localTracks.audio.getVolumeLevel === 'function' ? localTracks.audio.getVolumeLevel() : 0;
+                    console.log(`[LOCAL MIC AUDIO LEVEL] ${level.toFixed(4)}`);
+                    micSampleCount++;
+                } else {
+                    clearInterval(micInterval);
+                }
+            }, 1000);
+        } catch (audioErr) {
+            console.log('[MIC TRACK CREATED] NO - Error:', audioErr);
+            handleMediaError(audioErr, 'Microphone');
+        }
+
+        // Initialize video track independently
+        try {
+            localTracks.video = await AgoraRTC.createCameraVideoTrack();
             const localBox = document.getElementById('local-video');
-            localBox.querySelector('.video-placeholder')?.remove();
+            localBox?.querySelector('.video-placeholder')?.remove();
             localTracks.video.play('local-video');
+        } catch (videoErr) {
+            console.warn('Camera initialization failed:', videoErr);
+            handleMediaError(videoErr, 'Camera');
+        }
 
-            await client.publish([localTracks.audio, localTracks.video]);
-        } catch (deviceError) {
-            console.error('Local camera/microphone setup failed:', deviceError);
-            toastr.warning('Camera or microphone could not start, but you can still watch the call.');
+        // Publish any successfully initialized tracks
+        const tracksToPublish = [];
+        if (localTracks.audio) tracksToPublish.push(localTracks.audio);
+        if (localTracks.video) tracksToPublish.push(localTracks.video);
+
+        console.log('[PUBLISHING TRACKS]', {
+            audio: !!localTracks.audio,
+            video: !!localTracks.video,
+            count: tracksToPublish.length
+        });
+
+        if (tracksToPublish.length > 0) {
+            try {
+                await client.publish(tracksToPublish);
+                if (localTracks.audio) console.log('[AUDIO PUBLISH SUCCESS]');
+                if (localTracks.video) console.log('[VIDEO PUBLISH SUCCESS]');
+            } catch (pubErr) {
+                console.error('[PUBLISH FAILED]', pubErr);
+            }
         }
 
         startStatusPolling();
+        
+        const storedCc = sessionStorage.getItem(CC_STORAGE_KEY);
+        let initialCc = false;
+        if (storedCc === 'true') {
+            initialCc = true;
+        } else {
+            initialCc = false;
+        }
+
+        ccActive = initialCc;
+        sessionStorage.setItem(CC_STORAGE_KEY, ccActive ? 'true' : 'false');
+
+        const btn = document.getElementById('btnCC');
+        const icon = document.getElementById('ccIcon');
+        if (btn) btn.className = ccActive ? 'control-btn cc-active' : 'control-btn off';
+        if (icon) icon.textContent = 'CC';
+
+        console.log('[CC INITIAL STATE]', {
+            role: IS_DOCTOR ? 'doctor' : 'patient',
+            ccActive: ccActive,
+            storageValue: storedCc,
+            buttonShowsEnabled: btn?.classList.contains('cc-active'),
+            ariaPressed: btn?.getAttribute('aria-pressed')
+        });
+
+        // Always auto-start Agora STT backend service for Doctor role so Patient can receive Urdu subtitles regardless of Doctor CC view state
+        if (CURRENT_USER_ROLE === 'doctor') {
+            startTranslation(false).catch(err => {
+                console.warn('[AUTO SUBTITLES START NOTICE]', err);
+            });
+        } else if (!IS_DOCTOR) {
+            if (shouldPatientUrduAsrRun()) {
+                console.log('[REJOIN CC RESTORED] Starting Patient Urdu ASR...');
+                startPatientUrduAsr();
+            }
+        }
         
     } catch (error) {
         console.error('❌ Agora initialization failed:', error);
         const errorMsg = error?.message || String(error);
         toastr.error('Video call connection failed: ' + errorMsg);
         throw error;
+    }
+}
+
+function handleMediaError(err, deviceType) {
+    const errName = err?.name || err?.code || '';
+    const msg = err?.message || String(err);
+
+    if (errName === 'NotAllowedError' || msg.includes('PERMISSION_DENIED') || msg.includes('Permission denied')) {
+        toastr.error(`${deviceType} permission was denied by browser. Please allow permission in the address bar.`, 'Permission Denied');
+    } else if (errName === 'NotReadableError' || errName === 'TrackStartError' || msg.includes('occupy') || msg.includes('busy') || msg.includes('Device in use') || msg.includes('NOT_READABLE')) {
+        toastr.warning(`${deviceType} is in use by another application or browser tab. Close other apps using your camera and click the camera button to enable.`, 'Device In Use', { timeOut: 9000 });
+    } else if (errName === 'NotFoundError' || msg.includes('DEVICE_NOT_FOUND')) {
+        toastr.warning(`No ${deviceType.toLowerCase()} device detected on this system.`, 'No Device Found');
+    } else {
+        toastr.warning(`Could not start ${deviceType.toLowerCase()}: ${msg}`, `${deviceType} Unavailable`);
     }
 }
 
@@ -1058,31 +1475,71 @@ initAgora().catch(err => {
    CONTROL BUTTONS
    ================================================================ */
 
-// Mute / unmute mic
+// Mute / unmute mic (supports lazy creation if track was missing)
 document.getElementById('btnMic').addEventListener('click', async () => {
     try {
+        if (!localTracks.audio) {
+            toastr.info('Initializing microphone…');
+            localTracks.audio = await AgoraRTC.createMicrophoneAudioTrack();
+            await client.publish([localTracks.audio]);
+            micMuted = false;
+            const btn  = document.getElementById('btnMic');
+            const icon = document.getElementById('micIcon');
+            btn.classList.remove('muted');
+            icon.className = 'ti ti-microphone';
+            toastr.success('Microphone activated');
+            return;
+        }
+
         micMuted = !micMuted;
-        await localTracks.audio?.setMuted(micMuted);
+        await localTracks.audio.setMuted(micMuted);
         const btn  = document.getElementById('btnMic');
         const icon = document.getElementById('micIcon');
         btn.classList.toggle('muted', micMuted);
         icon.className = micMuted ? 'ti ti-microphone-off' : 'ti ti-microphone';
+
+        console.log('[PATIENT MIC STATE]', { enabled: !micMuted });
+
+        if (!IS_DOCTOR) {
+            if (micMuted) {
+                console.log('[PATIENT URDU ASR STOPPED]', { reason: 'microphone-muted' });
+                stopPatientUrduAsr();
+            } else if (shouldPatientUrduAsrRun()) {
+                startPatientUrduAsr();
+            }
+        }
     } catch (err) {
-        toastr.error('Could not toggle microphone: ' + err.message);
+        handleMediaError(err, 'Microphone');
     }
 });
 
-// Toggle camera
+// Toggle camera (supports lazy creation if track was missing)
 document.getElementById('btnCam').addEventListener('click', async () => {
     try {
+        if (!localTracks.video) {
+            toastr.info('Initializing camera…');
+            localTracks.video = await AgoraRTC.createCameraVideoTrack();
+            const localBox = document.getElementById('local-video');
+            localBox?.querySelector('.video-placeholder')?.remove();
+            localTracks.video.play('local-video');
+            await client.publish([localTracks.video]);
+            camOff = false;
+            const btn  = document.getElementById('btnCam');
+            const icon = document.getElementById('camIcon');
+            btn.classList.remove('off');
+            icon.className = 'ti ti-video';
+            toastr.success('Camera activated');
+            return;
+        }
+
         camOff = !camOff;
-        await localTracks.video?.setMuted(camOff);
+        await localTracks.video.setMuted(camOff);
         const btn  = document.getElementById('btnCam');
         const icon = document.getElementById('camIcon');
         btn.classList.toggle('off', camOff);
         icon.className = camOff ? 'ti ti-video-off' : 'ti ti-video';
     } catch (err) {
-        toastr.error('Could not toggle camera: ' + err.message);
+        handleMediaError(err, 'Camera');
     }
 });
 
@@ -1125,6 +1582,9 @@ document.getElementById('btnEnd')?.addEventListener('click', async () => {
 });
 
 async function leaveCall() {
+    if (ccActive) {
+        await stopTranslation().catch(() => {});
+    }
     stopCallTimer();
     localTracks.audio?.close();
     localTracks.video?.close();
@@ -1340,5 +1800,1293 @@ async function handleCallEnded(durationFmt = '') {
         window.location.href = APPT_SHOW_URL;
     }, 1000);
 }
+
+/* ================================================================
+   LIVE SUBTITLES & REAL-TIME TRANSLATION JS
+   ================================================================ */
+const VIEWER_SUBTITLE_LANGUAGE = IS_DOCTOR ? 'en-US' : APPOINTMENT_SUBTITLE_LANGUAGE;
+
+/**
+ * Agora Speech-to-Text Protobuf Message Decoder
+ * Decodes binary Protobuf payloads (Agora.SpeechToText.Text) sent over RTC stream-message
+ */
+const IGNORED_STT_TOKENS = new Set([
+    'translate', 'transcribe', 'transcribez', 'translation', 'translations', 
+    'text', 'texts', 'stream', 'speech', 'agora', 'vendor', 'version', 
+    'seqnum', 'lang', 'language', 'words', 'word', 'is_final', 'isfinal', 
+    'flag', 'time', 'uid', 'user_id', 'speaker_uid'
+]);
+
+function decodeAgoraSttProtobuf(bytes) {
+    if (!bytes) return null;
+    let u8Array = null;
+
+    if (bytes instanceof Uint8Array) {
+        u8Array = bytes;
+    } else if (bytes instanceof ArrayBuffer) {
+        u8Array = new Uint8Array(bytes);
+    } else if (bytes && bytes.buffer instanceof ArrayBuffer) {
+        u8Array = new Uint8Array(bytes.buffer, bytes.byteOffset || 0, bytes.byteLength || bytes.buffer.byteLength);
+    } else {
+        return null;
+    }
+
+    let pos = 0;
+    const len = u8Array.length;
+
+    function readVarint() {
+        let result = 0;
+        let shift = 0;
+        while (pos < len) {
+            const b = u8Array[pos++];
+            result |= (b & 0x7F) << shift;
+            if ((b & 0x80) === 0) return result;
+            shift += 7;
+            if (shift >= 35) {
+                while (pos < len && (u8Array[pos++] & 0x80) !== 0) {}
+                return result;
+            }
+        }
+        return result;
+    }
+
+    function readString(length) {
+        if (length <= 0 || pos + length > len) {
+            pos = Math.min(pos + Math.max(0, length), len);
+            return '';
+        }
+        const strBytes = u8Array.subarray(pos, pos + length);
+        pos += length;
+        return new TextDecoder('utf-8').decode(strBytes);
+    }
+
+    function skipField(wireType) {
+        if (wireType === 0) {
+            readVarint();
+        } else if (wireType === 1) {
+            pos += 8;
+        } else if (wireType === 2) {
+            const l = readVarint();
+            pos += l;
+        } else if (wireType === 5) {
+            pos += 4;
+        } else {
+            pos = len;
+        }
+    }
+
+    function parseWord(wordEnd) {
+        let text = '';
+        let isFinal = false;
+        while (pos < wordEnd && pos < len) {
+            const tag = readVarint();
+            const fieldNum = tag >> 3;
+            const wireType = tag & 0x07;
+            if (fieldNum === 1 && wireType === 2) {
+                text = readString(readVarint());
+            } else if (fieldNum === 4 && wireType === 0) {
+                isFinal = readVarint() !== 0;
+            } else {
+                skipField(wireType);
+            }
+        }
+        return { text, isFinal };
+    }
+
+    function parseTranslation(transEnd) {
+        let isFinal = false;
+        let lang = '';
+        const texts = [];
+        while (pos < transEnd && pos < len) {
+            const tag = readVarint();
+            const fieldNum = tag >> 3;
+            const wireType = tag & 0x07;
+            if (fieldNum === 1 && wireType === 0) {
+                isFinal = readVarint() !== 0;
+            } else if (fieldNum === 2 && wireType === 2) {
+                lang = readString(readVarint());
+            } else if (fieldNum === 3 && wireType === 2) {
+                const str = readString(readVarint());
+                if (str && str.trim() && !IGNORED_STT_TOKENS.has(str.trim().toLowerCase())) {
+                    texts.push(str.trim());
+                }
+            } else {
+                skipField(wireType);
+            }
+        }
+        return { isFinal, lang, texts };
+    }
+
+    const result = {
+        vendor: 0,
+        version: 0,
+        seqnum: 0,
+        uid: 0,
+        flag: 0,
+        time: 0,
+        lang: '',
+        words: [],
+        trans: []
+    };
+
+    try {
+        while (pos < len) {
+            const tag = readVarint();
+            const fieldNum = tag >> 3;
+            const wireType = tag & 0x07;
+
+            if (fieldNum === 1 && wireType === 0) {
+                result.vendor = readVarint();
+            } else if (fieldNum === 2 && wireType === 0) {
+                result.version = readVarint();
+            } else if (fieldNum === 3 && wireType === 0) {
+                result.seqnum = readVarint();
+            } else if (fieldNum === 4 && wireType === 0) {
+                result.uid = readVarint();
+            } else if (fieldNum === 5 && wireType === 0) {
+                result.flag = readVarint();
+            } else if (fieldNum === 6 && wireType === 0) {
+                result.time = readVarint();
+            } else if (fieldNum === 7 && wireType === 2) {
+                result.lang = readString(readVarint());
+            } else if (fieldNum === 10 && wireType === 2) {
+                const wLen = readVarint();
+                const wordEnd = pos + wLen;
+                const w = parseWord(wordEnd);
+                if (w && w.text) {
+                    result.words.push(w);
+                }
+                pos = wordEnd;
+            } else if (fieldNum === 11 && wireType === 2) {
+                const tLen = readVarint();
+                const transEnd = pos + tLen;
+                const t = parseTranslation(transEnd);
+                if (t && (t.texts.length > 0 || t.text || t.lang)) {
+                    result.trans.push(t);
+                }
+                pos = transEnd;
+            } else {
+                skipField(wireType);
+            }
+        }
+
+        if (result.words.length > 0 && !result.text) {
+            result.text = result.words.map(w => w.text || w.word || '').filter(Boolean).join(' ').trim();
+        }
+    } catch (e) {
+        console.warn('[AGORA STT PROTOBUF PARSE WARN]', e);
+    }
+
+    return result;
+}
+
+function cleanSubtitleText(rawStr) {
+    if (!rawStr || typeof rawStr !== 'string') return '';
+    let cleaned = rawStr.replace(/[\x00-\x1F\x7F-\x9F\uFFFD\uFEFF]/g, '');
+    return cleaned.replace(/\s+/g, ' ').trim();
+}
+
+function handleTranscriptionStreamMessage(uid, stream) {
+    console.log('[STT STAGE 1 RAW]', {
+        senderUid: String(uid),
+        streamType: typeof stream,
+        ccActive: ccActive,
+        receivedAt: new Date().toISOString()
+    });
+
+    try {
+        let textData = null;
+        let rawBuffer = null;
+
+        if (typeof stream === 'string') {
+            textData = stream;
+        } else if (stream instanceof Uint8Array || stream instanceof ArrayBuffer) {
+            rawBuffer = stream;
+        } else if (stream && stream.buffer) {
+            rawBuffer = stream.buffer;
+        } else if (stream && stream.data) {
+            if (typeof stream.data === 'string') {
+                textData = stream.data;
+            } else {
+                rawBuffer = stream.data;
+            }
+        }
+
+        if (!textData && rawBuffer) {
+            try {
+                const decStr = new TextDecoder('utf-8').decode(rawBuffer);
+                if (decStr && decStr.trim().startsWith('{') && decStr.trim().endsWith('}')) {
+                    textData = decStr.trim();
+                }
+            } catch (e) {}
+        }
+
+        let payload = null;
+
+        // 1. If payload is JSON string, parse as JSON
+        if (textData) {
+            try {
+                payload = JSON.parse(textData);
+                if (payload && payload.type === 'patient_urdu_asr') {
+                    handlePatientUrduAsrMessage(payload);
+                    return;
+                }
+            } catch (e) {
+                if (!rawBuffer) rawBuffer = new TextEncoder().encode(textData);
+            }
+        }
+
+        // 2. If payload is binary (Uint8Array / Protobuf), parse using Protobuf decoder
+        if (!payload && rawBuffer) {
+            payload = decodeAgoraSttProtobuf(rawBuffer);
+        }
+
+        if (!payload) {
+            console.warn('[STT DECODE FAILED] Payload could not be decoded as JSON or Protobuf');
+            return;
+        }
+
+        console.log('[STT STAGE 5 DECODE SUCCESS]', payload);
+
+        // Auto-enable local CC UI if incoming transcription stream messages are active
+        if (!ccActive && (Number(uid) === TRANSCRIBER_UID || Number(uid) === TRANSCRIBER_PUB_UID || payload.words?.length || payload.text || payload.trans?.length)) {
+            ccActive = true;
+            const btn = document.getElementById('btnCC');
+            if (btn) btn.className = 'control-btn cc-active';
+        }
+
+        // Extract actual human speaker UID from decoded payload fields (Agora STT bot 999998 transcribes Doctor UID audio)
+        let actualSpeakerUid = payload.uid || payload.user_id || payload.speaker_uid;
+        const numSpeaker = Number(actualSpeakerUid);
+
+        if (!actualSpeakerUid || numSpeaker === TRANSCRIBER_UID || numSpeaker === TRANSCRIBER_PUB_UID || numSpeaker === 0) {
+            actualSpeakerUid = DOCTOR_UID;
+        }
+
+        console.log('[STT SPEAKER UID]', { speakerUid: actualSpeakerUid, rawPayloadUid: payload.uid });
+
+        // Self-caption suppression: do not display self-speech captions on the speaker's own screen
+        const isSelf = String(actualSpeakerUid) === String(AGORA_UID);
+        console.log('[STT SELF CHECK]', {
+            speakerUid: actualSpeakerUid,
+            localUid: AGORA_UID,
+            isSelf: isSelf,
+            suppressed: isSelf
+        });
+
+        if (isSelf) {
+            console.log('[STT SELF CAPTION SUPPRESSED] Hiding self-speech caption on speaker screen');
+            return;
+        }
+
+        let subtitleText = '';
+        let selectedLang = null;
+        const targetLang = VIEWER_SUBTITLE_LANGUAGE || 'ur-PK';
+        const targetBase = targetLang.split('-')[0].toLowerCase();
+        const isUrduViewer = targetBase === 'ur' || targetLang.toLowerCase().includes('ur');
+
+        const availLangs = Array.isArray(payload.trans) ? payload.trans.map(t => t.lang || t.target || '') : [];
+        console.log('[STT TRANSLATIONS]', { availableLanguages: availLangs });
+        console.log('[STT VIEWER LANGUAGE]', { viewerLanguage: targetLang, targetBase: targetBase });
+
+        // 1. Look for translated text in payload.trans array or object matching target language
+        if (Array.isArray(payload.trans) && payload.trans.length > 0) {
+            const match = payload.trans.find(t => {
+                if (!t) return false;
+                const l = (t.lang || t.target || '').toLowerCase();
+                return l === targetLang.toLowerCase() 
+                    || l === targetBase 
+                    || (isUrduViewer && (l.includes('ur') || l.includes('urdu')));
+            });
+            if (match) {
+                selectedLang = match.lang || match.target || targetLang;
+                if (Array.isArray(match.texts) && match.texts.length > 0) {
+                    if (isUrduViewer) {
+                        const urduTexts = match.texts.filter(t => containsUrduScript(t));
+                        subtitleText = urduTexts.length > 0 ? urduTexts.join(' ').trim() : '';
+                    } else {
+                        subtitleText = match.texts.join(' ').trim();
+                    }
+                } else if (typeof match.text === 'string' && match.text) {
+                    subtitleText = match.text.trim();
+                } else if (Array.isArray(match.words) && match.words.length > 0) {
+                    subtitleText = match.words.map(w => (typeof w === 'string' ? w : w.text || w.word || '')).filter(Boolean).join(' ').trim();
+                }
+            }
+        }
+
+        if (!subtitleText && payload.translations && typeof payload.translations === 'object') {
+            subtitleText = payload.translations[targetLang] || payload.translations[targetBase] || '';
+            if (subtitleText) selectedLang = targetLang;
+        }
+
+        if (!subtitleText && payload.translation) {
+            if (typeof payload.translation === 'object') {
+                subtitleText = payload.translation[targetLang] || payload.translation[targetBase] || payload.translation.text || '';
+                if (subtitleText) selectedLang = targetLang;
+            }
+        }
+
+        let englishSourceText = '';
+        if (Array.isArray(payload.words) && payload.words.length > 0) {
+            englishSourceText = payload.words.map(w => (typeof w === 'string' ? w : w.text || w.word || '')).filter(Boolean).join(' ').trim();
+        } else if (payload.text && typeof payload.text === 'string') {
+            englishSourceText = payload.text.trim();
+        } else if (payload.sentence && typeof payload.sentence === 'string') {
+            englishSourceText = payload.sentence.trim();
+        }
+        englishSourceText = cleanSubtitleText(englishSourceText);
+
+        // 2. Only allow source words fallback IF viewer language is en-US (Doctor viewing English)
+        if (!subtitleText && !isUrduViewer && targetBase === 'en') {
+            subtitleText = englishSourceText;
+        }
+
+        if (isUrduViewer && subtitleText) {
+            const urduOnlyLines = subtitleText.split(/[\r\n]+/)
+                .map(l => l.trim())
+                .filter(l => containsUrduScript(l));
+            if (urduOnlyLines.length > 0) {
+                subtitleText = urduOnlyLines.join(' ');
+            } else if (!containsUrduScript(subtitleText)) {
+                subtitleText = '';
+                selectedLang = null;
+            }
+        }
+
+        const renderingSourceFallback = !selectedLang && !!subtitleText;
+
+        const normSource = englishSourceText.toLowerCase().replace(/\s+/g, ' ');
+        const nowMs = Date.now();
+        const traceId = `stt-${actualSpeakerUid}-${nowMs}`;
+
+        console.log('[DOCTOR STT RAW FRAME]', {
+            traceId: traceId,
+            senderUid: String(uid),
+            payloadUid: payload.uid,
+            resolvedSpeakerUid: actualSpeakerUid,
+            localUid: AGORA_UID,
+            isSelf: isSelf,
+            payloadText: payload.text || '',
+            payloadTrans: payload.trans || [],
+            timestamp: nowMs
+        });
+
+        console.log('[STT ROUTING DEBUG]', {
+            role: CURRENT_USER_ROLE,
+            localUid: AGORA_UID,
+            speakerUid: actualSpeakerUid,
+            viewerLanguage: targetLang,
+            availableTranslations: availLangs,
+            selectedLanguage: selectedLang || 'none',
+            selectedText: subtitleText,
+            renderingSourceFallback: renderingSourceFallback
+        });
+
+        // For Urdu viewer (Patient), stabilize Doctor STT English speech before translating
+        if (isUrduViewer && !selectedLang) {
+            if (englishSourceText) {
+                const normDoc = englishSourceText.toLowerCase().replace(/\s+/g, ' ');
+                const currentDocNorm = doctorSttCandidate.toLowerCase().replace(/\s+/g, ' ');
+
+                if (normDoc === currentDocNorm && doctorSttStableTimer) {
+                    console.log('[DOCTOR STT CANDIDATE DEDUPE IGNORED]', {
+                        traceId: traceId,
+                        sourceText: englishSourceText,
+                        candidate: doctorSttCandidate
+                    });
+                    return;
+                }
+
+                if (doctorSttStableTimer) {
+                    console.log('[DOCTOR STT STABILIZATION RESET]', {
+                        previousText: doctorSttCandidate,
+                        newText: englishSourceText
+                    });
+                    clearTimeout(doctorSttStableTimer);
+                    doctorSttStableTimer = null;
+                }
+
+                doctorSttCandidate = englishSourceText;
+                const docGen = ++doctorSttGeneration;
+
+                console.log('[DOCTOR STT CANDIDATE]', {
+                    traceId: traceId,
+                    sourceText: englishSourceText,
+                    normalizedText: normDoc,
+                    previousCandidate: currentDocNorm
+                });
+
+                console.log('[DOCTOR STT STABILIZATION SCHEDULED]', {
+                    sourceText: englishSourceText,
+                    delayMs: 600,
+                    generation: docGen
+                });
+
+                doctorSttStableTimer = setTimeout(() => {
+                    doctorSttStableTimer = null;
+                    if (docGen !== doctorSttGeneration || !doctorSttCandidate) return;
+
+                    const textToTranslate = cleanSubtitleText(doctorSttCandidate);
+                    doctorSttCandidate = '';
+
+                    console.log('[DOCTOR STT STABILIZED]', {
+                        sourceText: textToTranslate,
+                        generation: docGen
+                    });
+
+                    translateAndDisplayUrdu(actualSpeakerUid, textToTranslate, traceId);
+                }, 600);
+            }
+            return;
+        }
+
+        if (!subtitleText || !subtitleText.trim()) {
+            return;
+        }
+
+        let cleanSentence = subtitleText;
+        if (cleanSentence.length > 140) {
+            cleanSentence = cleanSentence.substring(0, 137) + '...';
+        }
+
+        console.log('[STT STAGE 8 RENDER CALLED]', {
+            viewerRole: CURRENT_USER_ROLE,
+            viewerLanguage: VIEWER_SUBTITLE_LANGUAGE,
+            speakerUid: actualSpeakerUid,
+            text: cleanSentence,
+            language: selectedLang || VIEWER_SUBTITLE_LANGUAGE
+        });
+
+        displaySubtitle(actualSpeakerUid, cleanSentence, false, traceId);
+
+    } catch (err) {
+        console.warn('Error processing transcription stream:', err);
+    }
+}
+
+const urduTranslationCache = new Map();
+const urduToEnglishTranslationCache = new Map();
+let latestUrduTranslationSeq = 0;
+let lastDoctorSourceText = '';
+let lastDoctorSourceAt = 0;
+let doctorSttCandidate = '';
+let doctorSttStableTimer = null;
+let doctorSttGeneration = 0;
+
+function containsUrduScript(text) {
+    return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(text || '');
+}
+
+function containsLatinLetters(text) {
+    return /[a-zA-Z]/.test(text || '');
+}
+
+function extractPureUrduText(rawText) {
+    if (!rawText || typeof rawText !== 'string') return '';
+    const segments = rawText.split(/[\r\n]+/)
+        .flatMap(line => line.split(/(?<=[.!?؟])\s+/))
+        .map(seg => cleanSubtitleText(seg))
+        .filter(seg => containsUrduScript(seg) && !containsLatinLetters(seg));
+    return segments.join(' ').trim();
+}
+
+async function translateAndDisplayUrdu(speakerUid, englishText, traceId = '') {
+    if (!englishText || !englishText.trim()) return;
+    const cleanEng = cleanSubtitleText(englishText);
+    if (!cleanEng) return;
+
+    const seq = ++latestUrduTranslationSeq;
+    const normKey = cleanEng.toLowerCase().replace(/\s+/g, ' ');
+
+    console.log('[URDU TRANSLATION REQUEST]', {
+        traceId: traceId,
+        requestId: seq,
+        sourceText: cleanEng,
+        startedAt: Date.now()
+    });
+
+    if (urduTranslationCache.has(normKey)) {
+        const cachedValue = urduTranslationCache.get(normKey);
+        console.log('[URDU CACHE LOOKUP]', {
+            sourceText: cleanEng,
+            normalizedKey: normKey,
+            hit: true,
+            cachedValue: cachedValue
+        });
+
+        console.log('[URDU TRANSLATION RENDER DECISION]', {
+            traceId: traceId,
+            requestId: seq,
+            latestRequestId: latestUrduTranslationSeq,
+            stale: seq < latestUrduTranslationSeq,
+            sourceText: cleanEng,
+            translatedText: cachedValue
+        });
+
+        if (seq < latestUrduTranslationSeq) {
+            console.log('[URDU TRANSLATION STALE REJECTED]', {
+                traceId: traceId,
+                requestId: seq,
+                latestRequestId: latestUrduTranslationSeq,
+                sourceText: cleanEng,
+                translatedText: cachedValue
+            });
+            return;
+        }
+
+        displaySubtitle(speakerUid, cachedValue, false, traceId);
+        return;
+    }
+
+    try {
+        const startAt = Date.now();
+        const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanEng)}&langpair=en|ur`);
+        const data = await res.json();
+        const completedAt = Date.now();
+        let urduText = data?.responseData?.translatedText;
+
+        console.log('[URDU TRANSLATION RESPONSE]', {
+            traceId: traceId,
+            requestId: seq,
+            sourceText: cleanEng,
+            translatedText: urduText,
+            startedAt: startAt,
+            completedAt: completedAt,
+            duration: completedAt - startAt
+        });
+
+        if (urduText && typeof urduText === 'string') {
+            const cleanUrdu = extractPureUrduText(urduText);
+            
+            if (cleanUrdu && containsUrduScript(cleanUrdu) && !containsLatinLetters(cleanUrdu)) {
+
+                console.log('[URDU CACHE WRITE]', {
+                    sourceText: cleanEng,
+                    normalizedKey: normKey,
+                    translatedText: cleanUrdu
+                });
+
+                urduTranslationCache.set(normKey, cleanUrdu);
+
+                console.log('[URDU TRANSLATION RENDER DECISION]', {
+                    traceId: traceId,
+                    requestId: seq,
+                    latestRequestId: latestUrduTranslationSeq,
+                    stale: seq < latestUrduTranslationSeq,
+                    sourceText: cleanEng,
+                    translatedText: cleanUrdu
+                });
+
+                if (seq < latestUrduTranslationSeq) {
+                    console.log('[URDU TRANSLATION STALE REJECTED]', {
+                        traceId: traceId,
+                        requestId: seq,
+                        latestRequestId: latestUrduTranslationSeq,
+                        sourceText: cleanEng,
+                        translatedText: cleanUrdu
+                    });
+                    return;
+                }
+
+                console.log('[STT URDU TRANSLATED SUCCESS]', { english: cleanEng, urdu: cleanUrdu });
+                displaySubtitle(speakerUid, cleanUrdu, false, traceId);
+            } else {
+                console.log('[URDU TRANSLATION INVALID REJECTED]', {
+                    sourceText: cleanEng,
+                    translatedText: urduText,
+                    containsUrdu: containsUrduScript(urduText),
+                    containsLatin: containsLatinLetters(urduText)
+                });
+                console.log('[FALSE CAPTION TRACE]', {
+                    traceId: traceId,
+                    rawAgoraText: englishText,
+                    selectedSourceText: cleanEng,
+                    translationRequestSource: cleanEng,
+                    translationResponse: urduText,
+                    finalSanitizedText: '',
+                    reason: 'rejected-invalid-mixed-or-non-urdu'
+                });
+                console.log('[PATIENT SUBTITLE REJECTED]', { reason: 'non-urdu-translation-result', englishText, rawResponse: urduText });
+            }
+        }
+    } catch (e) {
+        console.warn('[STT TRANSLATION FALLBACK ERROR]', e);
+    }
+}
+
+let latestEnglishTranslationSeq = 0;
+
+async function translateAndDisplayEnglish(speakerUid, urduText) {
+    if (!urduText || !urduText.trim()) return;
+    const cleanText = cleanSubtitleText(urduText);
+    if (!cleanText) return;
+
+    const seq = ++latestEnglishTranslationSeq;
+    const traceId = `pt-en-${speakerUid}-${Date.now()}`;
+
+    // Detect if Patient spoke English (has English letters and NO Urdu script characters)
+    const hasUrduChars = containsUrduScript(cleanText);
+    const hasEnglishChars = /[a-zA-Z]/.test(cleanText);
+
+    if (!hasUrduChars && hasEnglishChars) {
+        console.log('[PATIENT ENGLISH DETECTED]', { input: cleanText });
+        console.log('[STT STAGE 8 RENDER CALLED]', { speakerUid: speakerUid, language: 'en-US', text: cleanText });
+        if (seq < latestEnglishTranslationSeq) {
+            console.log('[ENGLISH TRANSLATION STALE REJECTED]', { requestId: seq, latestRequestId: latestEnglishTranslationSeq, text: cleanText });
+            return;
+        }
+        displaySubtitle(speakerUid, cleanText, false, traceId);
+        return;
+    }
+
+    if (urduToEnglishTranslationCache.has(cleanText)) {
+        const cachedEng = urduToEnglishTranslationCache.get(cleanText);
+        console.log('[URDU → ENGLISH TRANSLATION CACHED]', { input: cleanText, output: cachedEng });
+        console.log('[STT STAGE 8 RENDER CALLED]', { speakerUid: speakerUid, language: 'en-US', text: cachedEng });
+        if (seq < latestEnglishTranslationSeq) {
+            console.log('[ENGLISH TRANSLATION STALE REJECTED]', { requestId: seq, latestRequestId: latestEnglishTranslationSeq, text: cachedEng });
+            return;
+        }
+        displaySubtitle(speakerUid, cachedEng, false, traceId);
+        return;
+    }
+
+    try {
+        const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanText)}&langpair=ur|en`);
+        const data = await res.json();
+        const engText = data?.responseData?.translatedText;
+        if (engText && engText.trim()) {
+            const cleanEng = cleanSubtitleText(engText);
+            urduToEnglishTranslationCache.set(cleanText, cleanEng);
+            console.log('[URDU → ENGLISH TRANSLATION]', { input: cleanText, output: cleanEng });
+            console.log('[STT STAGE 8 RENDER CALLED]', { speakerUid: speakerUid, language: 'en-US', text: cleanEng });
+            if (seq < latestEnglishTranslationSeq) {
+                console.log('[ENGLISH TRANSLATION STALE REJECTED]', { requestId: seq, latestRequestId: latestEnglishTranslationSeq, text: cleanEng });
+                return;
+            }
+            displaySubtitle(speakerUid, cleanEng, false, traceId);
+        } else {
+            if (seq < latestEnglishTranslationSeq) {
+                console.log('[ENGLISH TRANSLATION STALE REJECTED]', { requestId: seq, latestRequestId: latestEnglishTranslationSeq, text: cleanText });
+                return;
+            }
+            displaySubtitle(speakerUid, cleanText, false, traceId);
+        }
+    } catch (e) {
+        console.warn('[URDU TO ENGLISH TRANSLATION ERROR]', e);
+        if (seq < latestEnglishTranslationSeq) return;
+        displaySubtitle(speakerUid, cleanText, false, traceId);
+    }
+}
+
+let patientUrduRecognition = null;
+let patientUrduAsrActive = false;
+let patientUrduAsrGeneration = 0;
+let patientAsrStableTimer = null;
+let patientAsrInterimText = '';
+let lastPatientAsrSentText = '';
+let lastPatientAsrSentAt = 0;
+
+function checkUrduAsrSupport() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const supported = !!SpeechRecognition;
+    const constructorName = SpeechRecognition ? (SpeechRecognition.name || 'SpeechRecognition') : null;
+    console.log('[URDU ASR SUPPORT]', {
+        supported: supported,
+        constructor: constructorName
+    });
+    return SpeechRecognition;
+}
+
+function shouldPatientUrduAsrRun() {
+    const res = !IS_DOCTOR &&
+                !micMuted &&
+                APPOINTMENT_SUBTITLE_LANGUAGE.startsWith('ur') &&
+                !!checkUrduAsrSupport();
+    console.log('[PATIENT ASR SHOULD RUN]', {
+        isDoctor: IS_DOCTOR,
+        appointmentLanguage: APPOINTMENT_SUBTITLE_LANGUAGE,
+        micMuted: micMuted,
+        callActive: true,
+        speechRecognitionSupported: !!checkUrduAsrSupport(),
+        result: res
+    });
+    return res;
+}
+
+function startPatientUrduAsr() {
+    console.log('[PATIENT URDU ASR START ATTEMPT]', {
+        shouldRun: shouldPatientUrduAsrRun(),
+        alreadyActive: patientUrduAsrActive
+    });
+
+    if (!shouldPatientUrduAsrRun()) {
+        return;
+    }
+    if (patientUrduAsrActive) return;
+
+    const SpeechRecognition = checkUrduAsrSupport();
+    if (!SpeechRecognition) {
+        console.warn('[PATIENT URDU ASR UNAVAILABLE] Web Speech API SpeechRecognition is not supported in this browser.');
+        return;
+    }
+
+    const currentGeneration = ++patientUrduAsrGeneration;
+
+    try {
+        patientUrduRecognition = new SpeechRecognition();
+        patientUrduRecognition.lang = 'ur-PK';
+        patientUrduRecognition.continuous = true;
+        patientUrduRecognition.interimResults = true;
+
+        patientUrduRecognition.onstart = () => {
+            patientUrduAsrActive = true;
+            console.log('[PATIENT URDU ASR STARTED]');
+        };
+
+        patientUrduRecognition.onresult = (event) => {
+            if (micMuted || currentGeneration !== patientUrduAsrGeneration) {
+                console.log('[PATIENT URDU ASR RESULT DROPPED]', { reason: 'microphone-muted' });
+                return;
+            }
+            if (!event.results) return;
+
+            console.log('[PATIENT ASR EVENT]', {
+                resultIndex: event.resultIndex,
+                resultsLength: event.results.length,
+                generation: currentGeneration,
+                micMuted: micMuted,
+                callActive: true
+            });
+
+            console.log('[PATIENT ASR STATE]', {
+                recognitionExists: !!patientUrduRecognition,
+                recognitionActive: patientUrduAsrActive,
+                generation: currentGeneration,
+                micMuted: micMuted,
+                callActive: true,
+                shouldRun: shouldPatientUrduAsrRun(),
+                stableTimerActive: !!patientAsrStableTimer,
+                currentCandidate: patientAsrInterimText,
+                connectionState: client?.connectionState || 'unknown',
+                timestamp: Date.now()
+            });
+
+            let fullTranscript = '';
+
+            for (let i = 0; i < event.results.length; i++) {
+                const res = event.results[i];
+                if (res && res[0] && res[0].transcript) {
+                    const str = res[0].transcript.trim();
+                    if (str) {
+                        fullTranscript += (fullTranscript ? ' ' : '') + str;
+                    }
+
+                    console.log('[PATIENT ASR RESULT DETAIL]', {
+                        index: i,
+                        transcript: str,
+                        isFinal: !!res.isFinal,
+                        confidence: res[0].confidence || 0
+                    });
+                }
+            }
+
+            const cleanText = cleanSubtitleText(fullTranscript);
+            if (!cleanText) return;
+
+            console.log('[PATIENT URDU ASR RESULT]', {
+                speakerUid: AGORA_UID,
+                configuredLanguage: 'ur-PK',
+                text: cleanText
+            });
+
+            // Interim stabilization fallback path (700ms debounce for the current active utterance)
+            const normNew = cleanSubtitleText(cleanText);
+            const normCurrent = cleanSubtitleText(patientAsrInterimText);
+
+            if (normNew === normCurrent && patientAsrStableTimer) {
+                console.log('[PATIENT ASR IDENTICAL HYPOTHESIS IGNORED]', {
+                    text: normNew,
+                    timerActive: true
+                });
+                return;
+            }
+
+            if (patientAsrStableTimer) {
+                console.log('[PATIENT ASR STABILIZATION RESET]', {
+                    previousText: normCurrent,
+                    newText: normNew,
+                    reason: 'hypothesis-changed',
+                    generation: currentGeneration
+                });
+                clearTimeout(patientAsrStableTimer);
+                patientAsrStableTimer = null;
+            }
+
+            patientAsrInterimText = normNew;
+
+            console.log('[PATIENT ASR STABILIZATION SCHEDULED]', {
+                generation: currentGeneration,
+                text: normNew,
+                delayMs: 700,
+                scheduledAt: Date.now()
+            });
+
+            patientAsrStableTimer = setTimeout(() => {
+                patientAsrStableTimer = null;
+
+                console.log('[PATIENT ASR STABILIZATION FIRED]', {
+                    generationAtSchedule: currentGeneration,
+                    currentGeneration: patientUrduAsrGeneration,
+                    text: patientAsrInterimText,
+                    micMuted: micMuted,
+                    callActive: true,
+                    shouldRun: shouldPatientUrduAsrRun()
+                });
+
+                if (micMuted || currentGeneration !== patientUrduAsrGeneration) {
+                    console.log('[PATIENT ASR STABILIZATION BLOCKED]', {
+                        reason: micMuted ? 'microphone-muted' : 'stale-generation',
+                        text: patientAsrInterimText,
+                        generationAtSchedule: currentGeneration,
+                        currentGeneration: patientUrduAsrGeneration,
+                        micMuted: micMuted,
+                        callActive: true
+                    });
+                    return;
+                }
+                if (!patientAsrInterimText || !patientAsrInterimText.trim()) return;
+
+                const textToSend = cleanSubtitleText(patientAsrInterimText);
+                patientAsrInterimText = '';
+
+                console.log('[PATIENT ASR UTTERANCE READY]', {
+                    text: textToSend,
+                    completionSource: 'stabilized-interim',
+                    generation: currentGeneration,
+                    micMuted: micMuted,
+                    callActive: true
+                });
+
+                sendPatientUrduAsrMessage(textToSend);
+            }, 700);
+        };
+
+        patientUrduRecognition.onerror = (event) => {
+            console.warn('[PATIENT URDU ASR ERROR]', { error: event.error, message: event.message });
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                patientUrduAsrActive = false;
+            }
+        };
+
+        patientUrduRecognition.onend = () => {
+            patientUrduAsrActive = false;
+            console.log('[PATIENT URDU ASR ENDED]');
+
+            const shouldRestart = shouldPatientUrduAsrRun() && currentGeneration === patientUrduAsrGeneration;
+            console.log('[PATIENT URDU ASR RESTART DECISION]', {
+                shouldRestart: shouldRestart,
+                reason: micMuted ? 'microphone-muted' : (IS_DOCTOR ? 'is-doctor' : 'normal-end')
+            });
+
+            if (shouldRestart) {
+                setTimeout(() => {
+                    if (shouldPatientUrduAsrRun() && !patientUrduAsrActive && currentGeneration === patientUrduAsrGeneration) {
+                        try {
+                            patientUrduRecognition?.start();
+                        } catch (e) {
+                            console.warn('[PATIENT URDU ASR RESTART EXCEPTION]', e);
+                        }
+                    }
+                }, 300);
+            }
+        };
+
+        patientUrduRecognition.start();
+    } catch (err) {
+        console.warn('[PATIENT URDU ASR START EXCEPTION]', err);
+        patientUrduAsrActive = false;
+    }
+}
+
+function stopPatientUrduAsr() {
+    patientUrduAsrGeneration++;
+    if (patientAsrStableTimer) {
+        clearTimeout(patientAsrStableTimer);
+        patientAsrStableTimer = null;
+    }
+    patientAsrInterimText = '';
+    if (patientUrduRecognition) {
+        try {
+            patientUrduRecognition.abort();
+        } catch (e) {}
+        patientUrduRecognition = null;
+    }
+    patientUrduAsrActive = false;
+}
+
+let patientUtteranceCounter = 0;
+
+function sendPatientUrduAsrMessage(text) {
+    if (micMuted) {
+        console.log('[PATIENT URDU MESSAGE BLOCKED]', { reason: 'microphone-muted', text: text });
+        return;
+    }
+    if (!text || !text.trim()) {
+        console.log('[PATIENT URDU MESSAGE BLOCKED]', { reason: 'empty-text', text: text });
+        return;
+    }
+    const cleanUrdu = cleanSubtitleText(text);
+    if (!cleanUrdu) {
+        console.log('[PATIENT URDU MESSAGE BLOCKED]', { reason: 'empty-text-after-clean', text: text });
+        return;
+    }
+
+    const normCurrent = cleanUrdu.replace(/\s+/g, ' ').toLowerCase();
+    const normLast = lastPatientAsrSentText.replace(/\s+/g, ' ').toLowerCase();
+    const now = Date.now();
+
+    // Deduplicate only exact identical sentences sent within a short 1200ms window (in-flight double trigger)
+    if (normCurrent === normLast && (now - lastPatientAsrSentAt) < 1200) {
+        console.log('[PATIENT ASR DUPLICATE SUPPRESSED]', {
+            text: cleanUrdu,
+            reason: 'identical-sentence-recently-sent'
+        });
+        return;
+    }
+
+    lastPatientAsrSentText = cleanUrdu;
+    lastPatientAsrSentAt = now;
+    const utteranceId = `utt-${AGORA_UID}-${++patientUtteranceCounter}-${now}`;
+
+    console.log('[PATIENT URDU MESSAGE SEND ATTEMPT]', {
+        utteranceId: utteranceId,
+        speakerUid: Number(AGORA_UID),
+        sourceLanguage: 'ur-PK',
+        text: cleanUrdu,
+        isFinal: true
+    });
+
+    const payload = {
+        type: 'patient_urdu_asr',
+        utteranceId: utteranceId,
+        speakerUid: Number(AGORA_UID),
+        sourceLanguage: 'ur-PK',
+        text: cleanUrdu,
+        isFinal: true,
+        timestamp: now
+    };
+
+    try {
+        const jsonStr = JSON.stringify(payload);
+        const encoded = new TextEncoder().encode(jsonStr);
+        client.sendStreamMessage(encoded);
+        console.log('[PATIENT URDU MESSAGE SENT]', payload);
+    } catch (err) {
+        console.warn('[PATIENT URDU MESSAGE SEND ERROR]', err);
+    }
+}
+
+function handlePatientUrduAsrMessage(msg) {
+    if (!msg || msg.type !== 'patient_urdu_asr') return;
+    const senderUid = msg.speakerUid || EXPECTED_REMOTE_UID;
+    const speakerUid = senderUid;
+    const isSelf = String(speakerUid) === String(AGORA_UID);
+
+    console.log('[STT SELF CHECK]', {
+        speakerUid: speakerUid,
+        localUid: AGORA_UID,
+        isSelf: isSelf,
+        suppressed: isSelf
+    });
+
+    if (isSelf) {
+        console.log('[PATIENT SELF CAPTION SUPPRESSED] Hiding self-speech caption on Patient screen');
+        return;
+    }
+
+    if (!IS_DOCTOR) {
+        return;
+    }
+
+    console.log('[PATIENT URDU MESSAGE RECEIVED]', {
+        senderUid: senderUid,
+        speakerUid: speakerUid,
+        sourceLanguage: msg.sourceLanguage || 'ur-PK',
+        text: msg.text
+    });
+
+    if (msg.text && msg.text.trim()) {
+        translateAndDisplayEnglish(speakerUid, msg.text.trim());
+    }
+}
+
+let subtitleRenderSeq = 0;
+
+function displaySubtitle(speakerUid, text, isSystem = false, traceId = '') {
+    const box     = document.getElementById('subtitleOverlay');
+    const speaker = document.getElementById('subtitleSpeaker');
+    const textEl  = document.getElementById('subtitleText');
+
+    console.log('[SUBTITLE DOM TARGET]', {
+        selector: '#subtitleOverlay',
+        exists: !!box,
+        elementId: box ? box.id : null,
+        className: box ? box.className : null,
+        role: CURRENT_USER_ROLE
+    });
+
+    if (!box || !speaker || !textEl) return;
+
+    if (!ccActive && !isSystem) {
+        console.log('[SUBTITLE DISPLAY BLOCKED]', { reason: 'viewer-cc-disabled' });
+        if (box) box.style.display = 'none';
+        return;
+    }
+
+    const isSelf = String(speakerUid) === String(AGORA_UID);
+
+    if (isSelf) {
+        console.log('[STT SELF CAPTION SUPPRESSED] Hiding self-speech caption on speaker screen');
+        return;
+    }
+
+    // Final Patient Display Invariant for ur-PK:
+    if (!IS_DOCTOR && VIEWER_SUBTITLE_LANGUAGE.startsWith('ur') && !isSystem) {
+        const pureUrdu = extractPureUrduText(text);
+
+        console.log('[PATIENT FINAL DOM VALIDATION]', {
+            text: text,
+            pureUrduExtracted: pureUrdu,
+            containsUrdu: containsUrduScript(pureUrdu),
+            containsLatin: containsLatinLetters(pureUrdu)
+        });
+
+        if (!pureUrdu || !containsUrduScript(pureUrdu) || containsLatinLetters(pureUrdu)) {
+            console.log('[PATIENT SUBTITLE REJECTED]', { reason: 'latin-or-non-urdu-final-render', originalText: text, pureUrdu: pureUrdu });
+            return;
+        }
+        text = pureUrdu;
+    }
+
+    console.log('[SUBTITLE DISPLAY DECISION]', {
+        role: CURRENT_USER_ROLE,
+        localUid: AGORA_UID,
+        speakerUid: speakerUid,
+        ccActive: ccActive,
+        isSelf: isSelf,
+        text: text
+    });
+
+    console.log('[SUBTITLE FINAL RENDER]', {
+        role: CURRENT_USER_ROLE,
+        localUid: AGORA_UID,
+        speakerUid: speakerUid,
+        viewerLanguage: VIEWER_SUBTITLE_LANGUAGE,
+        text: text,
+        source: isSystem ? 'system' : (isSelf ? 'self' : 'remote-translation')
+    });
+
+    console.log('[SUBTITLE DOM WRITE]', {
+        traceId: traceId,
+        role: CURRENT_USER_ROLE,
+        viewerLanguage: VIEWER_SUBTITLE_LANGUAGE,
+        speakerUid: speakerUid,
+        finalText: text,
+        timestamp: Date.now()
+    });
+
+    if (isSystem) {
+        speaker.textContent = 'SYSTEM';
+    } else if (isSelf) {
+        speaker.textContent = IS_DOCTOR ? 'DOCTOR (YOU)' : 'PATIENT (YOU)';
+    } else {
+        const isDoctorSpeaker = IS_DOCTOR ? false : true;
+        speaker.textContent = isDoctorSpeaker ? 'DOCTOR' : 'PATIENT';
+    }
+
+    console.log('[SUBTITLE DOM BEFORE WRITE]', {
+        traceId: traceId,
+        textContent: textEl.textContent,
+        innerHTML: textEl.innerHTML
+    });
+
+    textEl.textContent = text;
+
+    console.log('[SUBTITLE DOM AFTER WRITE]', {
+        traceId: traceId,
+        textContent: textEl.textContent,
+        expectedText: text
+    });
+
+    const isRtl = ['ur-PK', 'ar-SA'].includes(VIEWER_SUBTITLE_LANGUAGE) || containsUrduScript(text);
+    box.setAttribute('dir', isRtl ? 'rtl' : 'ltr');
+    box.style.display = 'block';
+    box.style.opacity = '1';
+    box.style.visibility = 'visible';
+
+    const styles = window.getComputedStyle(box);
+    const rect = box.getBoundingClientRect();
+
+    console.log('[SUBTITLE VISIBILITY]', {
+        display: styles.display,
+        visibility: styles.visibility,
+        opacity: styles.opacity,
+        color: styles.color,
+        backgroundColor: styles.backgroundColor,
+        zIndex: styles.zIndex,
+        position: styles.position,
+        width: box.offsetWidth,
+        height: box.offsetHeight,
+        clientRects: box.getClientRects().length
+    });
+
+    console.log('[SUBTITLE BOUNDING RECT]', {
+        top: rect.top,
+        left: rect.left,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight
+    });
+
+    const currentRenderSeq = ++subtitleRenderSeq;
+
+    if (subtitleClearTimer) clearTimeout(subtitleClearTimer);
+    subtitleClearTimer = setTimeout(() => {
+        if (currentRenderSeq === subtitleRenderSeq) {
+            console.log('[SUBTITLE CLEAR CALLED]', { reason: 'timer-expiry', seq: currentRenderSeq, text: text });
+            box.style.display = 'none';
+        } else {
+            console.log('[SUBTITLE CLEAR TIMER SUPPRESSED]', { reason: 'superseded-by-newer-caption', seq: currentRenderSeq, latestSeq: subtitleRenderSeq });
+        }
+    }, 5500);
+}
+
+document.getElementById('btnCC')?.addEventListener('click', async () => {
+    if (ccStarting) return;
+    const btn = document.getElementById('btnCC');
+    const icon = document.getElementById('ccIcon');
+
+    ccActive = !ccActive;
+    sessionStorage.setItem(CC_STORAGE_KEY, ccActive ? 'true' : 'false');
+
+    console.log('[CC VIEW STATE]', { role: CURRENT_USER_ROLE, enabled: ccActive });
+
+    if (ccActive) {
+        btn.className = 'control-btn cc-active';
+        icon.textContent = 'CC';
+        toastr.success('Live subtitles enabled');
+        const statusMsg = VIEWER_SUBTITLE_LANGUAGE.startsWith('ur') 
+            ? 'لائیو سب ٹائٹلز فعال ہیں — بات چیت سن رہے ہیں...'
+            : `Live Subtitles Active (${APPOINTMENT_SUBTITLE_LANG_NAME}) — Listening for speech...`;
+        displaySubtitle(AGORA_UID, statusMsg, true);
+
+        if (IS_DOCTOR) {
+            startTranslation(false).catch(err => console.warn('[STT START NOTICE]', err));
+        }
+    } else {
+        btn.className = 'control-btn off';
+        icon.textContent = 'CC';
+        const box = document.getElementById('subtitleOverlay');
+        if (box) box.style.display = 'none';
+        toastr.info('Live subtitles disabled');
+    }
+});
+
+async function startTranslation(force = false) {
+    const btn = document.getElementById('btnCC');
+    const icon = document.getElementById('ccIcon');
+    
+    ccStarting = true;
+    btn.className = 'control-btn cc-starting';
+    icon.innerHTML = '<i class="ti ti-loader spin"></i>';
+    toastr.info('Starting live subtitles…');
+
+    try {
+        const res = await fetch(TRANSLATION_START_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                target_langs: [VIEWER_SUBTITLE_LANGUAGE],
+                force: force
+            })
+        });
+
+        const data = await res.json();
+        console.log('[STT START RESPONSE]', { status: res.status, ok: res.ok, data: data });
+        if (res.ok && data.active) {
+            // Keep existing ccActive preference (do not force UI to active if Doctor initial preference was OFF)
+            if (ccActive) {
+                btn.className = 'control-btn cc-active';
+                icon.textContent = 'CC';
+                toastr.success('Live subtitles enabled');
+                const statusMsg = VIEWER_SUBTITLE_LANGUAGE.startsWith('ur') 
+                    ? 'لائیو سب ٹائٹلز فعال ہیں — بات چیت سن رہے ہیں...'
+                    : `Live Subtitles Active (${APPOINTMENT_SUBTITLE_LANG_NAME}) — Listening for speech...`;
+                displaySubtitle(AGORA_UID, statusMsg);
+            } else {
+                btn.className = 'control-btn off';
+                icon.textContent = 'CC';
+            }
+
+            if (!IS_DOCTOR) {
+                startPatientUrduAsr();
+            }
+        } else {
+            throw new Error(data.error || data.message || 'Could not start subtitles');
+        }
+    } catch (err) {
+        btn.className = ccActive ? 'control-btn cc-active' : 'control-btn off';
+        icon.textContent = 'CC';
+        toastr.error('Subtitle error: ' + err.message);
+    } finally {
+        ccStarting = false;
+    }
+}
+
+async function stopTranslation() {
+    const btn = document.getElementById('btnCC');
+    const icon = document.getElementById('ccIcon');
+    const subtitleOverlay = document.getElementById('subtitleOverlay');
+
+    sessionStorage.removeItem(CC_STORAGE_KEY);
+
+    if (!IS_DOCTOR) {
+        stopPatientUrduAsr();
+    }
+
+    try {
+        await fetch(TRANSLATION_STOP_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json',
+            }
+        });
+    } catch (err) {}
+
+    ccActive = false;
+    btn.className = 'control-btn off';
+    icon.textContent = 'CC';
+    if (subtitleOverlay) subtitleOverlay.style.display = 'none';
+    toastr.info('Live subtitles disabled');
+}
+
+window.addEventListener('beforeunload', () => {
+    if (ccActive) {
+        const data = new FormData();
+        data.append('_token', CSRF_TOKEN);
+        navigator.sendBeacon(TRANSLATION_STOP_URL, data);
+    }
+});
 </script>
 @endpush
