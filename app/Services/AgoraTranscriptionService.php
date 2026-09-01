@@ -129,6 +129,9 @@ class AgoraTranscriptionService
         if ($appointment->doctor && $appointment->doctor->user_id) {
             $subAudioUids[] = (string) $appointment->doctor->user_id;
         }
+        if ($appointment->patient && $appointment->patient->user_id) {
+            $subAudioUids[] = (string) $appointment->patient->user_id;
+        }
         $subAudioUids = array_values(array_unique(array_filter($subAudioUids)));
 
         $rtcConfig = [

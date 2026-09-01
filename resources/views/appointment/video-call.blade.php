@@ -1987,6 +1987,26 @@ function cleanSubtitleText(rawStr) {
 }
 
 function handleTranscriptionStreamMessage(uid, stream) {
+    let rawByteLength = null;
+    if (stream instanceof Uint8Array || stream instanceof ArrayBuffer) {
+        rawByteLength = stream.byteLength;
+    } else if (stream && stream.buffer) {
+        rawByteLength = stream.buffer.byteLength;
+    } else if (stream && stream.data) {
+        rawByteLength = stream.data.byteLength || stream.data.length || null;
+    } else if (typeof stream === 'string') {
+        rawByteLength = stream.length;
+    }
+
+    console.log('[DOCTOR STREAM MESSAGE RECEIVED]', {
+        senderUid: String(uid),
+        senderType: typeof uid,
+        payloadType: stream?.constructor?.name || typeof stream,
+        byteLength: rawByteLength,
+        role: CURRENT_USER_ROLE,
+        timestamp: new Date().toISOString()
+    });
+
     console.log('[STT STAGE 1 RAW]', {
         senderUid: String(uid),
         streamType: typeof stream,
@@ -2027,6 +2047,12 @@ function handleTranscriptionStreamMessage(uid, stream) {
         if (textData) {
             try {
                 payload = JSON.parse(textData);
+                console.log('[DOCTOR CUSTOM MESSAGE DECODE]', {
+                    senderUid: String(uid),
+                    decoded: !!payload,
+                    messageType: payload?.type || 'unknown',
+                    text: payload?.text || ''
+                });
                 if (payload && payload.type === 'patient_urdu_asr') {
                     handlePatientUrduAsrMessage(payload);
                     return;
@@ -2047,13 +2073,6 @@ function handleTranscriptionStreamMessage(uid, stream) {
         }
 
         console.log('[STT STAGE 5 DECODE SUCCESS]', payload);
-
-        // Auto-enable local CC UI if incoming transcription stream messages are active
-        if (!ccActive && (Number(uid) === TRANSCRIBER_UID || Number(uid) === TRANSCRIBER_PUB_UID || payload.words?.length || payload.text || payload.trans?.length)) {
-            ccActive = true;
-            const btn = document.getElementById('btnCC');
-            if (btn) btn.className = 'control-btn cc-active';
-        }
 
         // Extract actual human speaker UID from decoded payload fields (Agora STT bot 999998 transcribes Doctor UID audio)
         let actualSpeakerUid = payload.uid || payload.user_id || payload.speaker_uid;
@@ -2076,6 +2095,17 @@ function handleTranscriptionStreamMessage(uid, stream) {
 
         if (isSelf) {
             console.log('[STT SELF CAPTION SUPPRESSED] Hiding self-speech caption on speaker screen');
+            return;
+        }
+
+        // Part 1: If Doctor is viewing, suppress Patient speech packets coming from Agora Cloud STT bot (999998).
+        // Patient -> Doctor subtitles are handled authoritatively by Patient browser custom Urdu ASR (patient_urdu_asr).
+        if (IS_DOCTOR && String(actualSpeakerUid) === String(EXPECTED_REMOTE_UID)) {
+            console.log('[DOCTOR PATIENT CLOUD STT SUPPRESSED]', {
+                speakerUid: actualSpeakerUid,
+                source: 'agora-stt-bot',
+                rawText: payload?.text || payload?.sentence || ''
+            });
             return;
         }
 
@@ -2183,65 +2213,34 @@ function handleTranscriptionStreamMessage(uid, stream) {
             renderingSourceFallback: renderingSourceFallback
         });
 
-        // For Urdu viewer (Patient), stabilize Doctor STT English speech before translating
+        console.log('[STT CAPTION ROUTING]', {
+            role: CURRENT_USER_ROLE,
+            localUid: AGORA_UID,
+            speakerUid: actualSpeakerUid,
+            expectedRemoteUid: EXPECTED_REMOTE_UID,
+            isSelf: isSelf,
+            ccActive: ccActive,
+            originalText: englishSourceText,
+            translatedText: subtitleText,
+            willRender: ccActive && !isSelf && (!!subtitleText || isUrduViewer),
+            reason: !ccActive ? 'viewer-cc-disabled' : (isSelf ? 'self-speech-suppressed' : (isUrduViewer ? 'stabilizing-for-urdu-translation' : 'ready-to-render'))
+        });
+
+        // For Urdu viewer (Patient), buffer and stabilize Doctor STT English speech before translating
         if (isUrduViewer && !selectedLang) {
             if (englishSourceText) {
-                const normDoc = englishSourceText.toLowerCase().replace(/\s+/g, ' ');
-                const currentDocNorm = doctorSttCandidate.toLowerCase().replace(/\s+/g, ' ');
-
-                if (normDoc === currentDocNorm && doctorSttStableTimer) {
-                    console.log('[DOCTOR STT CANDIDATE DEDUPE IGNORED]', {
-                        traceId: traceId,
-                        sourceText: englishSourceText,
-                        candidate: doctorSttCandidate
-                    });
-                    return;
-                }
-
-                if (doctorSttStableTimer) {
-                    console.log('[DOCTOR STT STABILIZATION RESET]', {
-                        previousText: doctorSttCandidate,
-                        newText: englishSourceText
-                    });
-                    clearTimeout(doctorSttStableTimer);
-                    doctorSttStableTimer = null;
-                }
-
-                doctorSttCandidate = englishSourceText;
-                const docGen = ++doctorSttGeneration;
-
-                console.log('[DOCTOR STT CANDIDATE]', {
-                    traceId: traceId,
-                    sourceText: englishSourceText,
-                    normalizedText: normDoc,
-                    previousCandidate: currentDocNorm
-                });
-
-                console.log('[DOCTOR STT STABILIZATION SCHEDULED]', {
-                    sourceText: englishSourceText,
-                    delayMs: 600,
-                    generation: docGen
-                });
-
-                doctorSttStableTimer = setTimeout(() => {
-                    doctorSttStableTimer = null;
-                    if (docGen !== doctorSttGeneration || !doctorSttCandidate) return;
-
-                    const textToTranslate = cleanSubtitleText(doctorSttCandidate);
-                    doctorSttCandidate = '';
-
-                    console.log('[DOCTOR STT STABILIZED]', {
-                        sourceText: textToTranslate,
-                        generation: docGen
-                    });
-
-                    translateAndDisplayUrdu(actualSpeakerUid, textToTranslate, traceId);
-                }, 600);
+                processDoctorSttFrame(actualSpeakerUid, englishSourceText, payload, traceId);
             }
             return;
         }
 
         if (!subtitleText || !subtitleText.trim()) {
+            return;
+        }
+
+        // If Doctor/English viewer receives Hindi or Urdu text from STT stream, translate to English first
+        if (targetBase === 'en' && (containsHindiScript(subtitleText) || containsUrduScript(subtitleText))) {
+            translateAndDisplayEnglish(actualSpeakerUid, subtitleText);
             return;
         }
 
@@ -2268,14 +2267,17 @@ function handleTranscriptionStreamMessage(uid, stream) {
 const urduTranslationCache = new Map();
 const urduToEnglishTranslationCache = new Map();
 let latestUrduTranslationSeq = 0;
-let lastDoctorSourceText = '';
-let lastDoctorSourceAt = 0;
-let doctorSttCandidate = '';
+let doctorSttPendingUtterance = '';
+let doctorSttLastDispatchedText = '';
 let doctorSttStableTimer = null;
 let doctorSttGeneration = 0;
 
 function containsUrduScript(text) {
     return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(text || '');
+}
+
+function containsHindiScript(text) {
+    return /[\u0900-\u097F]/.test(text || '');
 }
 
 function containsLatinLetters(text) {
@@ -2291,10 +2293,113 @@ function extractPureUrduText(rawText) {
     return segments.join(' ').trim();
 }
 
+function processDoctorSttFrame(actualSpeakerUid, englishSourceText, payload, traceId) {
+    if (!englishSourceText || !englishSourceText.trim()) return;
+
+    let incoming = cleanSubtitleText(englishSourceText);
+    if (!incoming) return;
+
+    // 1. Check if Agora STT protobuf metadata exposes a final result flag
+    const isAgoraFlagFinal = (payload?.flag === 1 || payload?.flag === 2);
+    const hasWordFinal = Array.isArray(payload?.words) && payload.words.length > 0 && payload.words[payload.words.length - 1]?.isFinal === true;
+    const isAgoraFinal = isAgoraFlagFinal || hasWordFinal;
+
+    // 2. Separate sentence preservation: if incoming STT prepends previous dispatched sentence, strip prefix
+    const normIncoming = incoming.toLowerCase().replace(/\s+/g, ' ');
+    const normLast = doctorSttLastDispatchedText.toLowerCase().replace(/\s+/g, ' ');
+    if (normLast && normIncoming.startsWith(normLast)) {
+        const stripped = incoming.substring(doctorSttLastDispatchedText.length).replace(/^[,.\s!?]+/, '').trim();
+        if (stripped) {
+            incoming = stripped;
+        } else if (!isAgoraFinal) {
+            return;
+        }
+    }
+
+    const previousText = doctorSttPendingUtterance;
+    let chosenText = incoming;
+
+    // 3. Punctuation and completion heuristics
+    const hasPunctuation = /[.!?؟]$/.test(incoming.trim());
+    const wordCount = incoming.trim().split(/\s+/).length;
+    let completionSignal = 'none';
+
+    if (isAgoraFinal) {
+        completionSignal = 'agora-final';
+    } else if (hasPunctuation && wordCount >= 3) {
+        completionSignal = 'punctuation-and-stable';
+    }
+
+    doctorSttPendingUtterance = chosenText;
+
+    console.log('[DOCTOR STT BUFFER UPDATE]', {
+        previousText: previousText,
+        incomingText: incoming,
+        chosenText: chosenText,
+        isFinal: isAgoraFinal,
+        completionSignal: completionSignal
+    });
+
+    const finalizeSentence = (completionSource) => {
+        if (doctorSttStableTimer) {
+            clearTimeout(doctorSttStableTimer);
+            doctorSttStableTimer = null;
+        }
+
+        const sentenceToSend = cleanSubtitleText(doctorSttPendingUtterance);
+        if (!sentenceToSend) return;
+
+        const normToSend = sentenceToSend.toLowerCase().replace(/\s+/g, ' ');
+        if (normToSend === normLast) {
+            return;
+        }
+
+        doctorSttPendingUtterance = '';
+        doctorSttLastDispatchedText = sentenceToSend;
+
+        console.log('[DOCTOR STT SENTENCE READY]', {
+            completeText: sentenceToSend,
+            completionSource: completionSource
+        });
+
+        translateAndDisplayUrdu(actualSpeakerUid, sentenceToSend, traceId);
+    };
+
+    // If Agora provided an explicit final flag, finalize immediately
+    if (isAgoraFinal) {
+        finalizeSentence('agora-final');
+        return;
+    }
+
+    // Reset silence / stability timer for incoming interim updates
+    if (doctorSttStableTimer) {
+        console.log('[DOCTOR STT SENTENCE TIMER RESET]', {
+            previousCandidate: previousText,
+            newCandidate: chosenText
+        });
+        clearTimeout(doctorSttStableTimer);
+        doctorSttStableTimer = null;
+    }
+
+    const currentDocGen = ++doctorSttGeneration;
+    // 750ms for completed punctuation (with >= 3 words) or 1300ms silence timeout
+    const delayMs = (hasPunctuation && wordCount >= 3) ? 750 : 1300;
+
+    doctorSttStableTimer = setTimeout(() => {
+        doctorSttStableTimer = null;
+        if (currentDocGen !== doctorSttGeneration) return;
+
+        const completionSource = (hasPunctuation && wordCount >= 3) ? 'punctuation-and-stable' : 'silence-timeout';
+        finalizeSentence(completionSource);
+    }, delayMs);
+}
+
 async function translateAndDisplayUrdu(speakerUid, englishText, traceId = '') {
     if (!englishText || !englishText.trim()) return;
     const cleanEng = cleanSubtitleText(englishText);
     if (!cleanEng) return;
+
+    console.log('[DOCTOR STT TRANSLATION START]', { completeText: cleanEng });
 
     const seq = ++latestUrduTranslationSeq;
     const normKey = cleanEng.toLowerCase().replace(/\s+/g, ' ');
@@ -2315,14 +2420,7 @@ async function translateAndDisplayUrdu(speakerUid, englishText, traceId = '') {
             cachedValue: cachedValue
         });
 
-        console.log('[URDU TRANSLATION RENDER DECISION]', {
-            traceId: traceId,
-            requestId: seq,
-            latestRequestId: latestUrduTranslationSeq,
-            stale: seq < latestUrduTranslationSeq,
-            sourceText: cleanEng,
-            translatedText: cachedValue
-        });
+        console.log('[DOCTOR STT TRANSLATION COMPLETE]', { english: cleanEng, urdu: cachedValue });
 
         if (seq < latestUrduTranslationSeq) {
             console.log('[URDU TRANSLATION STALE REJECTED]', {
@@ -2361,22 +2459,9 @@ async function translateAndDisplayUrdu(speakerUid, englishText, traceId = '') {
             
             if (cleanUrdu && containsUrduScript(cleanUrdu) && !containsLatinLetters(cleanUrdu)) {
 
-                console.log('[URDU CACHE WRITE]', {
-                    sourceText: cleanEng,
-                    normalizedKey: normKey,
-                    translatedText: cleanUrdu
-                });
-
                 urduTranslationCache.set(normKey, cleanUrdu);
 
-                console.log('[URDU TRANSLATION RENDER DECISION]', {
-                    traceId: traceId,
-                    requestId: seq,
-                    latestRequestId: latestUrduTranslationSeq,
-                    stale: seq < latestUrduTranslationSeq,
-                    sourceText: cleanEng,
-                    translatedText: cleanUrdu
-                });
+                console.log('[DOCTOR STT TRANSLATION COMPLETE]', { english: cleanEng, urdu: cleanUrdu });
 
                 if (seq < latestUrduTranslationSeq) {
                     console.log('[URDU TRANSLATION STALE REJECTED]', {
@@ -2398,16 +2483,6 @@ async function translateAndDisplayUrdu(speakerUid, englishText, traceId = '') {
                     containsUrdu: containsUrduScript(urduText),
                     containsLatin: containsLatinLetters(urduText)
                 });
-                console.log('[FALSE CAPTION TRACE]', {
-                    traceId: traceId,
-                    rawAgoraText: englishText,
-                    selectedSourceText: cleanEng,
-                    translationRequestSource: cleanEng,
-                    translationResponse: urduText,
-                    finalSanitizedText: '',
-                    reason: 'rejected-invalid-mixed-or-non-urdu'
-                });
-                console.log('[PATIENT SUBTITLE REJECTED]', { reason: 'non-urdu-translation-result', englishText, rawResponse: urduText });
             }
         }
     } catch (e) {
@@ -2415,68 +2490,137 @@ async function translateAndDisplayUrdu(speakerUid, englishText, traceId = '') {
     }
 }
 
+const ROMAN_URDU_WORDS = new Set([
+    'aap', 'ap', 'meri', 'mera', 'mere', 'awaz', 'awaaz', 'arahi', 'aa', 'rahi', 'raha', 'rahe',
+    'hai', 'hain', 'ho', 'hun', 'kya', 'kia', 'kaise', 'kese', 'kahan', 'kyun', 'kyu', 'bolo',
+    'batao', 'suno', 'theek', 'thik', 'shukriya', 'nahi', 'nahin', 'nhi', 'kar', 'karo', 'mujhe',
+    'tum', 'tera', 'teri', 'tere', 'kuch', 'chahiye', 'hota', 'hoti', 'hote', 'wali', 'wala', 'wale'
+]);
+
+function isRomanUrdu(text) {
+    if (!text || typeof text !== 'string') return false;
+    const words = text.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(Boolean);
+    if (words.length === 0) return false;
+    let romanCount = 0;
+    for (const w of words) {
+        if (ROMAN_URDU_WORDS.has(w)) romanCount++;
+    }
+    return (romanCount / words.length) >= 0.35;
+}
+
 let latestEnglishTranslationSeq = 0;
 
-async function translateAndDisplayEnglish(speakerUid, urduText) {
-    if (!urduText || !urduText.trim()) return;
-    const cleanText = cleanSubtitleText(urduText);
+async function fetchEnglishTranslation(text) {
+    const clean = cleanSubtitleText(text);
+    if (!clean) return '';
+
+    // 1. Try Google Translate gtx API (clean direct translation without Roman Urdu artifacts)
+    try {
+        const gUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(clean)}`;
+        const gRes = await fetch(gUrl);
+        if (gRes.ok) {
+            const gData = await gRes.json();
+            if (Array.isArray(gData) && Array.isArray(gData[0])) {
+                const gText = gData[0].map(item => (item && item[0]) ? item[0] : '').join(' ').trim();
+                const cleanG = cleanSubtitleText(gText);
+                if (cleanG && !isRomanUrdu(cleanG) && !containsUrduScript(cleanG) && !containsHindiScript(cleanG)) {
+                    return cleanG;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[GOOGLE TRANSLATION NOTICE]', e);
+    }
+
+    // 2. Fallback to MyMemory API with strict Roman Urdu suppression
+    try {
+        const hasHindi = containsHindiScript(clean);
+        const langPair = hasHindi ? 'hi|en' : 'ur|en';
+        const mUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=${langPair}`;
+        const mRes = await fetch(mUrl);
+        if (mRes.ok) {
+            const mData = await mRes.json();
+            
+            // Check machine translation matches first
+            if (Array.isArray(mData?.matches)) {
+                for (const m of mData.matches) {
+                    const candidate = cleanSubtitleText(m.translation || '');
+                    if (candidate && !isRomanUrdu(candidate) && !containsUrduScript(candidate) && !containsHindiScript(candidate)) {
+                        return candidate;
+                    }
+                }
+            }
+
+            const rawText = mData?.responseData?.translatedText;
+            const cleanM = cleanSubtitleText(rawText);
+            if (cleanM && !isRomanUrdu(cleanM) && !containsUrduScript(cleanM) && !containsHindiScript(cleanM)) {
+                return cleanM;
+            }
+        }
+    } catch (e) {
+        console.warn('[MYMEMORY TRANSLATION NOTICE]', e);
+    }
+
+    return '';
+}
+
+async function translateAndDisplayEnglish(speakerUid, nonEnglishText) {
+    if (!nonEnglishText || !nonEnglishText.trim()) return;
+    const cleanText = cleanSubtitleText(nonEnglishText);
     if (!cleanText) return;
+
+    console.log('[DOCTOR ENGLISH TRANSLATION START]', { urdu: cleanText });
 
     const seq = ++latestEnglishTranslationSeq;
     const traceId = `pt-en-${speakerUid}-${Date.now()}`;
 
-    // Detect if Patient spoke English (has English letters and NO Urdu script characters)
+    // Detect if Patient already spoke English
     const hasUrduChars = containsUrduScript(cleanText);
+    const hasHindiChars = containsHindiScript(cleanText);
     const hasEnglishChars = /[a-zA-Z]/.test(cleanText);
 
-    if (!hasUrduChars && hasEnglishChars) {
+    if (!hasUrduChars && !hasHindiChars && hasEnglishChars && !isRomanUrdu(cleanText)) {
         console.log('[PATIENT ENGLISH DETECTED]', { input: cleanText });
-        console.log('[STT STAGE 8 RENDER CALLED]', { speakerUid: speakerUid, language: 'en-US', text: cleanText });
+        console.log('[DOCTOR ENGLISH TRANSLATION COMPLETE]', { urdu: cleanText, english: cleanText });
         if (seq < latestEnglishTranslationSeq) {
             console.log('[ENGLISH TRANSLATION STALE REJECTED]', { requestId: seq, latestRequestId: latestEnglishTranslationSeq, text: cleanText });
             return;
         }
+        console.log('[DOCTOR ENGLISH SENTENCE RENDER]', { english: cleanText });
         displaySubtitle(speakerUid, cleanText, false, traceId);
         return;
     }
 
     if (urduToEnglishTranslationCache.has(cleanText)) {
         const cachedEng = urduToEnglishTranslationCache.get(cleanText);
-        console.log('[URDU → ENGLISH TRANSLATION CACHED]', { input: cleanText, output: cachedEng });
-        console.log('[STT STAGE 8 RENDER CALLED]', { speakerUid: speakerUid, language: 'en-US', text: cachedEng });
+        console.log('[URDU/HINDI → ENGLISH TRANSLATION CACHED]', { input: cleanText, output: cachedEng });
+        console.log('[DOCTOR ENGLISH TRANSLATION COMPLETE]', { urdu: cleanText, english: cachedEng });
         if (seq < latestEnglishTranslationSeq) {
             console.log('[ENGLISH TRANSLATION STALE REJECTED]', { requestId: seq, latestRequestId: latestEnglishTranslationSeq, text: cachedEng });
             return;
         }
+        console.log('[DOCTOR ENGLISH SENTENCE RENDER]', { english: cachedEng });
         displaySubtitle(speakerUid, cachedEng, false, traceId);
         return;
     }
 
     try {
-        const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanText)}&langpair=ur|en`);
-        const data = await res.json();
-        const engText = data?.responseData?.translatedText;
-        if (engText && engText.trim()) {
-            const cleanEng = cleanSubtitleText(engText);
+        const cleanEng = await fetchEnglishTranslation(cleanText);
+        if (cleanEng && !isRomanUrdu(cleanEng)) {
             urduToEnglishTranslationCache.set(cleanText, cleanEng);
-            console.log('[URDU → ENGLISH TRANSLATION]', { input: cleanText, output: cleanEng });
-            console.log('[STT STAGE 8 RENDER CALLED]', { speakerUid: speakerUid, language: 'en-US', text: cleanEng });
+            console.log('[URDU/HINDI → ENGLISH TRANSLATION]', { input: cleanText, output: cleanEng });
+            console.log('[DOCTOR ENGLISH TRANSLATION COMPLETE]', { urdu: cleanText, english: cleanEng });
             if (seq < latestEnglishTranslationSeq) {
                 console.log('[ENGLISH TRANSLATION STALE REJECTED]', { requestId: seq, latestRequestId: latestEnglishTranslationSeq, text: cleanEng });
                 return;
             }
+            console.log('[DOCTOR ENGLISH SENTENCE RENDER]', { english: cleanEng });
             displaySubtitle(speakerUid, cleanEng, false, traceId);
         } else {
-            if (seq < latestEnglishTranslationSeq) {
-                console.log('[ENGLISH TRANSLATION STALE REJECTED]', { requestId: seq, latestRequestId: latestEnglishTranslationSeq, text: cleanText });
-                return;
-            }
-            displaySubtitle(speakerUid, cleanText, false, traceId);
+            console.warn('[TRANSLATION SUPPRESSED - NO VALID ENGLISH]', { input: cleanText });
         }
     } catch (e) {
-        console.warn('[URDU TO ENGLISH TRANSLATION ERROR]', e);
-        if (seq < latestEnglishTranslationSeq) return;
-        displaySubtitle(speakerUid, cleanText, false, traceId);
+        console.warn('[URDU/HINDI TO ENGLISH TRANSLATION ERROR]', e);
     }
 }
 
@@ -2484,17 +2628,125 @@ let patientUrduRecognition = null;
 let patientUrduAsrActive = false;
 let patientUrduAsrGeneration = 0;
 let patientAsrStableTimer = null;
-let patientAsrInterimText = '';
+let patientAsrActiveUtteranceText = '';
+let patientAsrSegmentCandidates = new Map();
+let patientAsrLastSentIndex = -1;
 let lastPatientAsrSentText = '';
 let lastPatientAsrSentAt = 0;
 
+function consolidateAsrHypothesis(existing, incoming, isFinal = false) {
+    const existNorm = cleanSubtitleText(existing);
+    const inNorm = cleanSubtitleText(incoming);
+
+    if (!existNorm && inNorm) {
+        return { candidate: inNorm, decision: 'new-segment' };
+    }
+    if (existNorm && !inNorm) {
+        return { candidate: existNorm, decision: 'shorter-prefix-kept-existing' };
+    }
+    if (!existNorm && !inNorm) {
+        return { candidate: '', decision: 'new-segment' };
+    }
+    if (existNorm === inNorm) {
+        return { candidate: existNorm, decision: 'identical' };
+    }
+
+    // 1. Extension: incoming starts with existing
+    if (inNorm.startsWith(existNorm)) {
+        return { candidate: inNorm, decision: 'extension' };
+    }
+
+    // 2. Incoming is a shorter prefix: existing starts with incoming
+    if (existNorm.startsWith(inNorm)) {
+        return { candidate: existNorm, decision: 'shorter-prefix-kept-existing' };
+    }
+
+    // 3. Incoming is a shorter suffix: existing ends with incoming (e.g. "پھر نہیں چل" vs "نہیں چل", or "نہیں چلتا" vs "چلتا")
+    if (existNorm.endsWith(inNorm)) {
+        return { candidate: existNorm, decision: 'shorter-suffix-kept-existing' };
+    }
+
+    // 4. Incoming contains additional leading context: incoming ends with existing (e.g. "نہیں چل رہا" vs "کیوں نہیں چل رہا")
+    if (inNorm.endsWith(existNorm)) {
+        return { candidate: inNorm, decision: 'extension' };
+    }
+
+    // 5. Sliding window token overlap merge
+    const existTokens = existNorm.split(/\s+/);
+    const inTokens = inNorm.split(/\s+/);
+
+    const maxOverlap = Math.min(existTokens.length, inTokens.length);
+    for (let k = maxOverlap; k >= 1; k--) {
+        const existSuffix = existTokens.slice(-k).join(' ');
+        const inPrefix = inTokens.slice(0, k).join(' ');
+        if (existSuffix === inPrefix) {
+            const mergedTokens = existTokens.concat(inTokens.slice(k));
+            const mergedText = mergedTokens.join(' ');
+            return { candidate: mergedText, decision: 'overlap-merged' };
+        }
+    }
+
+    // Check if incoming first token appears inside existing tokens
+    const matchIdx = existTokens.lastIndexOf(inTokens[0]);
+    if (matchIdx !== -1) {
+        const mergedTokens = existTokens.slice(0, matchIdx).concat(inTokens);
+        const mergedText = mergedTokens.join(' ');
+        return { candidate: mergedText, decision: 'overlap-merged' };
+    }
+
+    // 6. Correction check (similar token count & high word overlap)
+    const tokenDiff = Math.abs(existTokens.length - inTokens.length);
+    if (tokenDiff <= 2) {
+        let matchingTokens = 0;
+        const existSet = new Set(existTokens);
+        for (const t of inTokens) {
+            if (existSet.has(t)) matchingTokens++;
+        }
+        const similarity = matchingTokens / Math.max(existTokens.length, inTokens.length);
+        if (similarity >= 0.5) {
+            return { candidate: inNorm, decision: 'correction-replaced' };
+        }
+    }
+
+    // 7. If isFinal, trust Chrome's final decision if it is equal or longer in tokens
+    if (isFinal && inTokens.length >= existTokens.length) {
+        return { candidate: inNorm, decision: 'correction-replaced' };
+    }
+
+    // 8. Fallback: if incoming is strictly longer in words, use incoming; otherwise keep richer existing
+    if (inTokens.length > existTokens.length || (inTokens.length === existTokens.length && inNorm.length > existNorm.length)) {
+        return { candidate: inNorm, decision: 'extension' };
+    }
+
+    return { candidate: existNorm, decision: 'shorter-suffix-kept-existing' };
+}
+
 function checkUrduAsrSupport() {
+    const hasSpeechRecognition = typeof window.SpeechRecognition !== 'undefined';
+    const hasWebkitSpeechRecognition = typeof window.webkitSpeechRecognition !== 'undefined';
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const supported = !!SpeechRecognition;
     const constructorName = SpeechRecognition ? (SpeechRecognition.name || 'SpeechRecognition') : null;
+
+    console.log('[MOBILE ASR ENVIRONMENT]', {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        isSecureContext: window.isSecureContext,
+        hasSpeechRecognition: hasSpeechRecognition,
+        hasWebkitSpeechRecognition: hasWebkitSpeechRecognition,
+        browser: navigator.vendor || 'Unknown',
+        language: navigator.language || 'Unknown'
+    });
+
     console.log('[URDU ASR SUPPORT]', {
         supported: supported,
         constructor: constructorName
+    });
+    console.log('[PATIENT ASR INIT]', {
+        supported: supported,
+        role: CURRENT_USER_ROLE,
+        language: 'ur-PK',
+        micMuted: micMuted
     });
     return SpeechRecognition;
 }
@@ -2533,15 +2785,27 @@ function startPatientUrduAsr() {
     }
 
     const currentGeneration = ++patientUrduAsrGeneration;
+    patientAsrLastSentIndex = -1;
+    patientAsrActiveUtteranceText = '';
+    patientAsrSegmentCandidates.clear();
+
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     try {
         patientUrduRecognition = new SpeechRecognition();
         patientUrduRecognition.lang = 'ur-PK';
-        patientUrduRecognition.continuous = true;
+        patientUrduRecognition.continuous = !isMobile;
         patientUrduRecognition.interimResults = true;
 
         patientUrduRecognition.onstart = () => {
             patientUrduAsrActive = true;
+            console.log('[PATIENT ASR START]', {
+                role: CURRENT_USER_ROLE,
+                language: 'ur-PK',
+                continuous: !isMobile,
+                isMobile: isMobile,
+                timestamp: new Date().toISOString()
+            });
             console.log('[PATIENT URDU ASR STARTED]');
         };
 
@@ -2560,121 +2824,128 @@ function startPatientUrduAsr() {
                 callActive: true
             });
 
-            console.log('[PATIENT ASR STATE]', {
-                recognitionExists: !!patientUrduRecognition,
-                recognitionActive: patientUrduAsrActive,
-                generation: currentGeneration,
-                micMuted: micMuted,
-                callActive: true,
-                shouldRun: shouldPatientUrduAsrRun(),
-                stableTimerActive: !!patientAsrStableTimer,
-                currentCandidate: patientAsrInterimText,
-                connectionState: client?.connectionState || 'unknown',
-                timestamp: Date.now()
-            });
+            const startIndex = Math.max(0, patientAsrLastSentIndex + 1);
+            if (startIndex >= event.results.length && !isMobile) {
+                return;
+            }
 
-            let fullTranscript = '';
+            const effectiveStartIndex = isMobile ? 0 : startIndex;
 
-            for (let i = 0; i < event.results.length; i++) {
+            // 1. Update each segment candidate from effectiveStartIndex to event.results.length - 1
+            for (let i = effectiveStartIndex; i < event.results.length; i++) {
                 const res = event.results[i];
-                if (res && res[0] && res[0].transcript) {
-                    const str = res[0].transcript.trim();
-                    if (str) {
-                        fullTranscript += (fullTranscript ? ' ' : '') + str;
-                    }
+                if (!res || !res[0]) continue;
+                const rawTranscript = cleanSubtitleText(res[0].transcript || '');
+                const isFinal = !!res.isFinal;
+                const segKey = `${currentGeneration}:${i}`;
+                const existingObj = patientAsrSegmentCandidates.get(segKey);
+                const previousCandidate = existingObj ? existingObj.text : '';
 
-                    console.log('[PATIENT ASR RESULT DETAIL]', {
-                        index: i,
-                        transcript: str,
-                        isFinal: !!res.isFinal,
-                        confidence: res[0].confidence || 0
-                    });
+                const { candidate: chosenCandidate, decision } = consolidateAsrHypothesis(previousCandidate, rawTranscript, isFinal);
+                patientAsrSegmentCandidates.set(segKey, { text: chosenCandidate, isFinal: isFinal });
+
+                console.log('[PATIENT ASR SEGMENT UPDATE]', {
+                    generation: currentGeneration,
+                    index: i,
+                    incoming: rawTranscript,
+                    previousCandidate: previousCandidate,
+                    chosenCandidate: chosenCandidate,
+                    decision: decision
+                });
+            }
+
+            // 2. Build the current UNSENT utterance from ordered unsent segment candidates
+            const activeIndexes = [];
+            const segmentCandidates = [];
+            for (let i = effectiveStartIndex; i < event.results.length; i++) {
+                const segKey = `${currentGeneration}:${i}`;
+                const seg = patientAsrSegmentCandidates.get(segKey);
+                if (seg && seg.text) {
+                    activeIndexes.push(i);
+                    segmentCandidates.push(seg.text);
                 }
             }
 
-            const cleanText = cleanSubtitleText(fullTranscript);
-            if (!cleanText) return;
+            const combinedText = cleanSubtitleText(segmentCandidates.join(' '));
+            if (!combinedText) return;
 
-            console.log('[PATIENT URDU ASR RESULT]', {
-                speakerUid: AGORA_UID,
-                configuredLanguage: 'ur-PK',
-                text: cleanText
+            // 3. Delta check against lastPatientAsrSentText
+            let newTextOnly = combinedText;
+            if (lastPatientAsrSentText && newTextOnly.startsWith(lastPatientAsrSentText)) {
+                newTextOnly = cleanSubtitleText(newTextOnly.substring(lastPatientAsrSentText.length));
+            }
+
+            console.log('[PATIENT ASR DELTA]', {
+                previousSentText: lastPatientAsrSentText,
+                currentRecognizedText: combinedText,
+                newTextOnly: newTextOnly
             });
 
-            // Interim stabilization fallback path (700ms debounce for the current active utterance)
-            const normNew = cleanSubtitleText(cleanText);
-            const normCurrent = cleanSubtitleText(patientAsrInterimText);
+            console.log('[PATIENT ASR ACTIVE UTTERANCE]', {
+                generation: currentGeneration,
+                indexes: activeIndexes,
+                segmentCandidates: segmentCandidates,
+                combinedText: newTextOnly || combinedText
+            });
 
-            if (normNew === normCurrent && patientAsrStableTimer) {
-                console.log('[PATIENT ASR IDENTICAL HYPOTHESIS IGNORED]', {
-                    text: normNew,
-                    timerActive: true
-                });
+            const textToStabilize = newTextOnly || combinedText;
+            if (!textToStabilize) return;
+
+            const maxActiveIndex = activeIndexes.length > 0 ? Math.max(...activeIndexes) : patientAsrLastSentIndex;
+            const allFinal = activeIndexes.length > 0 && activeIndexes.every(idx => patientAsrSegmentCandidates.get(`${currentGeneration}:${idx}`)?.isFinal);
+
+            // 4. Stabilization Debounce (700ms on desktop, 500ms on mobile)
+            const debounceDelay = isMobile ? 500 : 700;
+
+            if (textToStabilize === patientAsrActiveUtteranceText && patientAsrStableTimer) {
                 return;
             }
 
             if (patientAsrStableTimer) {
-                console.log('[PATIENT ASR STABILIZATION RESET]', {
-                    previousText: normCurrent,
-                    newText: normNew,
-                    reason: 'hypothesis-changed',
-                    generation: currentGeneration
-                });
                 clearTimeout(patientAsrStableTimer);
                 patientAsrStableTimer = null;
             }
 
-            patientAsrInterimText = normNew;
+            patientAsrActiveUtteranceText = textToStabilize;
 
             console.log('[PATIENT ASR STABILIZATION SCHEDULED]', {
                 generation: currentGeneration,
-                text: normNew,
-                delayMs: 700,
-                scheduledAt: Date.now()
+                combinedText: textToStabilize,
+                delayMs: debounceDelay
             });
 
             patientAsrStableTimer = setTimeout(() => {
                 patientAsrStableTimer = null;
 
-                console.log('[PATIENT ASR STABILIZATION FIRED]', {
-                    generationAtSchedule: currentGeneration,
-                    currentGeneration: patientUrduAsrGeneration,
-                    text: patientAsrInterimText,
-                    micMuted: micMuted,
-                    callActive: true,
-                    shouldRun: shouldPatientUrduAsrRun()
-                });
-
                 if (micMuted || currentGeneration !== patientUrduAsrGeneration) {
                     console.log('[PATIENT ASR STABILIZATION BLOCKED]', {
                         reason: micMuted ? 'microphone-muted' : 'stale-generation',
-                        text: patientAsrInterimText,
-                        generationAtSchedule: currentGeneration,
-                        currentGeneration: patientUrduAsrGeneration,
-                        micMuted: micMuted,
-                        callActive: true
+                        text: patientAsrActiveUtteranceText,
+                        generation: currentGeneration
                     });
                     return;
                 }
-                if (!patientAsrInterimText || !patientAsrInterimText.trim()) return;
+                if (!patientAsrActiveUtteranceText || !patientAsrActiveUtteranceText.trim()) return;
 
-                const textToSend = cleanSubtitleText(patientAsrInterimText);
-                patientAsrInterimText = '';
+                const completeText = cleanSubtitleText(patientAsrActiveUtteranceText);
+                patientAsrActiveUtteranceText = '';
+                patientAsrLastSentIndex = isMobile ? -1 : Math.max(patientAsrLastSentIndex, maxActiveIndex);
 
                 console.log('[PATIENT ASR UTTERANCE READY]', {
-                    text: textToSend,
-                    completionSource: 'stabilized-interim',
                     generation: currentGeneration,
-                    micMuted: micMuted,
-                    callActive: true
+                    completeText: completeText,
+                    completionSource: allFinal ? 'is-final' : 'stabilized-interim'
                 });
 
-                sendPatientUrduAsrMessage(textToSend);
-            }, 700);
+                sendPatientUrduAsrMessage(completeText);
+            }, debounceDelay);
         };
 
         patientUrduRecognition.onerror = (event) => {
-            console.warn('[PATIENT URDU ASR ERROR]', { error: event.error, message: event.message });
+            console.warn('[PATIENT ASR ERROR]', {
+                error: event.error,
+                message: event.message || event.error
+            });
             if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                 patientUrduAsrActive = false;
             }
@@ -2682,24 +2953,28 @@ function startPatientUrduAsr() {
 
         patientUrduRecognition.onend = () => {
             patientUrduAsrActive = false;
-            console.log('[PATIENT URDU ASR ENDED]');
-
             const shouldRestart = shouldPatientUrduAsrRun() && currentGeneration === patientUrduAsrGeneration;
-            console.log('[PATIENT URDU ASR RESTART DECISION]', {
+            console.log('[PATIENT ASR END]', {
                 shouldRestart: shouldRestart,
-                reason: micMuted ? 'microphone-muted' : (IS_DOCTOR ? 'is-doctor' : 'normal-end')
+                micMuted: micMuted,
+                isMobile: isMobile
             });
+            console.log('[PATIENT URDU ASR ENDED]');
 
             if (shouldRestart) {
                 setTimeout(() => {
                     if (shouldPatientUrduAsrRun() && !patientUrduAsrActive && currentGeneration === patientUrduAsrGeneration) {
                         try {
+                            if (isMobile) {
+                                patientAsrSegmentCandidates.clear();
+                                patientAsrLastSentIndex = -1;
+                            }
                             patientUrduRecognition?.start();
                         } catch (e) {
                             console.warn('[PATIENT URDU ASR RESTART EXCEPTION]', e);
                         }
                     }
-                }, 300);
+                }, isMobile ? 150 : 300);
             }
         };
 
@@ -2716,7 +2991,9 @@ function stopPatientUrduAsr() {
         clearTimeout(patientAsrStableTimer);
         patientAsrStableTimer = null;
     }
-    patientAsrInterimText = '';
+    patientAsrActiveUtteranceText = '';
+    patientAsrSegmentCandidates.clear();
+    patientAsrLastSentIndex = -1;
     if (patientUrduRecognition) {
         try {
             patientUrduRecognition.abort();
@@ -2728,7 +3005,7 @@ function stopPatientUrduAsr() {
 
 let patientUtteranceCounter = 0;
 
-function sendPatientUrduAsrMessage(text) {
+async function sendPatientUrduAsrMessage(text) {
     if (micMuted) {
         console.log('[PATIENT URDU MESSAGE BLOCKED]', { reason: 'microphone-muted', text: text });
         return;
@@ -2760,12 +3037,14 @@ function sendPatientUrduAsrMessage(text) {
     lastPatientAsrSentAt = now;
     const utteranceId = `utt-${AGORA_UID}-${++patientUtteranceCounter}-${now}`;
 
-    console.log('[PATIENT URDU MESSAGE SEND ATTEMPT]', {
+    console.log('[PATIENT ASR SEND ATTEMPT]', {
+        fullRecognizedText: cleanUrdu,
+        textBeingSent: cleanUrdu,
+        transcript: cleanUrdu,
+        target: 'doctor',
+        messageType: 'patient_urdu_asr',
         utteranceId: utteranceId,
-        speakerUid: Number(AGORA_UID),
-        sourceLanguage: 'ur-PK',
-        text: cleanUrdu,
-        isFinal: true
+        speakerUid: Number(AGORA_UID)
     });
 
     const payload = {
@@ -2781,10 +3060,15 @@ function sendPatientUrduAsrMessage(text) {
     try {
         const jsonStr = JSON.stringify(payload);
         const encoded = new TextEncoder().encode(jsonStr);
-        client.sendStreamMessage(encoded);
+        await client.sendStreamMessage(encoded);
+        console.log('[PATIENT ASR SEND SUCCESS]', payload);
         console.log('[PATIENT URDU MESSAGE SENT]', payload);
     } catch (err) {
-        console.warn('[PATIENT URDU MESSAGE SEND ERROR]', err);
+        console.error('[PATIENT ASR SEND ERROR]', {
+            error: err?.message || String(err),
+            code: err?.code,
+            payload: payload
+        });
     }
 }
 
@@ -2793,6 +3077,13 @@ function handlePatientUrduAsrMessage(msg) {
     const senderUid = msg.speakerUid || EXPECTED_REMOTE_UID;
     const speakerUid = senderUid;
     const isSelf = String(speakerUid) === String(AGORA_UID);
+
+    console.log('[PATIENT URDU ASR RECEIVED BY DOCTOR]', {
+        senderUid: senderUid,
+        expectedRemoteUid: EXPECTED_REMOTE_UID,
+        text: msg.text,
+        ccActive: ccActive
+    });
 
     console.log('[STT SELF CHECK]', {
         speakerUid: speakerUid,
@@ -2971,8 +3262,26 @@ document.getElementById('btnCC')?.addEventListener('click', async () => {
     const btn = document.getElementById('btnCC');
     const icon = document.getElementById('ccIcon');
 
+    const prevCc = ccActive;
     ccActive = !ccActive;
     sessionStorage.setItem(CC_STORAGE_KEY, ccActive ? 'true' : 'false');
+
+    console.log('[CC USER ACTION]', {
+        role: CURRENT_USER_ROLE,
+        requestedState: ccActive,
+        previousState: prevCc,
+        newState: ccActive,
+        source: 'manual-click'
+    });
+
+    console.log('[CC STATE CHANGE]', {
+        role: CURRENT_USER_ROLE,
+        previousState: prevCc,
+        newState: ccActive,
+        changedBy: 'manual-click',
+        micEnabled: !micMuted,
+        sttRunning: !ccStarting
+    });
 
     console.log('[CC VIEW STATE]', { role: CURRENT_USER_ROLE, enabled: ccActive });
 
