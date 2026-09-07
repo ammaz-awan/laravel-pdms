@@ -5,6 +5,8 @@
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+<link rel="stylesheet" href="{{ asset('assets/plugins/select2/css/select2.min.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 
 <style>
 
@@ -437,17 +439,19 @@ html, body {
 /* ===== PRESCRIPTION PANEL (Doctor Only - Sidebar) ===== */
 .rx-sidebar {
     position: fixed;
-    right: -400px;
+    right: -480px;
     top: 0;
-    width: 400px;
+    width: 480px;
+    max-width: 100vw;
     height: 100vh;
     background: var(--bg-card);
     border-left: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    transition: right 0.3s ease;
+    transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 1200;
-    box-shadow: -2px 0 16px rgba(0, 0, 0, 0.3);
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
 }
 
 .rx-sidebar.open {
@@ -487,12 +491,13 @@ html, body {
 .rx-header {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dk) 100%);
     color: white;
-    padding: 16px;
+    padding: 14px 18px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     border-bottom: 1px solid var(--border-color);
     min-height: 56px;
+    box-sizing: border-box;
 }
 
 .rx-header h5 {
@@ -526,89 +531,404 @@ html, body {
 .rx-body {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    overflow-x: hidden;
+    padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
+    box-sizing: border-box;
 }
 
 .rx-field {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.rx-field label {
-    font-size: 0.75rem;
+.rx-field > label {
+    font-size: 0.76rem;
     font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
+    margin-bottom: 2px;
 }
 
-.rx-field textarea,
-.rx-field input {
+.rx-field textarea {
     background: var(--bg-light);
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    padding: 8px 10px;
+    padding: 8px 12px;
     font-size: 0.88rem;
     color: var(--text-primary);
     resize: vertical;
+    min-height: 70px;
     transition: all 0.2s;
     font-family: inherit;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.rx-field textarea::placeholder,
-.rx-field input::placeholder {
+.rx-field textarea::placeholder {
     color: var(--text-secondary);
     opacity: 0.6;
 }
 
-.rx-field textarea:focus,
-.rx-field input:focus {
+.rx-field textarea:focus {
     outline: none;
     border-color: var(--primary);
     background: var(--bg-dark);
-    box-shadow: 0 0 0 3px rgba(26, 111, 196, 0.1);
+    box-shadow: 0 0 0 3px rgba(26, 111, 196, 0.2);
 }
 
 .med-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
+    width: 100%;
 }
 
 .med-row {
-    display: grid;
-    grid-template-columns: 1fr 80px 80px 32px;
-    gap: 6px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.med-row:hover {
+    border-color: rgba(26, 111, 196, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.med-row-header {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
+    margin-bottom: -2px;
 }
 
-.med-row input {
-    background: var(--bg-light);
-    border: 1px solid var(--border-color);
+.med-row-num {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: rgba(26, 111, 196, 0.15);
+    padding: 2px 8px;
     border-radius: 4px;
-    padding: 6px 8px;
-    font-size: 0.82rem;
-    color: var(--text-primary);
-    font-family: inherit;
+    letter-spacing: 0.5px;
 }
 
-.med-row input:focus {
+.med-field-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+
+.med-field-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    letter-spacing: 0.3px;
+    margin-bottom: 0;
+}
+
+.med-sub-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+    width: 100%;
+    min-width: 0 !important;
+    box-sizing: border-box;
+}
+
+.med-sub-grid > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+.med-row input[type="text"],
+.rx-field input[type="text"] {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.84rem;
+    color: #1e293b;
+    font-family: inherit;
+    width: 100%;
+    box-sizing: border-box;
+    resize: none !important;
+    height: 38px;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.med-row input[type="text"]:focus,
+.rx-field input[type="text"]:focus {
     outline: none;
     border-color: var(--primary);
-    background: var(--bg-dark);
+    background: #ffffff;
+    box-shadow: 0 0 0 2px rgba(26, 111, 196, 0.2);
+}
+
+.med-row select {
+    resize: none !important;
+}
+
+/* Select2 Modern Light Styling */
+.rx-sidebar .select2-container {
+    width: 100% !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    resize: none !important;
+}
+
+.rx-sidebar .select2-container *,
+.rx-sidebar .select2-selection,
+.rx-sidebar .med-row * {
+    resize: none !important;
+}
+
+.rx-sidebar ::-webkit-resizer,
+.rx-sidebar .select2-container ::-webkit-resizer,
+.rx-sidebar .med-row ::-webkit-resizer {
+    display: none !important;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--single {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.2s, background-color 0.2s;
+    overflow: hidden !important;
+    resize: none !important;
+}
+
+.rx-sidebar .select2-container--default.select2-container--focus .select2-selection--single,
+.rx-sidebar .select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--primary) !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 0 0 2px rgba(26, 111, 196, 0.2) !important;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #1e293b !important;
+    font-size: 0.84rem !important;
+    line-height: 36px !important;
+    padding-left: 10px !important;
+    padding-right: 28px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #94a3b8 !important;
+    opacity: 1 !important;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px !important;
+    right: 8px !important;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border-color: #64748b transparent transparent transparent !important;
+    border-width: 5px 4px 0 4px !important;
+}
+
+.rx-sidebar .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+    border-color: transparent transparent #64748b transparent !important;
+    border-width: 0 4px 5px 4px !important;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--single .select2-selection__clear {
+    color: var(--danger) !important;
+    font-size: 1.1rem !important;
+    margin-right: 14px !important;
+    line-height: 36px !important;
+}
+
+/* Select2 Multiple (Dose Timing) */
+.rx-sidebar .select2-container--default .select2-selection--multiple {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    min-height: 38px !important;
+    box-sizing: border-box !important;
+    padding: 3px 6px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 4px !important;
+    resize: none !important;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.rx-sidebar .select2-container--default.select2-container--focus .select2-selection--multiple,
+.rx-sidebar .select2-container--default.select2-container--open .select2-selection--multiple {
+    border-color: var(--primary) !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 0 0 2px rgba(26, 111, 196, 0.2) !important;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: var(--primary) !important;
+    border: 1px solid var(--primary-dk) !important;
+    color: #ffffff !important;
+    border-radius: 4px !important;
+    padding: 3px 8px 3px 6px !important;
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    margin: 2px 2px !important;
+    display: inline-flex !important;
+    flex-direction: row-reverse !important;
+    align-items: center !important;
+    gap: 6px !important;
+    line-height: 1.4 !important;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    position: static !important;
+    line-height: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: auto !important;
+    height: auto !important;
+    transition: color 0.15s;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #ffffff !important;
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    color: #ffffff !important;
+    font-size: 0.8rem !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--multiple .select2-search--inline {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.rx-sidebar .select2-container--default .select2-selection--multiple .select2-search--inline .select2-search__field {
+    color: #1e293b !important;
+    font-size: 0.82rem !important;
+    margin: 0 !important;
+    padding: 2px 4px !important;
+    height: 28px !important;
+    min-width: 80px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.select2-dropdown {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    z-index: 10000 !important;
+}
+
+.select2-container--default .select2-search--dropdown {
+    padding: 8px !important;
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    color: #1e293b !important;
+    font-size: 0.84rem !important;
+    padding: 7px 10px !important;
+    outline: none !important;
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field:focus {
+    border-color: var(--primary) !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 0 0 2px rgba(26, 111, 196, 0.15) !important;
+}
+
+.select2-container--default .select2-results__option {
+    padding: 8px 12px !important;
+    font-size: 0.84rem !important;
+    color: #334155 !important;
+    border-bottom: 1px solid #f8fafc !important;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected],
+.select2-container--default .select2-results__option--highlighted {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+.select2-container--default .select2-results__option[aria-selected="true"] {
+    background-color: #e0f2fe !important;
+    color: #0369a1 !important;
+    font-weight: 600 !important;
+}
+
+.select2-container--default .select2-results__message {
+    color: #64748b !important;
+    font-size: 0.82rem !important;
 }
 
 .btn-add-med {
-    background: none;
-    border: 2px dashed var(--primary);
+    background: rgba(26, 111, 196, 0.08);
+    border: 1.5px dashed var(--primary);
     color: var(--primary);
     border-radius: 6px;
-    padding: 8px;
-    font-size: 0.82rem;
+    padding: 9px;
+    font-size: 0.84rem;
+    font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -616,25 +936,31 @@ html, body {
     gap: 6px;
     width: 100%;
     transition: all 0.2s;
-    margin-top: 8px;
+    margin-top: 4px;
 }
 
 .btn-add-med:hover {
-    background: rgba(26, 111, 196, 0.1);
+    background: rgba(26, 111, 196, 0.18);
+    border-color: var(--primary-dk);
 }
 
 .btn-del-med {
     background: none;
     border: none;
-    color: var(--danger);
+    color: #ef4444;
     cursor: pointer;
-    font-size: 1rem;
-    padding: 0;
-    transition: transform 0.2s;
+    font-size: 1.1rem;
+    padding: 3px 6px;
+    border-radius: 4px;
+    transition: transform 0.2s, background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-del-med:hover {
-    transform: scale(1.2);
+    transform: scale(1.15);
+    background: rgba(239, 68, 68, 0.15);
 }
 
 .rx-footer {
@@ -839,17 +1165,7 @@ html, body {
         <div class="rx-field">
             <label>Medicines</label>
             <div class="med-list" id="medList">
-                @forelse($appointment->prescription->medicines ?? [] as $med)
-                <div class="med-row">
-                    <input type="text" placeholder="Medicine name" value="{{ $med['name'] ?? '' }}" data-field="name">
-                    <input type="text" placeholder="Dosage" value="{{ $med['dosage'] ?? '' }}" data-field="dosage">
-                    <input type="text" placeholder="Duration" value="{{ $med['duration'] ?? '' }}" data-field="duration">
-                    <button type="button" class="btn-del-med" title="Remove">
-                        <i class="ti ti-trash"></i>
-                    </button>
-                </div>
-                @empty
-                @endforelse
+                {{-- Medicine rows dynamically generated with Select2 --}}
             </div>
             <button type="button" class="btn-add-med" id="btnAddMed">
                 <i class="ti ti-plus"></i> Add Medicine
@@ -890,6 +1206,8 @@ html, body {
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.js"></script>
+<script src="{{ asset('assets/plugins/select2/js/select2.min.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
 /* ================================================================
@@ -911,6 +1229,8 @@ const CSRF_TOKEN      = document.querySelector('meta[name="csrf-token"]').getAtt
 const END_CALL_URL    = "{{ route('appointments.end-call', ['id' => $appointment->id]) }}";
 const RX_STORE_URL    = "{{ route('appointments.prescription.store', ['id' => $appointment->id]) }}";
 const RX_FETCH_URL    = "{{ route('appointments.prescription.show', ['id' => $appointment->id]) }}";
+const MED_SEARCH_URL  = "{{ route('medicines.search') }}";
+const MED_CREATE_URL  = "{{ route('medicines.quick-create') }}";
 const APPT_SHOW_URL   = "{{ route('appointments.show', $appointment) }}";
 const APPT_RATING_URL = "{{ route('appointments.rating.show', ['id' => $appointment->id]) }}";
 
@@ -1628,97 +1948,405 @@ function startStatusPolling() {
 }
 
 /* ================================================================
-   PRESCRIPTION — DOCTOR SIDE
+   PRESCRIPTION — DOCTOR SIDE (LIVE SEARCHABLE & CREATABLE CONTROLS)
    ================================================================ */
 if (IS_DOCTOR) {
-    const rxSidebar = document.getElementById('rxSidebar');
-    const rxToggleBtn = document.getElementById('rxToggleBtn');
+    $(function() {
+        const rxSidebar = document.getElementById('rxSidebar');
+        const rxToggleBtn = document.getElementById('rxToggleBtn');
 
-    rxToggleBtn?.addEventListener('click', () => {
-        rxSidebar?.classList.toggle('open');
-    });
-
-    document.getElementById('btnAddMed')?.addEventListener('click', addMedRow);
-
-    function addMedRow(data = {}) {
-        const row = document.createElement('div');
-        row.className = 'med-row';
-        const name = esc(data.name ?? '');
-        const dosage = esc(data.dosage ?? '');
-        const duration = esc(data.duration ?? '');
-
-        row.innerHTML = `
-            <input type="text" placeholder="Medicine name" value="${name}" data-field="name">
-            <input type="text" placeholder="Dosage" value="${dosage}" data-field="dosage">
-            <input type="text" placeholder="Duration" value="${duration}" data-field="duration">
-            <button type="button" class="btn-del-med" title="Remove">
-                <i class="ti ti-trash"></i>
-            </button>`;
-        row.querySelector('.btn-del-med').addEventListener('click', () => row.remove());
-        document.getElementById('medList').appendChild(row);
-    }
-
-    if (!document.querySelector('#medList .med-row')) {
-        addMedRow();
-    }
-
-    document.querySelectorAll('.btn-del-med').forEach(btn =>
-        btn.addEventListener('click', () => btn.closest('.med-row').remove())
-    );
-
-    document.getElementById('btnSaveRx')?.addEventListener('click', saveRx);
-
-    async function saveRx() {
-        const btn    = document.getElementById('btnSaveRx');
-        const status = document.getElementById('saveStatus');
-        btn.disabled = true;
-        status.textContent = 'Saving…';
-        status.className   = 'save-status';
-
-        const medicines = [];
-        document.querySelectorAll('#medList .med-row').forEach(row => {
-            const name = row.querySelector('[data-field="name"]').value.trim();
-            if (!name) return;
-            medicines.push({
-                name,
-                dosage:   row.querySelector('[data-field="dosage"]').value.trim(),
-                duration: row.querySelector('[data-field="duration"]').value.trim(),
-            });
+        rxToggleBtn?.addEventListener('click', () => {
+            rxSidebar?.classList.toggle('open');
         });
 
-        try {
-            const res = await fetch(RX_STORE_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': CSRF_TOKEN,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    diagnosis: document.getElementById('rxDiagnosis').value,
-                    medicines: medicines,
-                    notes:     document.getElementById('rxNotes').value,
-                }),
+        const DEFAULT_DOSAGES = [
+            '5 mg', '10 mg', '15 mg', '20 mg', '25 mg', '50 mg', 
+            '100 mg', '125 mg', '200 mg', '250 mg', '500 mg', '750 mg', '1000 mg',
+            '5 ml', '10 ml', '15 ml'
+        ];
+
+        const DEFAULT_INTAKES = [
+            'With water', 'With milk', 'With food', 'After food', 'Before food',
+            'On empty stomach', 'Oral', 'Tablet', 'Capsule', 'Syrup',
+            'Injection', 'Intramuscular injection', 'Intravenous injection',
+            'Subcutaneous injection', 'Inhalation', 'Nebulization',
+            'Topical application', 'Drops', 'Nasal', 'Sublingual', 'As directed'
+        ];
+
+        const DEFAULT_DOSE_TIMINGS = [
+            'Morning',
+            'Afternoon',
+            'Evening',
+            'Night',
+            'Bedtime',
+            'Before Breakfast',
+            'After Breakfast',
+            'Before Lunch',
+            'After Lunch',
+            'Before Dinner',
+            'After Dinner',
+            'Before Food',
+            'After Food',
+            'Empty Stomach',
+            'As Needed'
+        ];
+
+        const INITIAL_MEDICINES = @json($appointment->prescription->medicines ?? []);
+
+        function updateRowNumbers() {
+            document.querySelectorAll('#medList .med-row').forEach((row, idx) => {
+                const badge = row.querySelector('.med-row-num');
+                if (badge) badge.textContent = `#${idx + 1}`;
             });
-            const data = await res.json();
-            if (!res.ok) {
-                if (data.errors) {
-                    const msgs = Object.values(data.errors).flat().join(', ');
-                    throw new Error(msgs);
-                }
-                throw new Error(data.message ?? data.error ?? 'Save failed');
-            }
-            status.textContent = '✓ Saved';
-            status.className   = 'save-status ok';
-            toastr.success('Prescription saved successfully');
-        } catch (err) {
-            status.textContent = '✗ ' + err.message;
-            status.className   = 'save-status err';
-            toastr.error('Prescription save failed: ' + err.message);
-        } finally {
-            btn.disabled = false;
         }
-    }
+
+        function initRowSelects(row, initialData = {}) {
+            const $row = $(row);
+            const $medSelect = $row.find('.rx-med-select');
+            const $dosageSelect = $row.find('.rx-dosage-select');
+            const $intakeSelect = $row.find('.rx-intake-select');
+            const $timingSelect = $row.find('.rx-timing-select');
+
+            if (typeof $.fn.select2 === 'function') {
+                // 1. Medicine Searchable + Creatable Select (Queries medicines table ONLY)
+                $medSelect.select2({
+                    placeholder: 'Search medicine...',
+                    allowClear: true,
+                    minimumInputLength: 2,
+                    dropdownParent: $('#rxSidebar'),
+                    ajax: {
+                        url: MED_SEARCH_URL,
+                        dataType: 'json',
+                        delay: 300,
+                        data: function(params) {
+                            return { q: params.term };
+                        },
+                        processResults: function(data, params) {
+                            const results = (data && data.results) ? [...data.results] : [];
+                            const term = $.trim(params.term || '');
+                            
+                            if (term.length >= 2) {
+                                const exactMatch = results.some(item => 
+                                    item.text.toLowerCase() === term.toLowerCase()
+                                );
+                                if (!exactMatch) {
+                                    results.unshift({
+                                        id: '__NEW__' + term,
+                                        text: 'Add "' + term + '"',
+                                        isNew: true,
+                                        newTerm: term
+                                    });
+                                }
+                            }
+                            return { results: results };
+                        },
+                        cache: true
+                    },
+                    language: {
+                        noResults: function() {
+                            return "No medicine found. Type to add custom.";
+                        },
+                        searching: function() {
+                            return "Searching medicines…";
+                        },
+                        inputTooShort: function(args) {
+                            return "Type 2 or more letters to search…";
+                        },
+                        errorLoading: function() {
+                            return "No results or search timeout.";
+                        }
+                    },
+                    templateResult: function(data) {
+                        if (!data.id) return data.text;
+                        if (data.isNew) {
+                            return $(`<span><i class="ti ti-plus text-primary me-1"></i> <strong>Add "${esc(data.newTerm)}"</strong></span>`);
+                        }
+                        return data.text;
+                    },
+                    templateSelection: function(data) {
+                        if (data.isNew) {
+                            return data.newTerm || data.text;
+                        }
+                        return data.text;
+                    }
+                });
+
+                // Quick creation if doctor selects the Add option
+                $medSelect.on('select2:select', async function(e) {
+                    const selected = e.params.data;
+                    if (selected && (selected.isNew || String(selected.id).startsWith('__NEW__'))) {
+                        const rawName = selected.newTerm || selected.text.replace(/^Add\s+"|"$/g, '');
+                        try {
+                            const res = await fetch(MED_CREATE_URL, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': CSRF_TOKEN,
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({ name: rawName })
+                            });
+                            const resData = await res.json();
+                            if (res.ok && resData.text) {
+                                const option = new Option(resData.text, resData.text, true, true);
+                                $medSelect.empty().append(option).trigger('change');
+                                toastr.success(resData.message || `Medicine "${resData.text}" selected.`);
+                            } else {
+                                throw new Error(resData.message || resData.error || 'Failed to add medicine');
+                            }
+                        } catch (err) {
+                            toastr.error(err.message || 'Error creating medicine');
+                            $medSelect.val(null).trigger('change');
+                        }
+                    }
+                });
+
+                // 2. Dosage Searchable + Creatable Select
+                DEFAULT_DOSAGES.forEach(dose => {
+                    $dosageSelect.append(new Option(dose, dose, false, false));
+                });
+                if (initialData.dosage) {
+                    if (!DEFAULT_DOSAGES.includes(initialData.dosage)) {
+                        $dosageSelect.append(new Option(initialData.dosage, initialData.dosage, true, true));
+                    } else {
+                        $dosageSelect.val(initialData.dosage);
+                    }
+                }
+
+                $dosageSelect.select2({
+                    placeholder: 'Select or enter dosage...',
+                    allowClear: true,
+                    tags: true,
+                    dropdownParent: $('#rxSidebar'),
+                    createTag: function(params) {
+                        const term = $.trim(params.term);
+                        if (term === '') return null;
+                        return {
+                            id: term,
+                            text: term,
+                            newTag: true
+                        };
+                    }
+                });
+
+                // 3. Intake / Administration Method Searchable + Creatable Select
+                DEFAULT_INTAKES.forEach(intake => {
+                    $intakeSelect.append(new Option(intake, intake, false, false));
+                });
+                const currentIntake = initialData.intake || initialData.instructions || '';
+                if (currentIntake) {
+                    if (!DEFAULT_INTAKES.includes(currentIntake)) {
+                        $intakeSelect.append(new Option(currentIntake, currentIntake, true, true));
+                    } else {
+                        $intakeSelect.val(currentIntake);
+                    }
+                }
+
+                $intakeSelect.select2({
+                    placeholder: 'Select or enter intake...',
+                    allowClear: true,
+                    tags: true,
+                    dropdownParent: $('#rxSidebar'),
+                    createTag: function(params) {
+                        const term = $.trim(params.term);
+                        if (term === '') return null;
+                        return {
+                            id: term,
+                            text: term,
+                            newTag: true
+                        };
+                    }
+                });
+
+                // 4. Dose Timing Searchable + Creatable Multi-Select
+                DEFAULT_DOSE_TIMINGS.forEach(timing => {
+                    $timingSelect.append(new Option(timing, timing, false, false));
+                });
+
+                const rawTiming = initialData.duration || '';
+                let selectedTimings = [];
+                if (rawTiming) {
+                    if (Array.isArray(rawTiming)) {
+                        selectedTimings = rawTiming;
+                    } else {
+                        selectedTimings = rawTiming.split(',').map(s => s.trim()).filter(Boolean);
+                    }
+                }
+
+                selectedTimings.forEach(t => {
+                    if (!$timingSelect.find(`option[value="${esc(t)}"]`).length) {
+                        $timingSelect.append(new Option(t, t, true, true));
+                    }
+                });
+
+                $timingSelect.val(selectedTimings);
+
+                $timingSelect.select2({
+                    placeholder: 'Select or enter dose timing...',
+                    allowClear: true,
+                    tags: true,
+                    dropdownParent: $('#rxSidebar'),
+                    createTag: function(params) {
+                        const term = $.trim(params.term);
+                        if (term === '') return null;
+                        return {
+                            id: term,
+                            text: term,
+                            newTag: true
+                        };
+                    }
+                });
+            }
+        }
+
+        function addMedRow(data = {}) {
+            const medList = document.getElementById('medList');
+            if (!medList) return;
+
+            const rowIndex = medList.querySelectorAll('.med-row').length + 1;
+            const row = document.createElement('div');
+            row.className = 'med-row';
+            
+            const initialName = data.name ?? '';
+            const initialDosage = data.dosage ?? '';
+            const initialIntake = data.intake ?? data.instructions ?? '';
+            const initialDuration = data.duration ?? '';
+
+            row.innerHTML = `
+                <div class="med-row-header">
+                    <span class="med-row-num">#${rowIndex}</span>
+                    <button type="button" class="btn-del-med" title="Remove Medicine">
+                        <i class="ti ti-trash"></i>
+                    </button>
+                </div>
+                
+                <div class="med-field-block">
+                    <label class="med-field-label">Medicine</label>
+                    <select class="rx-med-select" data-field="name" style="width: 100%;">
+                        ${initialName ? `<option value="${esc(initialName)}" selected>${esc(initialName)}</option>` : '<option value=""></option>'}
+                    </select>
+                </div>
+                
+                <div class="med-sub-grid">
+                    <div class="med-field-block">
+                        <label class="med-field-label">Dosage</label>
+                        <select class="rx-dosage-select" data-field="dosage" style="width: 100%;">
+                            <option value=""></option>
+                        </select>
+                    </div>
+                    <div class="med-field-block">
+                        <label class="med-field-label">Intake Method</label>
+                        <select class="rx-intake-select" data-field="intake" style="width: 100%;">
+                            <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="med-field-block">
+                    <label class="med-field-label">Dose Timing</label>
+                    <select class="rx-timing-select" data-field="duration" multiple="multiple" style="width: 100%;">
+                    </select>
+                </div>
+            `;
+
+            row.querySelector('.btn-del-med').addEventListener('click', () => {
+                $(row).find('select').each(function() {
+                    if ($(this).data('select2')) {
+                        $(this).select2('destroy');
+                    }
+                });
+                row.remove();
+                updateRowNumbers();
+            });
+
+            medList.appendChild(row);
+
+            initRowSelects(row, {
+                name: initialName,
+                dosage: initialDosage,
+                intake: initialIntake,
+                duration: initialDuration
+            });
+        }
+
+        document.getElementById('btnAddMed')?.addEventListener('click', () => addMedRow());
+
+        // Populate initial rows from database or start with 1 empty row
+        if (Array.isArray(INITIAL_MEDICINES) && INITIAL_MEDICINES.length > 0) {
+            INITIAL_MEDICINES.forEach(med => addMedRow(med));
+        } else {
+            addMedRow();
+        }
+
+        document.getElementById('btnSaveRx')?.addEventListener('click', saveRx);
+
+        async function saveRx() {
+            const btn    = document.getElementById('btnSaveRx');
+            const status = document.getElementById('saveStatus');
+            btn.disabled = true;
+            status.textContent = 'Saving…';
+            status.className   = 'save-status';
+
+            const medicines = [];
+            document.querySelectorAll('#medList .med-row').forEach(row => {
+                const nameEl = row.querySelector('[data-field="name"]');
+                const dosageEl = row.querySelector('[data-field="dosage"]');
+                const intakeEl = row.querySelector('[data-field="intake"]');
+                const $timingSelect = $(row).find('.rx-timing-select');
+
+                const name = nameEl ? nameEl.value.trim() : '';
+                if (!name || name.startsWith('__NEW__')) return;
+
+                let timingVal = $timingSelect.val();
+                let timingStr = '';
+                if (Array.isArray(timingVal)) {
+                    timingStr = timingVal.join(', ');
+                } else if (timingVal) {
+                    timingStr = String(timingVal).trim();
+                }
+
+                medicines.push({
+                    name: name,
+                    dosage:   dosageEl ? dosageEl.value.trim() : '',
+                    intake:   intakeEl ? intakeEl.value.trim() : '',
+                    duration: timingStr,
+                });
+            });
+
+            try {
+                const res = await fetch(RX_STORE_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': CSRF_TOKEN,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        diagnosis: document.getElementById('rxDiagnosis').value,
+                        medicines: medicines,
+                        notes:     document.getElementById('rxNotes').value,
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    if (data.errors) {
+                        const msgs = Object.values(data.errors).flat().join(', ');
+                        throw new Error(msgs);
+                    }
+                    throw new Error(data.message ?? data.error ?? 'Save failed');
+                }
+                status.textContent = '✓ Saved';
+                status.className   = 'save-status ok';
+                toastr.success('Prescription saved successfully');
+            } catch (err) {
+                status.textContent = '✗ ' + err.message;
+                status.className   = 'save-status err';
+                toastr.error('Prescription save failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    });
 }
 
 /* ================================================================

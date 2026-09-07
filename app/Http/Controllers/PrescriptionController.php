@@ -102,6 +102,8 @@ class PrescriptionController extends Controller
             'medicines'            => 'nullable|array',
             'medicines.*.name'     => 'required_with:medicines|string|max:255',
             'medicines.*.dosage'   => 'nullable|string|max:255',
+            'medicines.*.quantity' => 'nullable|string|max:255',
+            'medicines.*.intake'   => 'nullable|string|max:255',
             'medicines.*.duration' => 'nullable|string|max:255',
             'notes'                => 'nullable|string|max:5000',
         ]);

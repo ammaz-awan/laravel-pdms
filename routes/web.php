@@ -23,6 +23,7 @@ use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\AI\DoctorVerificationAIController;
 use App\Http\Controllers\ChangePasswordController;
+use App\Http\Controllers\MedicineController;
 
 
 // Authentication Routes
@@ -245,6 +246,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/appointments/{id}/prescription', [PrescriptionController::class, 'liveShow'])
         ->name('appointments.prescription.show');
+
+    // Medicine Search & Quick-Create Routes
+    Route::get('/medicines/search', [MedicineController::class, 'search'])
+        ->name('medicines.search');
+    Route::post('/medicines/quick-create', [MedicineController::class, 'quickCreate'])
+        ->name('medicines.quick-create');
 
     // ── Rating Routes ──────────────────────────────────────────────
     Route::post('/appointments/{id}/rate', [RatingController::class, 'store'])

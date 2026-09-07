@@ -139,7 +139,8 @@
                                         <th>SNO</th>
                                         <th>Medicine Name</th>
                                         <th>Dosage</th>
-                                        <th>Duration</th>
+                                        <th>Intake Method</th>
+                                        <th>Dose Timing</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -148,6 +149,7 @@
                                             <td>{{ str_pad($idx + 1, 2, '0', STR_PAD_LEFT) }}</td>
                                             <td class="fw-semibold">{{ $med['name'] ?? '—' }}</td>
                                             <td>{{ $med['dosage'] ?? '—' }}</td>
+                                            <td>{{ $med['intake'] ?? $med['instructions'] ?? '—' }}</td>
                                             <td>{{ $med['duration'] ?? '—' }}</td>
                                         </tr>
                                     @endforeach
@@ -162,7 +164,7 @@
                     @endif
                 </div>
 
-                {{-- ── Notes / Advice ───────────────────────────────────────── --}}
+                {{-- ── Notes / Advice ──────────────────────────────────────── --}}
                 @if($prescription->notes)
                     <div class="pb-3 mb-3 border-bottom">
                         <h6 class="mb-1 fs-16 fw-semibold">Advice / Notes</h6>

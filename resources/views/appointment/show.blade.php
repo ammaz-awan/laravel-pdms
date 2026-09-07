@@ -246,7 +246,8 @@
                                 <th>#</th>
                                 <th>Medicine Name</th>
                                 <th>Dosage</th>
-                                <th>Duration</th>
+                                <th>Intake Method</th>
+                                <th>Dose Timing</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -255,7 +256,8 @@
                                     <td>{{ $idx + 1 }}</td>
                                     <td class="fw-semibold text-dark">{{ $med['name'] ?? 'N/A' }}</td>
                                     <td><span class="badge bg-soft-info text-info border border-info">{{ $med['dosage'] ?? 'N/A' }}</span></td>
-                                    <td class="text-muted">{{ $med['duration'] ?? 'N/A' }}</td>
+                                    <td><span class="badge bg-soft-primary text-primary border border-primary">{{ $med['intake'] ?? $med['instructions'] ?? 'N/A' }}</span></td>
+                                    <td><span class="badge bg-soft-success text-success border border-success">{{ $med['duration'] ?? 'N/A' }}</span></td>
                                 </tr>
                             @endforeach
                         </tbody>
