@@ -169,6 +169,11 @@
                                         <i class="ti ti-star"></i><span>Ratings</span>
                                     </a>
                                 </li>
+                                <li class="{{ $nav('admin.directory-scraper.*') }}">
+                                    <a href="{{ route('admin.directory-scraper.index') }}">
+                                        <i class="ti ti-database-import"></i><span>Directory Scraper</span>
+                                    </a>
+                                </li>
                             <li class="submenu">
                                     <a href="javascript:void(0);" class="{{ $nav('admin.settings.*') }}">
                                         <i class="ti ti-settings"></i><span>Settings</span>

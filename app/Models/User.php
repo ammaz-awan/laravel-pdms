@@ -70,7 +70,12 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         do {
             $uuid = str_pad((string) mt_rand(0, 99999999), 8, '0', STR_PAD_LEFT);
-        } while (static::where('uuid', $uuid)->exists());
+            try {
+                $exists = static::where('uuid', $uuid)->exists();
+            } catch (\Throwable $e) {
+                $exists = false;
+            }
+        } while ($exists);
 
         return $uuid;
     }

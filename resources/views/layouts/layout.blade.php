@@ -65,9 +65,21 @@
                     <div class="card shadow-none mb-0">
                         <div class="px-3 py-2 d-flex flex-row align-items-center" id="search-top">
                             <i class="ti ti-search fs-22"></i>
-                            <input type="search" class="form-control border-0" placeholder="Search">
+                            <input type="search" 
+                                   class="form-control border-0" 
+                                   @if(auth()->check() && auth()->user()->role === 'doctor')
+                                       id="doctorMobileSearchInput" 
+                                       placeholder="Search patients..." 
+                                       autocomplete="off"
+                                   @else
+                                       placeholder="Search"
+                                   @endif
+                            >
                             <button type="button" class="btn p-0" data-bs-dismiss="modal" aria-label="Close"><i class="ti ti-x fs-22"></i></button>
                         </div>
+                        @if(auth()->check() && auth()->user()->role === 'doctor')
+                            <div id="doctorMobileSearchResults" class="p-2 border-top bg-white" style="display: none; max-height: 320px; overflow-y: auto;"></div>
+                        @endif
                     </div>
                 </div>
             </div>

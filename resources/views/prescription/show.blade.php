@@ -40,7 +40,7 @@
                         <img src="{{ \App\Models\Setting::getLogo('dark') }}" class="logo-dark" alt="{{ \App\Models\Setting::getSiteName() }}" style="height:40px;">
                     </div>
                     <span class="badge bg-info-subtle text-info-emphasis fs-13 fw-medium border border-primary py-1 px-2">
-                        #PRE{{ str_pad($prescription->id, 4, '0', STR_PAD_LEFT) }}
+                        {{ $prescription->reference_number ?: ('#PRE' . str_pad($prescription->id, 4, '0', STR_PAD_LEFT)) }}
                     </span>
                 </div>
 
@@ -66,26 +66,51 @@
                     </div>
 
                     <div class="text-lg-end">
-                        @if(optional($prescription->appointment)->appointment_date)
-                            <p class="text-dark mb-1">
-                                Prescribed on:
+                        <p class="text-dark mb-1">
+                            Prescribed on:
+                            <span class="text-body">
+                                {{ $prescription->created_at ? $prescription->created_at->format('d M Y') : (\Carbon\Carbon::parse(optional($prescription->appointment)->appointment_date)->format('d M Y') ?? '—') }}
+                            </span>
+                        </p>
+                        <p class="text-dark mb-1">
+                            Consultation:
+                            <span class="text-body">{{ $prescription->appointment_id ? 'Video / Online' : 'Clinical Workspace' }}</span>
+                        </p>
+                        @if($prescription->appointment_id)
+                            <p class="text-dark mb-0">
+                                Appointment:
                                 <span class="text-body">
-                                    {{ \Carbon\Carbon::parse($prescription->appointment->appointment_date)->format('d M Y') }}
+                                    #APT{{ str_pad($prescription->appointment_id, 4, '0', STR_PAD_LEFT) }}
                                 </span>
                             </p>
                         @endif
-                        <p class="text-dark mb-1">
-                            Consultation:
-                            <span class="text-body">Video / Online</span>
-                        </p>
-                        <p class="text-dark mb-0">
-                            Appointment:
-                            <span class="text-body">
-                                #APT{{ str_pad($prescription->appointment_id, 4, '0', STR_PAD_LEFT) }}
-                            </span>
-                        </p>
                     </div>
                 </div>
+
+                {{-- ── Destination Pharmacy (If assigned) ──────────────────── --}}
+                @if($prescription->pharmacy_name_snapshot || $prescription->pharmacy_id)
+                    <div class="mb-3">
+                        <h6 class="mb-2 fs-14 fw-medium">Destination Pharmacy</h6>
+                        <div class="px-3 py-2 bg-light rounded d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div>
+                                <h6 class="m-0 fw-semibold fs-15 text-dark">
+                                    {{ $prescription->destination_pharmacy_name }}
+                                </h6>
+                                @if($prescription->pharmacy_address_snapshot)
+                                    <small class="text-muted">
+                                        {{ $prescription->pharmacy_address_snapshot }}
+                                        @if($prescription->pharmacy_city_snapshot)
+                                            , {{ $prescription->pharmacy_city_snapshot }}, {{ $prescription->pharmacy_state_snapshot }} {{ $prescription->pharmacy_postal_code_snapshot }}
+                                        @endif
+                                    </small>
+                                @endif
+                            </div>
+                            @if($prescription->pharmacy_phone_snapshot)
+                                <span class="text-muted fs-13"><i class="ti ti-phone me-1"></i>{{ $prescription->pharmacy_phone_snapshot }}</span>
+                            @endif
+                        </div>
+                    </div>
+                @endif
 
                 {{-- ── Patient Details ──────────────────────────────────────── --}}
                 <div class="mb-3">
@@ -129,28 +154,76 @@
 
                 {{-- ── Medicines Table ──────────────────────────────────────── --}}
                 <div class="mb-4">
-                    <h6 class="mb-3 fs-16 fw-bold text-center">Prescription Details</h6>
+                    <h6 class="mb-3 fs-16 fw-bold text-center">Prescribed Medications</h6>
                     @php $medicines = is_array($prescription->medicines) ? $prescription->medicines : []; @endphp
                     @if(count($medicines) > 0)
                         <div class="table-responsive border bg-white rounded">
-                            <table class="table table-nowrap mb-0">
+                            <table class="table align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>SNO</th>
-                                        <th>Medicine Name</th>
-                                        <th>Dosage</th>
-                                        <th>Intake Method</th>
-                                        <th>Dose Timing</th>
+                                        <th style="width: 50px;">#</th>
+                                        <th>Medication & Form</th>
+                                        <th>Instructions / Sig</th>
+                                        <th>Frequency & Timing</th>
+                                        <th>Dispense / Refills</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($medicines as $idx => $med)
+                                        @php
+                                            $name = $med['name'] ?? '—';
+                                            $strength = $med['strength'] ?? ($med['dosage'] ?? '');
+                                            $form = $med['dosage_form'] ?? '';
+                                            $route = $med['route'] ?? '';
+                                            $freq = $med['frequency'] ?? '';
+                                            $timing = is_array($med['timing'] ?? null) ? implode(', ', $med['timing']) : ($med['timing'] ?? '');
+                                            $intake = $med['intake'] ?? ($med['instructions'] ?? '');
+                                            $duration = $med['duration'] ?? '';
+                                            $quantity = $med['quantity'] ?? '';
+                                            $unit = $med['unit'] ?? '';
+                                            $refills = $med['refills'] ?? 0;
+                                            $directions = $med['directions'] ?? ($med['notes'] ?? '');
+                                            $substitutions = isset($med['substitutions_allowed']) ? $med['substitutions_allowed'] : true;
+                                        @endphp
                                         <tr>
-                                            <td>{{ str_pad($idx + 1, 2, '0', STR_PAD_LEFT) }}</td>
-                                            <td class="fw-semibold">{{ $med['name'] ?? '—' }}</td>
-                                            <td>{{ $med['dosage'] ?? '—' }}</td>
-                                            <td>{{ $med['intake'] ?? $med['instructions'] ?? '—' }}</td>
-                                            <td>{{ $med['duration'] ?? '—' }}</td>
+                                            <td class="text-muted">{{ str_pad($idx + 1, 2, '0', STR_PAD_LEFT) }}</td>
+                                            <td>
+                                                <div class="fw-bold text-dark fs-14">{{ $name }}</div>
+                                                @if($strength || $form)
+                                                    <div class="text-muted fs-12">
+                                                        {{ implode(' • ', array_filter([$strength, $form, $route])) }}
+                                                    </div>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($directions)
+                                                    <div class="text-dark fs-13">{{ $directions }}</div>
+                                                @endif
+                                                @if($intake)
+                                                    <div class="text-muted fs-12"><i class="ti ti-info-circle me-1"></i>{{ $intake }}</div>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($freq)
+                                                    <div class="fw-semibold text-primary fs-13">{{ $freq }}</div>
+                                                @endif
+                                                @if($timing)
+                                                    <div class="text-muted fs-12">Timing: {{ $timing }}</div>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($quantity || $duration)
+                                                    <div class="fs-13 text-dark fw-medium">
+                                                        {{ $quantity ? $quantity . ' ' . ($unit ?: 'units') : '' }}
+                                                        {{ $duration ? '(' . $duration . ')' : '' }}
+                                                    </div>
+                                                @else
+                                                    <span class="text-muted fs-13">—</span>
+                                                @endif
+                                                <div class="text-muted fs-11">
+                                                    Refills: {{ $refills }} &bull; {{ $substitutions ? 'Substitutions OK' : 'Dispense as Written' }}
+                                                </div>
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>

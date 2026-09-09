@@ -17,7 +17,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            \App\Services\Contracts\PharmacyScraperInterface::class,
+            \App\Services\GoogleMapsPharmacyScraper::class
+        );
+
+        $this->app->bind(
+            \App\Services\Contracts\LabScraperInterface::class,
+            \App\Services\GoogleMapsLabScraper::class
+        );
     }
 
     /**

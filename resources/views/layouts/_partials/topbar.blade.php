@@ -29,12 +29,26 @@
                     <!-- Search -->
                     <div class="me-auto d-flex align-items-center header-search d-lg-flex d-none">
                         <!-- Search -->
-                        <div class="input-icon-start position-relative me-2">
+                        <div class="input-icon-start position-relative me-2" @if(auth()->check() && auth()->user()->role === 'doctor') id="doctorSearchWrapper" style="min-width: 280px;" @endif>
                             <span class="input-icon-addon">
                                 <i class="ti ti-search"></i>
                             </span>
-                           <input type="text" class="form-control shadow-sm" placeholder="Search">
-                           <span class="input-icon-addon text-dark shadow fs-18 d-inline-flex p-0 header-search-icon"><i class="ti ti-command"></i></span>
+                           <input type="text" 
+                                  class="form-control shadow-sm" 
+                                  @if(auth()->check() && auth()->user()->role === 'doctor')
+                                      id="doctorPatientSearchInput" 
+                                      placeholder="Search patients..." 
+                                      autocomplete="off"
+                                  @else
+                                      placeholder="Search"
+                                  @endif
+                           >
+                           <span class="input-icon-addon text-dark shadow fs-18 d-inline-flex p-0 header-search-icon" style="right: 6px; left: auto !important;"><i class="ti ti-command"></i></span>
+
+                           @if(auth()->check() && auth()->user()->role === 'doctor')
+                               <div id="doctorPatientSearchResults" class="dropdown-menu shadow-lg p-2 position-absolute w-100" style="display: none; top: 100%; left: 0; min-width: 340px; max-height: 380px; overflow-y: auto; z-index: 99999; margin-top: 6px; border-radius: 8px; background-color: #ffffff; border: 1px solid #e2e8f0;">
+                               </div>
+                           @endif
                         </div>
                         <!-- /Search -->
                     </div>
@@ -352,3 +366,199 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endif
+
+@if(auth()->check() && auth()->user()->role === 'doctor')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const searchEndpoint = "{{ route('doctor.patients.search') }}";
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function initDoctorSearch(inputEl, resultsContainerEl) {
+        if (!inputEl || !resultsContainerEl) return;
+
+        let debounceTimer = null;
+        let currentAbortController = null;
+        let selectedIndex = -1;
+
+        function closeDropdown() {
+            resultsContainerEl.style.display = 'none';
+            resultsContainerEl.innerHTML = '';
+            selectedIndex = -1;
+        }
+
+        function showLoading() {
+            resultsContainerEl.innerHTML = `
+                <div class="p-3 text-center text-muted fs-13">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    Searching patients...
+                </div>
+            `;
+            resultsContainerEl.style.display = 'block';
+        }
+
+        function showNoResults() {
+            resultsContainerEl.innerHTML = `
+                <div class="p-3 text-center text-muted fs-13">
+                    <i class="ti ti-user-x fs-20 d-block mb-1 text-secondary opacity-75"></i>
+                    No patients found
+                </div>
+            `;
+            resultsContainerEl.style.display = 'block';
+        }
+
+        function showError() {
+            resultsContainerEl.innerHTML = `
+                <div class="p-2 text-center text-danger fs-12">
+                    <i class="ti ti-alert-circle me-1"></i> Unable to search patients. Please try again.
+                </div>
+            `;
+            resultsContainerEl.style.display = 'block';
+        }
+
+        function renderResults(patients) {
+            if (!patients || patients.length === 0) {
+                showNoResults();
+                return;
+            }
+
+            let html = '';
+            patients.forEach((patient, idx) => {
+                const subDetails = [patient.email, patient.phone].filter(Boolean).map(escapeHtml).join(' • ');
+
+                html += `
+                    <a href="${escapeHtml(patient.profile_url)}" class="dropdown-item p-2 rounded d-flex align-items-center gap-2 text-decoration-none doctor-search-result-item" data-index="${idx}">
+                        <img src="${escapeHtml(patient.profile_image)}" alt="${escapeHtml(patient.name)}" class="rounded-circle flex-shrink-0" style="width: 36px; height: 36px; object-fit: cover; border: 1px solid #e2e8f0;">
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="fw-semibold text-dark text-truncate fs-13">${escapeHtml(patient.name)}</div>
+                            <div class="text-muted fs-12 text-truncate">${subDetails || 'No contact info'}</div>
+                        </div>
+                    </a>
+                `;
+            });
+
+            resultsContainerEl.innerHTML = html;
+            resultsContainerEl.style.display = 'block';
+            selectedIndex = -1;
+        }
+
+        function executeSearch(query) {
+            const cleanQuery = query.trim();
+            if (cleanQuery.length < 2) {
+                closeDropdown();
+                return;
+            }
+
+            if (currentAbortController) {
+                currentAbortController.abort();
+            }
+            currentAbortController = new AbortController();
+
+            showLoading();
+
+            const url = `${searchEndpoint}?q=${encodeURIComponent(cleanQuery)}`;
+            fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                signal: currentAbortController.signal
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Search network response was not ok');
+                return res.json();
+            })
+            .then(data => {
+                renderResults(data.results || []);
+            })
+            .catch(err => {
+                if (err.name === 'AbortError') return;
+                console.warn('Doctor patient search error:', err);
+                showError();
+            });
+        }
+
+        inputEl.addEventListener('input', function (e) {
+            clearTimeout(debounceTimer);
+            const val = e.target.value;
+            if (val.trim().length < 2) {
+                if (currentAbortController) currentAbortController.abort();
+                closeDropdown();
+                return;
+            }
+            debounceTimer = setTimeout(() => {
+                executeSearch(val);
+            }, 300);
+        });
+
+        inputEl.addEventListener('keydown', function (e) {
+            const items = resultsContainerEl.querySelectorAll('.doctor-search-result-item');
+            if (!items.length || resultsContainerEl.style.display === 'none') {
+                if (e.key === 'Escape') {
+                    closeDropdown();
+                }
+                return;
+            }
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = (selectedIndex + 1) % items.length;
+                updateHighlight(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+                updateHighlight(items);
+            } else if (e.key === 'Enter') {
+                if (selectedIndex >= 0 && items[selectedIndex]) {
+                    e.preventDefault();
+                    window.location.href = items[selectedIndex].getAttribute('href');
+                }
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeDropdown();
+                inputEl.blur();
+            }
+        });
+
+        function updateHighlight(items) {
+            items.forEach((item, idx) => {
+                if (idx === selectedIndex) {
+                    item.classList.add('active', 'bg-light');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('active', 'bg-light');
+                }
+            });
+        }
+
+        // Close on click outside
+        document.addEventListener('click', function (e) {
+            if (!inputEl.contains(e.target) && !resultsContainerEl.contains(e.target)) {
+                closeDropdown();
+            }
+        });
+    }
+
+    // Initialize Desktop Top Search
+    initDoctorSearch(
+        document.getElementById('doctorPatientSearchInput'),
+        document.getElementById('doctorPatientSearchResults')
+    );
+
+    // Initialize Mobile Modal Search
+    initDoctorSearch(
+        document.getElementById('doctorMobileSearchInput'),
+        document.getElementById('doctorMobileSearchResults')
+    );
+});
+</script>
+@endif
+

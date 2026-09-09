@@ -264,4 +264,54 @@ public function updateVerification(Request $request)
 
         return view('patient.index', compact('patients', 'listScope'));
     }
+
+    /**
+     * Search patients for the authenticated doctor.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function searchPatients(Request $request)
+    {
+        abort_unless(Auth::check() && Auth::user()->role === 'doctor', 403);
+
+        $queryStr = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($queryStr) < 2) {
+            return response()->json(['results' => []]);
+        }
+
+        $patients = Patient::query()
+            ->select('patients.id', 'patients.user_id', 'patients.phone')
+            ->join('users', 'users.id', '=', 'patients.user_id')
+            ->where(function ($q) use ($queryStr) {
+                $q->where('users.name', 'like', '%' . $queryStr . '%')
+                    ->orWhere('users.email', 'like', '%' . $queryStr . '%')
+                    ->orWhere('users.uuid', 'like', '%' . $queryStr . '%')
+                    ->orWhere('patients.phone', 'like', '%' . $queryStr . '%');
+
+                if (is_numeric($queryStr)) {
+                    $q->orWhere('patients.id', '=', (int) $queryStr);
+                }
+            })
+            ->with(['user:id,uuid,name,email,profile_image'])
+            ->limit(10)
+            ->get();
+
+        $results = $patients->map(function ($patient) {
+            $patientUuid = $patient->user?->ensureUuid() ?? $patient->id;
+
+            return [
+                'id' => $patient->id,
+                'uuid' => $patient->user?->uuid,
+                'name' => $patient->user?->name ?? 'Unknown',
+                'email' => $patient->user?->email ?? '',
+                'phone' => $patient->phone ?? '',
+                'profile_image' => $patient->user?->profile_image_url ?? asset('assets/img/users/user-08.jpg'),
+                'profile_url' => route('patients.show', $patientUuid),
+            ];
+        });
+
+        return response()->json(['results' => $results]);
+    }
 }

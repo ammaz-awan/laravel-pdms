@@ -174,19 +174,15 @@ class PatientController extends Controller
         if ($user?->role === 'doctor') {
             $doctorId = $user->doctor?->id;
 
-            $isLinkedPatient = $patient->appointments()
-                ->where('doctor_id', $doctorId)
-                ->exists();
-
-            abort_unless($isLinkedPatient, 403);
-
             $patient->load([
                 'user',
                 'appointments' => function ($query) use ($doctorId) {
-                    $query->where('doctor_id', $doctorId)
-                        ->with('doctor.user')
-                        ->latest('appointment_date')
-                        ->latest('appointment_time');
+                    $query->when($doctorId, function ($q) use ($doctorId) {
+                        $q->where('doctor_id', $doctorId);
+                    })
+                    ->with('doctor.user')
+                    ->latest('appointment_date')
+                    ->latest('appointment_time');
                 },
             ]);
         } elseif ($user?->role === 'patient') {

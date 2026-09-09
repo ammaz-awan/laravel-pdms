@@ -24,6 +24,8 @@ use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\AI\DoctorVerificationAIController;
 use App\Http\Controllers\ChangePasswordController;
 use App\Http\Controllers\MedicineController;
+use App\Http\Controllers\PatientPreferenceController;
+use App\Http\Controllers\Admin\DirectoryScraperController;
 
 
 // Authentication Routes
@@ -103,6 +105,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/patient/payment-verification', [PatientController::class, 'paymentPage'])
     ->name('patient.payment.page')
     ->middleware(['auth']);
+
+    // Patient Preferred Pharmacy & Laboratory routes
+    Route::get('/patient/pharmacies/search', [PatientPreferenceController::class, 'searchPharmacies'])->name('patient.pharmacies.search');
+    Route::post('/patient/preferred-pharmacy', [PatientPreferenceController::class, 'savePreferredPharmacy'])->name('patient.preferred-pharmacy.store');
+    Route::delete('/patient/preferred-pharmacy', [PatientPreferenceController::class, 'removePreferredPharmacy'])->name('patient.preferred-pharmacy.destroy');
+
+    Route::get('/patient/laboratories/search', [PatientPreferenceController::class, 'searchLaboratories'])->name('patient.laboratories.search');
+    Route::post('/patient/preferred-laboratory', [PatientPreferenceController::class, 'savePreferredLaboratory'])->name('patient.preferred-laboratory.store');
+    Route::delete('/patient/preferred-laboratory', [PatientPreferenceController::class, 'removePreferredLaboratory'])->name('patient.preferred-laboratory.destroy');
     
     Route::post('/mark-verified', [PatientController::class, 'markVerified'])->middleware('auth');
 
@@ -167,6 +178,12 @@ Route::post('/admin/doctor-verifications/{doctor}/reject', [AdminController::cla
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin/settings/site', [SettingController::class, 'index'])->name('admin.settings.site');
     Route::post('/admin/settings/site', [SettingController::class, 'update'])->name('admin.settings.site.update');
+
+    // Admin Directory Scraper Routes
+    Route::get('/admin/directory-scraper', [DirectoryScraperController::class, 'index'])->name('admin.directory-scraper.index');
+    Route::post('/admin/directory-scraper/scrape', [DirectoryScraperController::class, 'scrape'])->name('admin.directory-scraper.scrape');
+    Route::get('/admin/directory-scraper/data', [DirectoryScraperController::class, 'data'])->name('admin.directory-scraper.data');
+    Route::get('/admin/directory-scraper/location-suggest', [DirectoryScraperController::class, 'locationSuggest'])->name('admin.directory-scraper.location-suggest');
 });
 
 Route::post('/doctor/update-verification', [DoctorController::class, 'updateVerification'])
@@ -174,6 +191,7 @@ Route::post('/doctor/update-verification', [DoctorController::class, 'updateVeri
     ->name('doctor.updateVerification');
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/doctor/patients/search', [DoctorController::class, 'searchPatients'])->name('doctor.patients.search');
     Route::get('/doctor/appointments', [AppointmentController::class, 'doctorAppointments'])->name('doctor.appointments');
     Route::get('/doctor/my-patients', [DoctorController::class, 'myPatients'])->name('doctor.my-patients');
     Route::get('/doctor/schedules', [DoctorScheduleController::class, 'index'])->name('doctor.schedules.index');
@@ -185,6 +203,24 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/appointments/book', [AppointmentController::class, 'store'])->name('appointments.book');
     Route::post('/doctor/appointments/{appointment}/approve', [AppointmentController::class, 'approve'])->name('doctor.appointments.approve');
     Route::post('/doctor/appointments/{appointment}/reject', [AppointmentController::class, 'reject'])->name('doctor.appointments.reject');
+
+    // Doctor Patient Clinical Workspace Routes
+    Route::prefix('doctor/patients/{patient}')->name('doctor.clinical.')->group(function () {
+        Route::get('/clinical/preferred-destinations', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'getPreferredDestinations'])->name('preferred-destinations');
+        Route::get('/medicines/search', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'searchMedicines'])->name('medicines.search');
+        Route::get('/pharmacies/search', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'searchPharmacies'])->name('pharmacies.search');
+        Route::post('/prescriptions', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'storePrescription'])->name('prescriptions.store');
+        Route::get('/prescriptions', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'listPrescriptions'])->name('prescriptions.index');
+        Route::get('/prescriptions/{prescription}', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'showPrescription'])->name('prescriptions.show');
+        Route::get('/prescriptions/{prescription}/pdf', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'prescriptionPdf'])->name('prescriptions.pdf');
+
+        Route::get('/lab-tests/search', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'searchLabTests'])->name('lab-tests.search');
+        Route::get('/laboratories/search', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'searchLaboratories'])->name('laboratories.search');
+        Route::post('/lab-orders', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'storeLabOrder'])->name('lab-orders.store');
+        Route::get('/lab-orders', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'listLabOrders'])->name('lab-orders.index');
+        Route::get('/lab-orders/{labOrder}', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'showLabOrder'])->name('lab-orders.show');
+        Route::get('/lab-orders/{labOrder}/pdf', [\App\Http\Controllers\DoctorClinicalWorkspaceController::class, 'labOrderPdf'])->name('lab-orders.pdf');
+    });
 });
 
 // Payment Routes
