@@ -57,4 +57,13 @@ class Doctor extends Model
     {
         return $this->hasMany(LabOrder::class);
     }
+
+    public function getDisplayNameAttribute(): string
+    {
+        $name = $this->user?->name;
+        if (!$name) {
+            return '—';
+        }
+        return \Illuminate\Support\Str::startsWith($name, ['Dr.', 'Dr ']) ? $name : 'Dr. ' . $name;
+    }
 }

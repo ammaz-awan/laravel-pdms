@@ -22,3 +22,9 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# NPPES Bulk Data & Temporary Extraction Files
+/storage/app/nppes
+/storage/app/nppes_temp
+*.nppes.*
+npidata_pfile_*

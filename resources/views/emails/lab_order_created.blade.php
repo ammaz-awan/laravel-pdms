@@ -28,7 +28,7 @@
         </div>
         <div class="body">
             <p>Dear <strong>{{ $patient->user?->name ?? 'Patient' }}</strong>,</p>
-            <p><strong>Dr. {{ $doctor->user?->name ?? 'Doctor' }}</strong> has placed a new laboratory test order for you.</p>
+            <p><strong>{{ $doctor->display_name ?? 'Doctor' }}</strong> has placed a new laboratory test order for you.</p>
 
             <table class="info-table">
                 <tr>

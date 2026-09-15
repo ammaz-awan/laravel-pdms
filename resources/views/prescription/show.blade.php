@@ -52,7 +52,7 @@
                         </span>
                         <div>
                             <h6 class="text-dark fw-semibold mb-1">
-                                Dr. {{ optional(optional($prescription->doctor)->user)->name ?? '—' }}
+                                {{ optional($prescription->doctor)->display_name ?? '—' }}
                             </h6>
                             <p class="mb-1 text-muted">
                                 {{ optional($prescription->doctor)->specialization ?? 'General Practice' }}
@@ -257,7 +257,7 @@
                     </div>
                     <div class="text-end">
                         <h6 class="fs-14 fw-semibold mb-0">
-                            Dr. {{ optional(optional($prescription->doctor)->user)->name ?? '—' }}
+                            {{ optional($prescription->doctor)->display_name ?? '—' }}
                         </h6>
                         <p class="fs-13 fw-normal text-muted mb-0">
                             {{ optional($prescription->doctor)->specialization ?? '' }}

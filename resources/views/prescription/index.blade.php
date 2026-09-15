@@ -62,7 +62,7 @@
                                     </span>
                                     <div>
                                         <span class="fw-semibold text-dark d-block">
-                                            Dr. {{ optional(optional($rx->doctor)->user)->name ?? '—' }}
+                                            {{ optional($rx->doctor)->display_name ?? '—' }}
                                         </span>
                                         <span class="fs-12 text-muted">
                                             {{ optional($rx->doctor)->specialization ?? '' }}
@@ -86,9 +86,13 @@
                         @endif
 
                         <td>
-                            <span class="text-truncate d-inline-block" style="max-width:180px;">
-                                {{ $rx->diagnosis ?? '<span class="text-muted">—</span>' }}
-                            </span>
+                            @if(!empty($rx->diagnosis))
+                                <span class="text-truncate d-inline-block" style="max-width:180px;" title="{{ $rx->diagnosis }}">
+                                    {{ $rx->diagnosis }}
+                                </span>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
                         </td>
 
                         <td>
@@ -127,12 +131,5 @@
             {{ $prescriptions->links() }}
         </div>
     @endif
-</div>
-
-
-            </table>
-        </div>
-        {{ $prescriptions->links() }}
-    </div>
 </div>
 @endsection

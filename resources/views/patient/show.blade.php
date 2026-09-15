@@ -313,7 +313,7 @@
                     </span>
                     <div>
                         <h5 class="modal-header-title text-white mb-0" id="prescriptionModalLabel">Medication Prescription Workspace</h5>
-                        <div class="fs-12 text-white-50">Prescribe structured RxNorm medications for {{ $patient->user->name }}</div>
+                        <div class="fs-12 text-white-50">Prescribe medications for {{ $patient->user->name }}</div>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -826,7 +826,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             <option value="4">4</option>
                             <option value="5">5</option>
                             <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
                             <option value="11">11</option>
+                            <option value="12">12</option>
                         </select>
                     </div>
                 </div>
@@ -1600,11 +1605,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             <td>${escapeHtml(p.pharmacy_name)}</td>
                             <td><span class="badge ${p.email_status === 'Sent' ? 'bg-success' : 'bg-secondary'}">${escapeHtml(p.email_status)}</span></td>
                             <td class="text-end">
-                                <a href="${escapeHtml(p.view_url)}" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2 fs-11 me-1">
+                                <a href="${escapeHtml(p.view_url)}" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2 fs-11">
                                     <i class="ti ti-eye"></i> View
-                                </a>
-                                <a href="${escapeHtml(p.pdf_url)}" target="_blank" class="btn btn-outline-dark btn-sm py-0 px-2 fs-11">
-                                    <i class="ti ti-file-type-pdf"></i> PDF
                                 </a>
                             </td>
                         </tr>
@@ -1648,11 +1650,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             <td>${escapeHtml(o.laboratory_name)}</td>
                             <td><span class="badge ${o.email_status === 'Sent' ? 'bg-success' : 'bg-secondary'}">${escapeHtml(o.email_status)}</span></td>
                             <td class="text-end">
-                                <a href="${escapeHtml(o.view_url)}" target="_blank" class="btn btn-outline-info btn-sm py-0 px-2 fs-11 me-1">
+                                <a href="${escapeHtml(o.view_url)}" target="_blank" class="btn btn-outline-info btn-sm py-0 px-2 fs-11">
                                     <i class="ti ti-eye"></i> View
-                                </a>
-                                <a href="${escapeHtml(o.pdf_url)}" target="_blank" class="btn btn-outline-dark btn-sm py-0 px-2 fs-11">
-                                    <i class="ti ti-file-type-pdf"></i> PDF
                                 </a>
                             </td>
                         </tr>

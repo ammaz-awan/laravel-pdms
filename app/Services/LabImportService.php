@@ -462,24 +462,39 @@ class LabImportService
      */
     public function isStrictMedicalLaboratory(?string $category, ?string $name): bool
     {
+        if (empty($name)) {
+            return false;
+        }
+
         if ($this->isKnownMedicalLabBrand($name)) {
             return true;
         }
 
-        $cleanName = strtolower(trim((string) $name));
-        if ($cleanName !== '' && preg_match('/\b(lab|labs|laboratory|laboratories|pathology|pathlab|diagnostic|diagnostics|blood\s*test|blood\s*draw|draw\s*station|pet\/ct|mri|x-ray|radiology|imaging|pcr|sample\s*collection|phlebotomy)\b/i', $cleanName)) {
-            if (!preg_match('/\b(dental\s*lab|photo\s*lab|film\s*lab|computer\s*lab)\b/i', $cleanName)) {
-                return true;
-            }
+        $cleanName = strtolower(trim($name));
+        $catLower = $category ? strtolower(trim($category)) : '';
+
+        // Exclude dental, photo, film, computer, university/research without medical testing
+        if (preg_match('/\b(dental\s*lab|dental\s*laboratory|photo\s*lab|film\s*lab|computer\s*lab|computer\s*science)\b/i', $cleanName) ||
+            str_contains($catLower, 'dental') ||
+            str_contains($catLower, 'photo') ||
+            str_contains($catLower, 'computer') ||
+            str_contains($catLower, 'veterin') ||
+            (str_contains($catLower, 'research') && !str_contains($cleanName, 'diagnostic') && !str_contains($cleanName, 'pathology') && !str_contains($cleanName, 'medical')) ||
+            (str_contains($catLower, 'university') && !str_contains($cleanName, 'diagnostic') && !str_contains($cleanName, 'pathology') && !str_contains($cleanName, 'medical'))) {
+            return false;
         }
 
-        if ($category !== null) {
-            $catLower = strtolower(trim($category));
-            if (preg_match('/\b(medical\s*laboratory|clinical\s*laboratory|pathology\s*laboratory|blood\s*testing\s*service|diagnostic\s*center|medical\s*diagnostic|laboratory|diagnostic\s*imaging|blood\s*bank|dna\s*testing|drug\s*testing)\b/i', $catLower)) {
-                if (!str_contains($catLower, 'dental') && !str_contains($catLower, 'photo') && !str_contains($catLower, 'computer') && !str_contains($catLower, 'veterin') && !str_contains($catLower, 'university')) {
-                    return true;
-                }
-            }
+        if (preg_match('/\b(medical\s*laboratory|clinical\s*laboratory|pathology\s*laboratory|blood\s*testing\s*service|diagnostic\s*center|medical\s*diagnostic|diagnostic\s*imaging|blood\s*bank|dna\s*testing|drug\s*testing)\b/i', $catLower)) {
+            return true;
+        }
+
+        if (preg_match('/\b(pathology|pathlab|diagnostic|diagnostics|blood\s*test|blood\s*draw|draw\s*station|pet\/ct|mri|x-ray|radiology|imaging|pcr|sample\s*collection|phlebotomy)\b/i', $cleanName)) {
+            return true;
+        }
+
+        // If category is generic "Laboratory" and name contains "Lab" or "Laboratory" but not excluded
+        if ($catLower === 'laboratory' && preg_match('/\b(medical|clinical|diagnostic|pathology)\b/i', $cleanName)) {
+            return true;
         }
 
         return false;
@@ -667,10 +682,6 @@ class LabImportService
         $addr = strtolower($address);
         $addr = preg_replace('/\b(street|st\.)\b/', 'st', $addr);
         $addr = preg_replace('/\b(avenue|ave\.)\b/', 'ave', $addr);
-        $addr = preg_replace('/\b(road|rd\.)\b/', 'rd', $addr);
-        $addr = preg_replace('/\b(boulevard|blvd\.)\b/', 'blvd', $addr);
-        $addr = preg_replace('/\b(drive|dr\.)\b/', 'dr', $addr);
-
         return preg_replace('/[^a-zA-Z0-9]/', '', $addr);
     }
 
@@ -696,3 +707,4 @@ class LabImportService
         return in_array($lower, $countries, true);
     }
 }
+

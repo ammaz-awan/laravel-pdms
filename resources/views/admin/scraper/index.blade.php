@@ -100,18 +100,9 @@
 @endsection
 
 @section('content')
-<!-- Page Header / Breadcrumb -->
-<div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
-    <div class="my-auto mb-2">
-        <h3 class="mb-1 fw-bold text-dark">Directory Scraper</h3>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0 fs-13">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="ti ti-smart-home me-1"></i>Dashboard</a></li>
-                <li class="breadcrumb-item">Admin</li>
-                <li class="breadcrumb-item active" aria-current="page">Labs & Pharmacies Scraper</li>
-            </ol>
-        </nav>
-    </div>
+<!-- Page Header -->
+<div class="mb-3">
+    <h3 class="mb-1 fw-bold text-dark">Directory Scraper</h3>
 </div>
 
 <!-- Hero Card -->
@@ -119,8 +110,8 @@
     <div class="row align-items-center">
         <div class="col-lg-8">
             <div class="d-flex align-items-center gap-3 mb-2">
-                <div class="bg-white bg-opacity-20 p-2 rounded-3 text-white">
-                    <i class="ti ti-database-import fs-26"></i>
+                <div class="d-flex align-items-center justify-content-center rounded-3 shadow-sm" style="width: 48px; height: 48px; background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.35);">
+                    <i class="ti ti-database fs-24 text-white"></i>
                 </div>
                 <h3 class="fw-bold mb-0 text-white">Healthcare Directory Importer</h3>
             </div>
@@ -194,11 +185,6 @@
                             <input type="radio" class="btn-check" name="scrape_type" id="type_laboratories" value="laboratories">
                             <label class="btn btn-outline-secondary flex-fill py-2 text-center fs-13" for="type_laboratories">
                                 <i class="ti ti-flask me-1"></i> Laboratories
-                            </label>
-
-                            <input type="radio" class="btn-check" name="scrape_type" id="type_both" value="both">
-                            <label class="btn btn-outline-secondary flex-fill py-2 text-center fs-13" for="type_both">
-                                <i class="ti ti-layers-intersect me-1"></i> Both
                             </label>
                         </div>
                     </div>

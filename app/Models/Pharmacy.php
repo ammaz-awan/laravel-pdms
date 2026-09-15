@@ -16,6 +16,14 @@ class Pharmacy extends Model
         'state',
         'postal_code',
         'phone',
+        'fax',
+        'npi',
+        'fax_source',
+        'fax_lookup_status',
+        'fax_match_score',
+        'fax_lookup_notes',
+        'fax_verified_at',
+        'fax_last_checked_at',
         'website',
         'latitude',
         'longitude',
@@ -27,7 +35,26 @@ class Pharmacy extends Model
     protected $casts = [
         'latitude' => 'float',
         'longitude' => 'float',
+        'fax_match_score' => 'integer',
+        'fax_verified_at' => 'datetime',
+        'fax_last_checked_at' => 'datetime',
     ];
+
+    /**
+     * Check if the pharmacy has an explicitly verified fax number.
+     */
+    public function isFaxVerified(): bool
+    {
+        return !empty($this->fax) && $this->fax_verified_at !== null;
+    }
+
+    /**
+     * Check if the pharmacy has any fax number stored.
+     */
+    public function hasFax(): bool
+    {
+        return !empty($this->fax);
+    }
 
     protected $appends = [
         'display_name',

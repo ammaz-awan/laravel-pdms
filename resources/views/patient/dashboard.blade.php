@@ -96,7 +96,7 @@
             <i class="ti ti-video fs-20"></i>
             <div>
                 <strong>Active Call!</strong>
-                Dr. {{ $activeAppt->doctor->user->name }} is waiting —
+                {{ $activeAppt->doctor->display_name }} is waiting —
                 {{ $activeAppt->appointment_date->format('d M') }}
                 {{ $activeAppt->formatted_time }}
             </div>
@@ -123,7 +123,7 @@
                                 <i class="ti ti-stethoscope text-primary fs-18"></i>
                             </span>
                             <div>
-                                <h6 class="fs-14 mb-1 text-truncate fw-semibold">Dr. {{ $doctor->user->name ?? 'Doctor' }}</h6>
+                                <h6 class="fs-14 mb-1 text-truncate fw-semibold">{{ $doctor->display_name ?? 'Doctor' }}</h6>
                                 <p class="mb-0 fs-13 text-muted text-truncate">{{ $doctor->specialization ?? 'General' }}</p>
                             </div>
                         </div>
@@ -153,7 +153,7 @@
                             </span>
                             <div>
                                 <h6 class="fs-14 mb-1 text-truncate fw-semibold">
-                                    Dr. {{ $rx->doctor->user->name ?? 'Doctor' }}
+                                    {{ $rx->doctor->display_name ?? 'Doctor' }}
                                 </h6>
                                 <p class="mb-0 fs-12 text-muted">{{ $rx->created_at->format('d M Y') }}</p>
                             </div>
@@ -187,7 +187,7 @@
                                 <i class="ti ti-stethoscope text-primary fs-14"></i>
                             </span>
                             <div>
-                                <h6 class="fs-14 fw-semibold mb-0">Dr. {{ $appt->doctor->user->name ?? 'Doctor' }}</h6>
+                                <h6 class="fs-14 fw-semibold mb-0">{{ $appt->doctor->display_name ?? 'Doctor' }}</h6>
                                 <p class="mb-0 fs-12 text-muted">{{ $appt->doctor->specialization ?? '' }}</p>
                             </div>
                         </div>
@@ -342,7 +342,7 @@
                                                 <i class="ti ti-stethoscope text-primary fs-14"></i>
                                             </span>
                                             <div>
-                                                <h6 class="fs-14 mb-0 fw-semibold">Dr. {{ $appt->doctor->user->name ?? 'Doctor' }}</h6>
+                                                <h6 class="fs-14 mb-0 fw-semibold">{{ $appt->doctor->display_name ?? 'Doctor' }}</h6>
                                                 <p class="mb-0 fs-12 text-muted">{{ $appt->doctor->specialization ?? '' }}</p>
                                             </div>
                                         </div>
